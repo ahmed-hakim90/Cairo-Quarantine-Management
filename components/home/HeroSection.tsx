@@ -1,8 +1,9 @@
 import Image from "next/image";
 import type { Messages } from "@/lib/i18n/messages";
 
+/** Same Unsplash asset as the original hero (wing / aerial — pre-refactor). */
 const HERO_IMAGE =
-  "https://images.unsplash.com/photo-1436491865332-7a61a109cc05?auto=format&fit=crop&w=1920&q=90";
+  "https://images.unsplash.com/photo-1436491865332-7a61a109cc05?auto=format&fit=crop&w=1920&q=80";
 
 type HeroSectionProps = {
   content: Messages["hero"];
@@ -38,7 +39,7 @@ export function HeroSection({ content }: HeroSectionProps) {
           </div>
         </div>
 
-        <div className="relative w-full">
+        <div className="relative w-full" aria-hidden>
           <div className="relative aspect-[16/10] min-h-[200px] overflow-hidden rounded-xl shadow-xl ring-1 ring-white/15 sm:aspect-[21/9] sm:min-h-[240px] md:min-h-[280px]">
             <Image
               src={HERO_IMAGE}
@@ -46,13 +47,11 @@ export function HeroSection({ content }: HeroSectionProps) {
               fill
               priority
               className="object-cover object-center"
-              sizes="(max-width: 768px) 100vw, 1152px"
-              role="presentation"
+              sizes="(max-width: 1280px) 100vw, 1152px"
             />
-            <div
-              className="pointer-events-none absolute inset-x-0 bottom-0 h-1/4 bg-gradient-to-t from-gov-navy-deep/40 to-transparent"
-              aria-hidden
-            />
+            <div className="absolute inset-0 bg-gradient-to-br from-gov-navy/80 via-gov-accent/20 to-gov-navy-deep/90" />
+            <div className="absolute inset-0 opacity-[0.12] [background-image:radial-gradient(circle_at_1px_1px,white_1px,transparent_0)] [background-size:24px_24px]" />
+            <div className="pointer-events-none absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-gov-navy-deep/85 to-transparent" />
           </div>
         </div>
       </div>

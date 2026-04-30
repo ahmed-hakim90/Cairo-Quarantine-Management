@@ -146,7 +146,7 @@ export type Messages = {
       vaccineTitle: string;
       vaccineBody: string;
       docsTitle: string;
-      docsBullets: [string, string, string];
+      docsBullets: string[];
       notesTitle: string;
       notesBody: string;
     };
@@ -337,11 +337,7 @@ const ar: Messages = {
       vaccineBody:
         "يتم تطعيم المواطنين بطعم السحائي الثنائي سعر 200 ج.",
       docsTitle: "الوثائق المطلوبة",
-      docsBullets: [
-        "بطاقة الرقم القومي سارية.",
-        "بطاقة التأمين الصحي عند الانطباق.",
-        "أي تقارير طبية ذات صلة بالحالة الصحية.",
-      ],
+      docsBullets: ["البطاقة الشخصية (الرقم القومي) سارية المفعول."],
       notesTitle: "ملاحظات عامة",
       notesBody:
         "يرجى مراجعة المركز المعتمد أو القنوات الرسمية لوزارة الصحة لتأكيد المواعيد والخدمات الفعلية.",
@@ -536,11 +532,7 @@ const en: Messages = {
       vaccineBody:
         "Citizens receive the bivalent meningococcal vaccine at an indicative price of 200 EGP.",
       docsTitle: "Documents to bring",
-      docsBullets: [
-        "Valid national ID card.",
-        "Health insurance card where applicable.",
-        "Any medical reports relevant to your condition.",
-      ],
+      docsBullets: ["Valid national ID card only."],
       notesTitle: "General notes",
       notesBody:
         "Confirm appointment times and available services with your authorised centre or official Ministry of Health channels.",
@@ -727,11 +719,7 @@ const zh: Messages = {
       vaccineBody:
         "公民接种双价脑膜炎疫苗，参考价为 200 埃及镑。",
       docsTitle: "所需材料",
-      docsBullets: [
-        "有效的国民身份证。",
-        "适用时请携带医疗保险卡。",
-        "与健康状况相关的医学报告（如有）。",
-      ],
+      docsBullets: ["仅需携带有效的国民身份证。"],
       notesTitle: "一般提示",
       notesBody:
         "预约时间与开放服务请以授权中心或卫生部官方渠道确认为准。",

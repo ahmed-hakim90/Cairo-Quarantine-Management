@@ -7,6 +7,8 @@ import type { Messages } from "@/lib/i18n/messages";
 
 type HajjTravelerOfficesTableProps = {
   content: Messages["hajjTable"];
+  /** When set, only offices matching this service type are listed */
+  serviceFilter?: TravelerVaccinationService;
 };
 
 function serviceLabel(
@@ -18,7 +20,17 @@ function serviceLabel(
     : content.serviceUmrahOnly;
 }
 
-export function HajjTravelerOfficesTable({ content }: HajjTravelerOfficesTableProps) {
+export function HajjTravelerOfficesTable({
+  content,
+  serviceFilter,
+}: HajjTravelerOfficesTableProps) {
+  const rows =
+    serviceFilter === undefined
+      ? CAIRO_TRAVELER_VACCINATION_OFFICES
+      : CAIRO_TRAVELER_VACCINATION_OFFICES.filter(
+          (row) => row.service === serviceFilter,
+        );
+
   return (
     <section
       className="mx-auto max-w-6xl px-4 py-14"
@@ -38,7 +50,7 @@ export function HajjTravelerOfficesTable({ content }: HajjTravelerOfficesTablePr
         className="mt-8 flex flex-col gap-3 md:hidden"
         aria-label={content.caption}
       >
-        {CAIRO_TRAVELER_VACCINATION_OFFICES.map((row) => (
+        {rows.map((row) => (
           <li
             key={row.id}
             className={
@@ -103,7 +115,7 @@ export function HajjTravelerOfficesTable({ content }: HajjTravelerOfficesTablePr
             </tr>
           </thead>
           <tbody className="divide-y divide-gov-gray-200">
-            {CAIRO_TRAVELER_VACCINATION_OFFICES.map((row) => (
+            {rows.map((row) => (
               <tr
                 key={row.id}
                 className={

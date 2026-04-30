@@ -1,3 +1,4 @@
+import { HajjTravelerOfficesTable } from "@/components/hajj/HajjTravelerOfficesTable";
 import { VaccineSelector } from "@/components/home/VaccineSelector";
 import { PageHeading } from "@/components/layout/PageHeading";
 import { ScrollReveal } from "@/components/motion/ScrollReveal";
@@ -51,6 +52,12 @@ export default async function InternationalTravelerPage({
           initialCategory="international"
           locale={locale}
           labels={m.vaccineSelector}
+        />
+      </ScrollReveal>
+      <ScrollReveal>
+        <HajjTravelerOfficesTable
+          content={m.hajjTable}
+          serviceFilter="hajj_umrah_travelers"
         />
       </ScrollReveal>
     </>
