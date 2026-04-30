@@ -1,0 +1,280 @@
+/**
+ * مكاتب تطعيم المسافرين بالقاهرة — مرجع توجيهي لعام 2026.
+ * يُحدَّث من المصادر الرسمية عند صدور قرارات جديدة.
+ */
+export type TravelerVaccinationService =
+  | "hajj_umrah_travelers"
+  | "hajj_umrah_only";
+
+export type CairoTravelerVaccinationOffice = {
+  id: string;
+  serialInGovernorate: number;
+  administrationAr: string;
+  officeNameAr: string;
+  addressAr: string;
+  phone: string | null;
+  mapsUrl: string;
+  service: TravelerVaccinationService;
+};
+
+export const CAIRO_TRAVELER_VACCINATION_OFFICES: CairoTravelerVaccinationOffice[] =
+  [
+    {
+      id: "cairo-trav-1",
+      serialInGovernorate: 1,
+      administrationAr: "تطعيم المطار الدولي",
+      officeNameAr: "مكتب تطعيم المطار الدولي",
+      addressAr: "قاعة 1، المطار القديم",
+      phone: "022653543",
+      mapsUrl: "https://maps.app.goo.gl/KSx61yoEbbnwdrTd7",
+      service: "hajj_umrah_travelers",
+    },
+    {
+      id: "cairo-trav-2",
+      serialInGovernorate: 2,
+      administrationAr: "الساحل",
+      officeNameAr: "شريف",
+      addressAr:
+        "37 شارع محمد الهواري، الخلفاوي، قرب محطة مترو الخلفاوي",
+      phone: null,
+      mapsUrl: "https://maps.app.goo.gl/gFKGWHPiha1adSdt5",
+      service: "hajj_umrah_travelers",
+    },
+    {
+      id: "cairo-trav-3",
+      serialInGovernorate: 3,
+      administrationAr: "السيدة زينب",
+      officeNameAr: "رعاية الطفل بمصر القديمة",
+      addressAr: "شارع السبع ساقيات، قرب مدرسة الصباحين — السيدة زينب",
+      phone: null,
+      mapsUrl: "https://maps.app.goo.gl/tcRnbwW2SkVwz1d9A",
+      service: "hajj_umrah_only",
+    },
+    {
+      id: "cairo-trav-4",
+      serialInGovernorate: 4,
+      administrationAr: "الشروق",
+      officeNameAr: "مكتب تحسين الشروق",
+      addressAr: "مدينة الشروق — مركزي 63 م",
+      phone: null,
+      mapsUrl: "https://maps.app.goo.gl/BFPYJfWYPWCWqpAbA",
+      service: "hajj_umrah_only",
+    },
+    {
+      id: "cairo-trav-5",
+      serialInGovernorate: 5,
+      administrationAr: "القاهرة الجديدة",
+      officeNameAr: "التجمع الأول",
+      addressAr: "المجاورة العاشرة، أمام جهاز تعمير التجمع الأول",
+      phone: "022461906",
+      mapsUrl: "https://maps.app.goo.gl/K3npmoGB2pfMJ1T79",
+      service: "hajj_umrah_travelers",
+    },
+    {
+      id: "cairo-trav-6",
+      serialInGovernorate: 6,
+      administrationAr: "القاهرة الجديدة",
+      officeNameAr: "التجمع الثالث (مؤقت)",
+      addressAr: "القطامية، موقف البنك، قرب مدرسة القطامية المشتركة",
+      phone: null,
+      mapsUrl: "https://maps.app.goo.gl/GzHKDchFkUqEbukL7",
+      service: "hajj_umrah_only",
+    },
+    {
+      id: "cairo-trav-7",
+      serialInGovernorate: 7,
+      administrationAr: "القاهرة الجديدة",
+      officeNameAr: "التجمع الخامس",
+      addressAr: "قرب مول وادي القمر — التجمع الخامس",
+      phone: null,
+      mapsUrl: "https://maps.app.goo.gl/NTRCyLSiZqgmYU4x9",
+      service: "hajj_umrah_only",
+    },
+    {
+      id: "cairo-trav-8",
+      serialInGovernorate: 8,
+      administrationAr: "المرج",
+      officeNameAr: "مكتب صحة الأندلس",
+      addressAr: "شارع مؤسسة الزكاة، قرب مستشفى الجراحات المتقدمة ليوم واحد",
+      phone: "028702827",
+      mapsUrl: "https://maps.app.goo.gl/gAP4ReSDXxEfRufGA",
+      service: "hajj_umrah_only",
+    },
+    {
+      id: "cairo-trav-9",
+      serialInGovernorate: 9,
+      administrationAr: "المعادي",
+      officeNameAr: "المعادي",
+      addressAr: "71 ميدان التعاون — المعادي",
+      phone: "023583381",
+      mapsUrl: "https://maps.app.goo.gl/Ef3p4MZdQRPTmBgd7",
+      service: "hajj_umrah_travelers",
+    },
+    {
+      id: "cairo-trav-10",
+      serialInGovernorate: 10,
+      administrationAr: "المعصرة",
+      officeNameAr: "حدائق حلوان",
+      addressAr: "شارع خالد بن الوليد، أمام قسم المعصرة",
+      phone: null,
+      mapsUrl: "https://maps.app.goo.gl/z3pURcRfTiBFnvY6",
+      service: "hajj_umrah_only",
+    },
+    {
+      id: "cairo-trav-11",
+      serialInGovernorate: 11,
+      administrationAr: "المقطم",
+      officeNameAr: "الأسمرات",
+      addressAr: "مدينة الأسمرات، المقطم، عمارة 31 الجوهرة",
+      phone: null,
+      mapsUrl: "https://maps.app.goo.gl/ZpzhHY9uyafBYJSE8",
+      service: "hajj_umrah_only",
+    },
+    {
+      id: "cairo-trav-12",
+      serialInGovernorate: 12,
+      administrationAr: "النزهة",
+      officeNameAr: "المحكمة",
+      addressAr: "32 شارع الحجاز، أمام محكمة القاهرة الجديدة",
+      phone: "026339444",
+      mapsUrl: "https://maps.app.goo.gl/hx65ccwcSccVcTV68",
+      service: "hajj_umrah_travelers",
+    },
+    {
+      id: "cairo-trav-13",
+      serialInGovernorate: 13,
+      administrationAr: "النزهة",
+      officeNameAr: "النزهة الجديدة",
+      addressAr: "38 شارع الفريق جوزيف تيتو",
+      phone: null,
+      mapsUrl: "https://maps.app.goo.gl/kohwga5fjJswvxmPA",
+      service: "hajj_umrah_only",
+    },
+    {
+      id: "cairo-trav-14",
+      serialInGovernorate: 14,
+      administrationAr: "الوايلي",
+      officeNameAr: "مكتب صحة العباسية",
+      addressAr: "2 شارع المستشفى الإيطالي، العباسية",
+      phone: "026848533",
+      mapsUrl: "https://maps.app.goo.gl/5nSWTYNH632Nbkrm7",
+      service: "hajj_umrah_only",
+    },
+    {
+      id: "cairo-trav-15",
+      serialInGovernorate: 15,
+      administrationAr: "حدائق القبة",
+      officeNameAr: "الوايلي الكبير",
+      addressAr: "3 شارع مدحت نور، خلف قسم حدائق القبة",
+      phone: null,
+      mapsUrl: "https://maps.app.goo.gl/KHDAifmCMm79azZA",
+      service: "hajj_umrah_only",
+    },
+    {
+      id: "cairo-trav-16",
+      serialInGovernorate: 16,
+      administrationAr: "حلوان",
+      officeNameAr: "السيدة خضرة",
+      addressAr: "شارع راغب، متفرع من شارع برهان حلوان",
+      phone: "025567079",
+      mapsUrl: "https://maps.app.goo.gl/GsBViG3R4JWCEnEC8",
+      service: "hajj_umrah_travelers",
+    },
+    {
+      id: "cairo-trav-17",
+      serialInGovernorate: 17,
+      administrationAr: "15 مايو",
+      officeNameAr: "مكتب تحسين 15 مايو",
+      addressAr: "المجاورة 5، قرب مدرسة مصطفى نصر",
+      phone: null,
+      mapsUrl: "https://maps.app.goo.gl/KN67o9nmccivrtTC6",
+      service: "hajj_umrah_only",
+    },
+    {
+      id: "cairo-trav-18",
+      serialInGovernorate: 18,
+      administrationAr: "روض الفرج",
+      officeNameAr: "المركز الحضري",
+      addressAr: "قرب مستشفى الجراحات المتقدمة ليوم واحد — روض الفرج",
+      phone: null,
+      mapsUrl: "https://maps.app.goo.gl/CbAXFJrQvSs664gT9",
+      service: "hajj_umrah_only",
+    },
+    {
+      id: "cairo-trav-19",
+      serialInGovernorate: 19,
+      administrationAr: "عابدين",
+      officeNameAr: "عابدين",
+      addressAr: "197 شارع التحرير — باب اللوق",
+      phone: "022794650",
+      mapsUrl: "https://maps.app.goo.gl/fxWPJKWTWStBT9TVA",
+      service: "hajj_umrah_travelers",
+    },
+    {
+      id: "cairo-trav-20",
+      serialInGovernorate: 20,
+      administrationAr: "غرب",
+      officeNameAr: "قصر النيل",
+      addressAr:
+        "7 شارع رضا، متفرع من ميدان السيدة زينب، أمام مستشفى المنيرة",
+      phone: "023656432",
+      mapsUrl: "https://maps.app.goo.gl/9cfZ8Q9NdT7UM5dz8",
+      service: "hajj_umrah_travelers",
+    },
+    {
+      id: "cairo-trav-21",
+      serialInGovernorate: 21,
+      administrationAr: "مصر القديمة",
+      officeNameAr: "مكتب صحة المنيل",
+      addressAr: "15 شارع إبراهيم باهر زغلول — المنيل",
+      phone: "026419392",
+      mapsUrl: "https://maps.app.goo.gl/a1N2RwwTezVgvOn68",
+      service: "hajj_umrah_travelers",
+    },
+    {
+      id: "cairo-trav-22",
+      serialInGovernorate: 22,
+      administrationAr: "شرق مدينة نصر",
+      officeNameAr: "مكتب صحة النصر 1",
+      addressAr: "14 عمارات رابعة، طريق النصر",
+      phone: "022613676",
+      mapsUrl: "https://maps.app.goo.gl/wjudWLkKY9Gh1uTk6",
+      service: "hajj_umrah_travelers",
+    },
+    {
+      id: "cairo-trav-23",
+      serialInGovernorate: 23,
+      administrationAr: "شرق مدينة نصر",
+      officeNameAr: "الأمل (سابقاً الحجّانة)",
+      addressAr: "شارع مصطفى النحاس — الطبّة — شرق مدينة نصر",
+      phone: null,
+      mapsUrl: "https://maps.app.goo.gl/V9CfUV2RjhtPwpPCA",
+      service: "hajj_umrah_only",
+    },
+    {
+      id: "cairo-trav-24",
+      serialInGovernorate: 24,
+      administrationAr: "غرب مدينة نصر",
+      officeNameAr: "مكتب صحة النصر 2",
+      addressAr: "الحي السادس، قرب مستشفى الجراحات المتقدمة ليوم واحد",
+      phone: "022620816",
+      mapsUrl: "https://maps.app.goo.gl/1e3zkprpU7t41vf49",
+      service: "hajj_umrah_travelers",
+    },
+    {
+      id: "cairo-trav-25",
+      serialInGovernorate: 25,
+      administrationAr: "مصر الجديدة",
+      officeNameAr: "مصر الجديدة",
+      addressAr: "54 شارع خليفة مأمون — روكسي",
+      phone: null,
+      mapsUrl: "https://maps.app.goo.gl/4uMn35iKdE3jnTmA8",
+      service: "hajj_umrah_only",
+    },
+  ];
+
+export function serviceLabelAr(service: TravelerVaccinationService): string {
+  return service === "hajj_umrah_travelers"
+    ? "حجاج ومعتمرين ومسافرين"
+    : "حجاج ومعتمرين فقط";
+}

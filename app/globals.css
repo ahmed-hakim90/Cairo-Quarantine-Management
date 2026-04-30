@@ -1,0 +1,55 @@
+@import "tailwindcss";
+
+:root {
+  --gov-navy: #0c2340;
+  --gov-navy-deep: #081828;
+  --gov-white: #ffffff;
+  --gov-gray-50: #f5f7fa;
+  --gov-gray-100: #ebeef2;
+  --gov-gray-200: #dfe4ea;
+  --gov-gray-600: #4a5568;
+  --gov-gray-700: #374151;
+  --gov-gray-900: #1a202c;
+  --gov-accent: #0f766e;
+  --gov-accent-muted: #ccfbf1;
+  --background: var(--gov-white);
+  --foreground: var(--gov-gray-900);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-gov-navy: var(--gov-navy);
+  --color-gov-navy-deep: var(--gov-navy-deep);
+  --color-gov-gray-50: var(--gov-gray-50);
+  --color-gov-gray-100: var(--gov-gray-100);
+  --color-gov-gray-200: var(--gov-gray-200);
+  --color-gov-gray-600: var(--gov-gray-600);
+  --color-gov-gray-700: var(--gov-gray-700);
+  --color-gov-gray-900: var(--gov-gray-900);
+  --color-gov-accent: var(--gov-accent);
+  --color-gov-accent-muted: var(--gov-accent-muted);
+  --font-sans: var(--font-cairo), ui-sans-serif, system-ui, sans-serif;
+  --font-heading: var(--font-tajawal), var(--font-cairo), sans-serif;
+}
+
+@layer base {
+  body {
+    background: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-sans);
+  }
+
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-heading);
+    font-weight: 700;
+    letter-spacing: 0.01em;
+  }
+
+  :focus-visible {
+    outline: 3px solid var(--gov-accent);
+    outline-offset: 2px;
+  }
+}
