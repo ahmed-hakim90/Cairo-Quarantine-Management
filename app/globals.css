@@ -29,8 +29,9 @@
   --color-gov-gray-900: var(--gov-gray-900);
   --color-gov-accent: var(--gov-accent);
   --color-gov-accent-muted: var(--gov-accent-muted);
-  --font-sans: var(--font-cairo), ui-sans-serif, system-ui, sans-serif;
-  --font-heading: var(--font-tajawal), var(--font-cairo), sans-serif;
+  --font-sans: var(--font-almarai), ui-sans-serif, system-ui, sans-serif;
+  --font-heading: var(--font-ibm-plex-sans-arabic), var(--font-almarai),
+    sans-serif;
 }
 
 @layer base {
@@ -51,5 +52,12 @@
   :focus-visible {
     outline: 3px solid var(--gov-accent);
     outline-offset: 2px;
+  }
+
+  .zh-site {
+    --font-sans: var(--font-noto-sc), "PingFang SC", "Microsoft YaHei",
+      ui-sans-serif, system-ui, sans-serif;
+    --font-heading: var(--font-noto-sc), "PingFang SC", "Microsoft YaHei",
+      ui-sans-serif, sans-serif;
   }
 }

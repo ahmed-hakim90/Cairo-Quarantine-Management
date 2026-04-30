@@ -8,7 +8,7 @@ type LocationsSectionProps = {
 };
 
 export function LocationsSection({ locale, content }: LocationsSectionProps) {
-  const isEn = locale === "en";
+  const useEnFields = locale !== "ar";
 
   return (
     <section
@@ -64,16 +64,16 @@ export function LocationsSection({ locale, content }: LocationsSectionProps) {
                     scope="row"
                     className="max-w-[220px] px-4 py-4 font-medium text-gov-navy"
                   >
-                    {isEn ? row.centerNameEn : row.centerNameAr}
+                    {useEnFields ? row.centerNameEn : row.centerNameAr}
                   </th>
                   <td className="whitespace-nowrap px-4 py-4 text-gov-gray-700">
-                    {isEn ? row.administrationEn : row.administrationAr}
+                    {useEnFields ? row.administrationEn : row.administrationAr}
                   </td>
                   <td className="whitespace-nowrap px-4 py-4 text-gov-gray-700">
-                    {isEn ? row.governorateEn : row.governorateAr}
+                    {useEnFields ? row.governorateEn : row.governorateAr}
                   </td>
                   <td className="min-w-[200px] px-4 py-4 text-gov-gray-700">
-                    {isEn ? row.addressEn : row.addressAr}
+                    {useEnFields ? row.addressEn : row.addressAr}
                   </td>
                   <td className="whitespace-nowrap px-4 py-4 font-mono text-gov-gray-700">
                     {row.phone}

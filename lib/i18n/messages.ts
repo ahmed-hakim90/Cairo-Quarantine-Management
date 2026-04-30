@@ -11,6 +11,7 @@ export type Messages = {
     citizen: string;
     switchToAr: string;
     switchToEn: string;
+    switchToZh: string;
     switchLangAria: string;
   };
   footer: {
@@ -152,6 +153,7 @@ const ar: Messages = {
     citizen: "خدمات المواطنين",
     switchToAr: "العربية",
     switchToEn: "English",
+    switchToZh: "中文",
     switchLangAria: "تغيير اللغة",
   },
   footer: {
@@ -327,6 +329,7 @@ const en: Messages = {
     citizen: "Citizen services",
     switchToAr: "العربية",
     switchToEn: "English",
+    switchToZh: "中文",
     switchLangAria: "Change language",
   },
   footer: {
@@ -487,6 +490,180 @@ const en: Messages = {
   },
 };
 
+const zh: Messages = {
+  meta: {
+    siteName: "开罗检疫管理处",
+    siteDescription:
+      "开罗省及所属机构的检疫服务与旅客疫苗接种官方门户。",
+  },
+  skipLink: "跳至主要内容",
+  nav: {
+    subtitle: "公共卫生机构 — 阿拉伯埃及共和国",
+    title: "开罗检疫管理处",
+    aria: "主导航",
+    home: "首页",
+    international: "国际旅客",
+    hajjUmrah: "朝觐与副朝",
+    citizen: "公民服务",
+    switchToAr: "العربية",
+    switchToEn: "English",
+    switchToZh: "中文",
+    switchLangAria: "切换语言",
+  },
+  footer: {
+    title: "开罗检疫管理处",
+    blurb:
+      "面向旅客与公民的官方信息门户。紧急咨询请拨打指定热线或前往最近的授权接种中心。",
+    contactTitle: "联系方式（示例）",
+    hotline: "热线：16528 — 全天候",
+    email: "邮箱：info@cqm.gov.eg",
+    address: "地址：埃及开罗",
+    copyright:
+      "保留所有权利。内容仅供宣传参考，不能替代直接医疗建议。",
+  },
+  hero: {
+    title: "开罗检疫管理处",
+    visionLabel: "愿景：",
+    vision:
+      "通过可靠、透明、人人可及的检疫服务，保障公众健康与旅客安全。",
+    missionLabel: "使命：",
+    mission:
+      "提供官方指引，协调所需疫苗与筛查，并支持与各方的协作，以符合国内与国际卫生标准。",
+  },
+  services: {
+    heading: "主要服务",
+    intro: "请选择适合您的路径，查看要求与疫苗参考价格。",
+    viewDetails: "查看详情",
+    internationalTitle: "国际旅客",
+    internationalDesc: "出境或入境埃及所需的疫苗接种与健康措施。",
+    hajjTitle: "朝觐 / 副朝旅客",
+    hajjDesc: "朝觐与副朝的获批卫生要求及参考时间安排。",
+    citizenTitle: "公民",
+    citizenDesc: "面向埃及境内居民的疫苗接种服务与健康宣传。",
+  },
+  vaccineSelector: {
+    heading: "疫苗查询与参考价格",
+    intro:
+      "选择人群与疫苗类型以查看参考价格。实际费用可能因政策更新或保险覆盖而有所不同。",
+    userType: "人群",
+    vaccine: "疫苗",
+    guidancePrice: "参考价格",
+    free: "免费",
+    currency: "埃及镑",
+    footnote:
+      "预约与缴费请前往授权中心或官方渠道（后续若接入线上服务以官方通知为准）。",
+    categories: {
+      international: "国际旅客",
+      hajj: "朝觐",
+      umrah: "副朝",
+      citizen: "公民",
+    },
+  },
+  importantLinks: {
+    heading: "重要链接",
+    pdf: "下载健康指南（PDF）",
+    hajjInstructions: "朝觐与副朝须知",
+  },
+  locations: {
+    heading: "授权接种中心",
+    introLead: "开罗2026年旅客接种门诊列表 — 服务对象：",
+    introHighlight: "朝觐、副朝与国际旅客",
+    caption:
+      "开罗授权接种门诊表：门诊名称、管理机构、省、地址、电话、地图链接",
+    colOffice: "门诊名称",
+    colAdmin: "管理机构",
+    colGov: "省",
+    colAddress: "地址",
+    colPhone: "电话",
+    colMaps: "地图",
+    mapsLink: "Google 地图",
+  },
+  hajjTable: {
+    heading: "开罗旅客接种门诊 — 2026（参考清单）",
+    intro:
+      "数据仅供参考；到访前请通过卫生部官方渠道确认时间与开放服务。",
+    caption:
+      "开罗省旅客接种门诊：管理机构、地址、电话、地图链接与服务类型",
+    colGov: "省",
+    colAdmin: "管理机构",
+    colSerial: "省内序号",
+    colOffice: "门诊名称",
+    colAddress: "门诊地址",
+    colPhone: "电话",
+    colMaps: "地图",
+    colService: "服务类型",
+    mapsLink: "Google 地图",
+    governorate: "开罗",
+    phoneMissing: "—",
+    serviceTravelers: "朝觐、副朝及旅客",
+    serviceUmrahOnly: "仅朝觐与副朝",
+  },
+  pages: {
+    international: {
+      metaTitle: "国际旅客",
+      heading: "国际旅客服务",
+      description:
+        "关于按目的地与入境埃及规定所需的疫苗与检测的官方说明。出行前请务必向主管部门核实最新要求。",
+      beforeTravel: "出行前",
+      bullets: [
+        "携带有效护照及所需健康文件。",
+        "查询目的地对强制或建议接种的要求。",
+        "如需请提前预约授权接种中心。",
+      ],
+    },
+    hajj: {
+      metaTitle: "朝觐与副朝",
+      heading: "朝觐与副朝 — 卫生要求",
+      description:
+        "本页汇总朝觐与副朝获批疫苗的参考信息。请遵循埃及卫生部与沙特主管部门的正式决定。",
+      basicsTitle: "核心疫苗",
+      basicsBody:
+        "通常须按规定完成脑膜炎球菌等获批疫苗接种并持有旅行用接种证明。清单可能随季节调整，请以官方公告为准。",
+      instructionsTitle: "朝觐与副朝须知",
+      instructions: [
+        "携带身份证件或护照及原件接种证明；个人信息须与各文件一致。",
+        "若有严重呼吸道症状，建议暂缓出行并于到访中心前咨询医疗指引。",
+        "保存健康文件电子版，避免无序聚集；现场安排以官方渠道发布为准。",
+      ],
+      pricing: {
+        sectionTitle: "按行程类型的参考费用",
+        tripTypeLabel: "行程类型",
+        tripHajj: "朝觐",
+        tripUmrah: "副朝",
+        guidancePrice: "参考价格",
+        fluDisclaimer:
+          "上述价格不含季节性流感疫苗；流感疫苗为可选项目。",
+        locationsTitle: "服务地点",
+        locationsBody:
+          "所有授权地点均可提供服务（参考：朝觐与副朝接种场所 Excel 表）。",
+      },
+      umrahPathTitle: "其他疫苗",
+      umrahPathBody:
+        "如需季节性流感等参考价格，请在下方工具中选择与行程相符的「朝觐」或「副朝」。",
+    },
+    citizen: {
+      metaTitle: "公民服务",
+      heading: "公民服务",
+      description:
+        "面向居民的可选疫苗与参考价格说明。实际服务与时间以授权中心及官方渠道为准。",
+      vaccineTitle: "公民接种",
+      vaccineBody:
+        "公民接种双价脑膜炎疫苗，参考价为 200 埃及镑。",
+      docsTitle: "所需材料",
+      docsBullets: [
+        "有效的国民身份证。",
+        "适用时请携带医疗保险卡。",
+        "与健康状况相关的医学报告（如有）。",
+      ],
+      notesTitle: "一般提示",
+      notesBody:
+        "预约时间与开放服务请以授权中心或卫生部官方渠道确认为准。",
+    },
+  },
+};
+
 export function getMessages(locale: string): Messages {
-  return locale === "en" ? en : ar;
+  if (locale === "en") return en;
+  if (locale === "zh") return zh;
+  return ar;
 }

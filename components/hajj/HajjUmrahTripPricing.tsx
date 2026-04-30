@@ -26,9 +26,10 @@ export function HajjUmrahTripPricing({
     [trip],
   );
 
-  const numberLocale = locale === "ar" ? "ar-EG" : "en-US";
+  const numberLocale =
+    locale === "ar" ? "ar-EG" : locale === "zh" ? "zh-CN" : "en-US";
   const vaccineName =
-    locale === "en" ? primary.nameEn : primary.nameAr;
+    locale === "ar" ? primary.nameAr : primary.nameEn;
 
   return (
     <section

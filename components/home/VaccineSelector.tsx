@@ -28,7 +28,7 @@ type VaccineSelectorProps = {
 };
 
 function vaccineName(record: VaccineRecord, locale: Locale): string {
-  return locale === "en" ? record.nameEn : record.nameAr;
+  return locale === "ar" ? record.nameAr : record.nameEn;
 }
 
 export function VaccineSelector({
@@ -65,7 +65,8 @@ export function VaccineSelector({
     [list, vaccineId],
   );
 
-  const numberLocale = locale === "ar" ? "ar-EG" : "en-US";
+  const numberLocale =
+    locale === "ar" ? "ar-EG" : locale === "zh" ? "zh-CN" : "en-US";
 
   return (
     <section
@@ -143,7 +144,9 @@ export function VaccineSelector({
               {selected?.free ? (
                 <p
                   className="font-heading text-4xl font-bold tracking-tight text-gov-accent sm:text-5xl"
-                  lang={locale === "ar" ? "ar" : "en"}
+                  lang={
+                    locale === "ar" ? "ar" : locale === "zh" ? "zh-CN" : "en"
+                  }
                 >
                   {labels.free}
                 </p>

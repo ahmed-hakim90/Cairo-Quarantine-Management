@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Cairo, Tajawal } from "next/font/google";
+import { Almarai, IBM_Plex_Sans_Arabic, Noto_Sans_SC } from "next/font/google";
 import { notFound } from "next/navigation";
 import "../globals.css";
 import { FloatingWhatsAppButton } from "@/components/layout/FloatingWhatsAppButton";
@@ -12,17 +12,24 @@ import {
 } from "@/lib/i18n/config";
 import { getMessages } from "@/lib/i18n/messages";
 
-const cairo = Cairo({
+const almarai = Almarai({
   subsets: ["arabic", "latin"],
-  weight: ["400", "600", "700"],
-  variable: "--font-cairo",
+  weight: ["400", "700", "800"],
+  variable: "--font-almarai",
   display: "swap",
 });
 
-const tajawal = Tajawal({
+const ibmPlexSansArabic = IBM_Plex_Sans_Arabic({
   subsets: ["arabic", "latin"],
+  weight: ["400", "600", "700"],
+  variable: "--font-ibm-plex-sans-arabic",
+  display: "swap",
+});
+
+const notoSansSc = Noto_Sans_SC({
+  subsets: ["latin"],
   weight: ["400", "500", "700"],
-  variable: "--font-tajawal",
+  variable: "--font-noto-sc",
   display: "swap",
 });
 
@@ -58,14 +65,15 @@ export default async function LocaleLayout({
   const locale = localeParam as Locale;
   const messages = getMessages(locale);
   const dir = locale === "ar" ? "rtl" : "ltr";
-  const lang = locale === "ar" ? "ar" : "en";
+  const lang =
+    locale === "ar" ? "ar" : locale === "zh" ? "zh-CN" : "en";
+  const htmlClass =
+    locale === "zh"
+      ? `${notoSansSc.variable} zh-site h-full`
+      : `${almarai.variable} ${ibmPlexSansArabic.variable} h-full`;
 
   return (
-    <html
-      lang={lang}
-      dir={dir}
-      className={`${cairo.variable} ${tajawal.variable} h-full`}
-    >
+    <html lang={lang} dir={dir} className={htmlClass}>
       <body className="flex min-h-full flex-col bg-background text-foreground antialiased">
         <a
           href="#main-content"
