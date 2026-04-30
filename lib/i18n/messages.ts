@@ -2,7 +2,7 @@ export type Messages = {
   meta: { siteName: string; siteDescription: string };
   skipLink: string;
   nav: {
-   
+    subtitle: string;
     title: string;
     aria: string;
     home: string;
@@ -169,7 +169,7 @@ const ar: Messages = {
   },
   skipLink: "تخطي إلى المحتوى الرئيسي",
   nav: {
-  
+    subtitle: "جهة صحية عامة — جمهورية مصر العربية",
     title: "إدارة الحجر الصحي بالقاهرة",
     aria: "التنقل الرئيسي",
     home: "الرئيسية",
