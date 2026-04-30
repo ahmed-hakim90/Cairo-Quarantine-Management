@@ -47,6 +47,11 @@ export type Messages = {
     intro: string;
     userType: string;
     vaccine: string;
+    vaccinesDropdownHint: string;
+    vaccinesSummaryNone: string;
+    vaccinesSummaryCount: string;
+    vaccinesTotal: string;
+    vaccinesEmptySelection: string;
     guidancePrice: string;
     free: string;
     currency: string;
@@ -145,6 +150,9 @@ export type Messages = {
       description: string;
       vaccineTitle: string;
       vaccineBody: string;
+      /** Lines merged into LocationsSection intro (with shared table headings/columns) */
+      locationsIntroLead: string;
+      locationsIntroHighlight: string;
       docsTitle: string;
       docsBullets: string[];
       notesTitle: string;
@@ -212,9 +220,15 @@ const ar: Messages = {
   vaccineSelector: {
     heading: "استعلام القاحات والتكلفة التوجيهية",
     intro:
-      "اختر الفئة ثم نوع اللقاح لعرض السعر التوجيهي. قد تختلف التكلفة الفعلية بحسب السياسات المحدثة أو التغطية التأمينية.",
+      "اختر الفئة ثم افتح قائمة اللقاحات وحدد لقاحاً واحداً أو أكثر لعرض الأسعار التوجيهية والإجمالي. قد تختلف التكلفة الفعلية بحسب السياسات المحدثة أو التغطية التأمينية.",
     userType: "نوع المستخدم",
-    vaccine: "اللقاح",
+    vaccine: "اللقاحات",
+    vaccinesDropdownHint: "افتح القائمة وحدد لقاحاً واحداً أو أكثر.",
+    vaccinesSummaryNone: "اختر اللقاحات…",
+    vaccinesSummaryCount: "{count} لقاح محدد",
+    vaccinesTotal: "الإجمالي التوجيهي",
+    vaccinesEmptySelection:
+      "لم يُحدد أي لقاح — افتح القائمة أعلاه واختر لقاحاً واحداً أو أكثر.",
     guidancePrice: "التكلفة التوجيهية",
     free: "مجاناً",
     currency: "جنيه مصري",
@@ -293,7 +307,7 @@ const ar: Messages = {
         "إرشادات رسمية حول التطعيمات والفحوصات المطلوبة وفق وجهة السفر وحالة الوصول إلى جمهورية مصر العربية. يرجى التحقق من آخر التحديثات الصادرة عن الجهات المختصة قبل السفر.",
       beforeTravel: "قبل السفر",
       bullets: [
-        "احرص على إحضار جواز السفر ساري المفعول وأي مستندات صحية مطلوبة.",
+        "احرص على إحضار البطاقة الشخصية (الرقم القومي) سارية المفعول فقط.",
         "راجع متطلبات وجهتك بخصوص التطعيمات الإلزامية أو الموصى بها.",
         "احجز موعداً مسبقاً في مركز تطعيم معتمد عند الحاجة.",
       ],
@@ -335,9 +349,13 @@ const ar: Messages = {
         "معلومات موجهة للمواطنين داخل الجمهورية حول التطعيمات المتاحة والأسعار التوجيهية. الخدمات الفعلية والمواعيد تُحدَّد عبر المراكز المعتمدة والقنوات الرسمية.",
       vaccineTitle: "التطعيم المتاح للمواطنين",
       vaccineBody:
-        "يتم تطعيم المواطنين بطعم السحائي الثنائي سعر 200 ج.",
+        "المواطنين.",
+      locationsIntroLead:
+        "جدول مراكز التطعيم المعتمدة بمحافظة القاهرة لعام ٢٠٢٦؛ يمكن للمواطنين المراجعة والحجز في",
+      locationsIntroHighlight:
+        "المقرات التالية (تخدم أيضاً مسافري الحج والعمرة والخارج حسب كل مركز).",
       docsTitle: "الوثائق المطلوبة",
-      docsBullets: ["البطاقة الشخصية (الرقم القومي) سارية المفعول."],
+      docsBullets: ["البطاقة الشخصية (الرقم القومي) سارية ."],
       notesTitle: "ملاحظات عامة",
       notesBody:
         "يرجى مراجعة المركز المعتمد أو القنوات الرسمية لوزارة الصحة لتأكيد المواعيد والخدمات الفعلية.",
@@ -404,9 +422,15 @@ const en: Messages = {
   vaccineSelector: {
     heading: "Vaccine lookup & indicative cost",
     intro:
-      "Pick an audience and vaccine to see the indicative price. Actual cost may vary with updated policies or insurance coverage.",
+      "Pick an audience, open the vaccine list, and select one or more vaccines to see line prices and an indicative total. Actual cost may vary with updated policies or insurance coverage.",
     userType: "Audience",
-    vaccine: "Vaccine",
+    vaccine: "Vaccines",
+    vaccinesDropdownHint: "Open the list and tick one or more vaccines.",
+    vaccinesSummaryNone: "Choose vaccines…",
+    vaccinesSummaryCount: "{count} vaccines selected",
+    vaccinesTotal: "Indicative total",
+    vaccinesEmptySelection:
+      "No vaccines selected — open the list above and choose one or more.",
     guidancePrice: "Indicative cost",
     free: "Free",
     currency: "EGP",
@@ -488,7 +512,7 @@ const en: Messages = {
         "Official guidance on vaccinations and tests required by destination and entry rules for Egypt. Always confirm the latest updates from competent authorities before travel.",
       beforeTravel: "Before you travel",
       bullets: [
-        "Bring a valid passport and any required health documents.",
+        "Bring a valid national ID card only.",
         "Check your destination’s mandatory or recommended vaccinations.",
         "Book ahead at an authorised vaccination centre when needed.",
       ],
@@ -497,7 +521,7 @@ const en: Messages = {
       metaTitle: "Hajj & Umrah",
       heading: "Hajj & Umrah — health requirements",
       description:
-        "This page summarises guidance on approved vaccinations for Hajj and Umrah. Follow official decisions from Egypt’s Ministry of Health and Saudi authorities.",
+        "This page summarises guidance on approved vaccinations for Hajj and Umrah. Follow official decisions from Egypt’s Ministry of Health and other authorities.",
       basicsTitle: "Core vaccinations",
       basicsBody:
         "Meningitis vaccination is commonly required with an approved certificate for travel. The list may change by season — follow official announcements.",
@@ -517,7 +541,7 @@ const en: Messages = {
           "These prices do not include the seasonal influenza vaccine, which is optional.",
         locationsTitle: "Where services are provided",
         locationsBody:
-          "Services are available at all authorised locations (reference: Excel sheet — Hajj and Umrah vaccination sites).",
+          "Services are available at all authorised locations .",
       },
       umrahPathTitle: "Additional vaccines",
       umrahPathBody:
@@ -530,7 +554,11 @@ const en: Messages = {
         "Information for residents on available vaccines and indicative prices. Actual services and appointments are set by authorised centres and official channels.",
       vaccineTitle: "Vaccination for citizens",
       vaccineBody:
-        "Citizens receive the bivalent meningococcal vaccine at an indicative price of 200 EGP.",
+        "For citizens: bivalent meningococcal vaccine 200 EGP; seasonal influenza 260 EGP; hepatitis vaccines by type — Egyptian 100 EGP, foreign 200 EGP, Egyptian travelling abroad 150 EGP, foreign traveller 300 EGP (indicative prices; use the home-page lookup for details).",
+      locationsIntroLead:
+        "Approved vaccination centres in Cairo Governorate for 2026. Citizens may attend or book at",
+      locationsIntroHighlight:
+        "the offices listed below (many also serve Hajj, Umrah, and international travellers).",
       docsTitle: "Documents to bring",
       docsBullets: ["Valid national ID card only."],
       notesTitle: "General notes",
@@ -595,9 +623,14 @@ const zh: Messages = {
   vaccineSelector: {
     heading: "疫苗查询与参考价格",
     intro:
-      "选择人群与疫苗类型以查看参考价格。实际费用可能因政策更新或保险覆盖而有所不同。",
+      "选择人群后打开疫苗列表，可勾选一种或多种疫苗查看分项价格与参考合计。实际费用可能因政策更新或保险覆盖而有所不同。",
     userType: "人群",
-    vaccine: "疫苗",
+    vaccine: "疫苗（可多选）",
+    vaccinesDropdownHint: "展开列表并勾选一种或多种疫苗。",
+    vaccinesSummaryNone: "请选择疫苗…",
+    vaccinesSummaryCount: "已选 {count} 项",
+    vaccinesTotal: "参考合计",
+    vaccinesEmptySelection: "尚未选择疫苗 — 请展开上方列表并勾选一项或多项。",
     guidancePrice: "参考价格",
     free: "免费",
     currency: "埃及镑",
@@ -675,7 +708,7 @@ const zh: Messages = {
         "关于按目的地与入境埃及规定所需的疫苗与检测的官方说明。出行前请务必向主管部门核实最新要求。",
       beforeTravel: "出行前",
       bullets: [
-        "携带有效护照及所需健康文件。",
+        "仅需携带有效的国民身份证。",
         "查询目的地对强制或建议接种的要求。",
         "如需请提前预约授权接种中心。",
       ],
@@ -704,7 +737,7 @@ const zh: Messages = {
           "上述价格不含季节性流感疫苗；流感疫苗为可选项目。",
         locationsTitle: "服务地点",
         locationsBody:
-          "所有授权地点均可提供服务（参考：朝觐与副朝接种场所 Excel 表）。",
+          "所有授权地点均可提供服务。",
       },
       umrahPathTitle: "其他疫苗",
       umrahPathBody:
@@ -717,7 +750,10 @@ const zh: Messages = {
         "面向居民的可选疫苗与参考价格说明。实际服务与时间以授权中心及官方渠道为准。",
       vaccineTitle: "公民接种",
       vaccineBody:
-        "公民接种双价脑膜炎疫苗，参考价为 200 埃及镑。",
+        "公民：双价脑膜炎疫苗 200 埃及镑；季节性流感 260 埃及镑；乙肝疫苗按类型 — 埃及产 100、进口 200、埃及产且出境 150、进口且出境 300（均为参考价；详情可用首页查询工具）。",
+      locationsIntroLead: "开罗省2026年授权接种中心一览；公民可在下列",
+      locationsIntroHighlight:
+        "门诊预约或到场接种（部分网点同时服务朝觐、副朝与国际旅客）。",
       docsTitle: "所需材料",
       docsBullets: ["仅需携带有效的国民身份证。"],
       notesTitle: "一般提示",

@@ -1,3 +1,5 @@
+import { LocationsSection } from "@/components/home/LocationsSection";
+import { VaccineSelector } from "@/components/home/VaccineSelector";
 import { PageHeading } from "@/components/layout/PageHeading";
 import { ScrollReveal } from "@/components/motion/ScrollReveal";
 import type { Metadata } from "next";
@@ -32,14 +34,28 @@ export default async function CitizenServicesPage({
         <PageHeading title={p.heading} description={p.description} />
       </ScrollReveal>
       <ScrollReveal>
-        <section className="mx-auto max-w-6xl px-4 pb-6 pt-10">
-          <div className="rounded-lg border border-gov-gray-200 bg-white p-6 shadow-sm md:p-8">
-            <h2 className="font-heading text-xl font-bold text-gov-navy">
+        <section
+          className="border-y border-gov-gray-200 bg-gov-gray-50 py-14"
+          aria-labelledby="citizen-vaccines-heading"
+        >
+          <div className="mx-auto max-w-6xl px-4">
+            <h2
+              id="citizen-vaccines-heading"
+              className="font-heading text-xl font-bold text-gov-navy sm:text-2xl"
+            >
               {p.vaccineTitle}
             </h2>
-            <p className="mt-4 text-lg leading-relaxed text-gov-gray-700">
+            <p className="mt-4 max-w-3xl text-lg leading-relaxed text-gov-gray-700">
               {p.vaccineBody}
             </p>
+            <VaccineSelector
+              embedded
+              initialCategory="citizen"
+              allowedCategories={["citizen"]}
+              sectionId="citizen-vaccine-selector"
+              locale={locale}
+              labels={m.vaccineSelector}
+            />
           </div>
         </section>
       </ScrollReveal>
@@ -66,6 +82,16 @@ export default async function CitizenServicesPage({
             </div>
           </div>
         </section>
+      </ScrollReveal>
+      <ScrollReveal>
+        <LocationsSection
+          locale={locale}
+          content={{
+            ...m.locations,
+            introLead: p.locationsIntroLead,
+            introHighlight: p.locationsIntroHighlight,
+          }}
+        />
       </ScrollReveal>
     </>
   );
