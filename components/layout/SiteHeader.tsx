@@ -1,5 +1,6 @@
 import { LanguageSwitcher } from "@/components/i18n/LanguageSwitcher";
 import { LocaleLink } from "@/components/i18n/LocaleLink";
+import { SiteNavLinks } from "@/components/layout/SiteNavLinks";
 import type { Locale } from "@/lib/i18n/config";
 import type { Messages } from "@/lib/i18n/messages";
 
@@ -7,9 +8,6 @@ type SiteHeaderProps = {
   locale: Locale;
   messages: Messages;
 };
-
-const navLinkClass =
-  "inline-flex shrink-0 items-center whitespace-nowrap rounded-md px-1.5 py-2 text-[11px] font-medium leading-snug text-white/95 transition-colors hover:bg-white/10 sm:px-2 sm:text-xs md:px-3 md:text-sm min-h-10 sm:min-h-11";
 
 export function SiteHeader({ locale, messages }: SiteHeaderProps) {
   const n = messages.nav;
@@ -38,21 +36,7 @@ export function SiteHeader({ locale, messages }: SiteHeaderProps) {
         </LocaleLink>
 
         <div className="flex min-w-0 flex-nowrap items-center justify-center gap-1 border-t border-white/15 pt-2 sm:gap-2 md:min-w-0 md:flex-1 md:justify-end md:border-t-0 md:pt-0 md:gap-2 lg:gap-3">
-          <nav aria-label={n.aria} className="min-w-0">
-            <ul className="flex flex-nowrap items-center justify-center gap-0.5 md:justify-end sm:gap-1 md:gap-1.5">
-              {navItems.map(({ href, label }) => (
-                <li key={href} className="shrink-0">
-                  <LocaleLink
-                    href={href}
-                    locale={locale}
-                    className={navLinkClass}
-                  >
-                    {label}
-                  </LocaleLink>
-                </li>
-              ))}
-            </ul>
-          </nav>
+          <SiteNavLinks locale={locale} ariaLabel={n.aria} items={navItems} />
           <LanguageSwitcher locale={locale} nav={n} />
         </div>
       </div>

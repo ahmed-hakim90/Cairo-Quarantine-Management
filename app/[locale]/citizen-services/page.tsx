@@ -1,4 +1,5 @@
 import { PageHeading } from "@/components/layout/PageHeading";
+import { ScrollReveal } from "@/components/motion/ScrollReveal";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { isLocale, type Locale } from "@/lib/i18n/config";
@@ -27,39 +28,45 @@ export default async function CitizenServicesPage({
 
   return (
     <>
-      <PageHeading title={p.heading} description={p.description} />
-      <section className="mx-auto max-w-6xl px-4 pb-6 pt-10">
-        <div className="rounded-lg border border-gov-gray-200 bg-white p-6 shadow-sm md:p-8">
-          <h2 className="font-heading text-xl font-bold text-gov-navy">
-            {p.vaccineTitle}
-          </h2>
-          <p className="mt-4 text-lg leading-relaxed text-gov-gray-700">
-            {p.vaccineBody}
-          </p>
-        </div>
-      </section>
-      <section className="mx-auto max-w-6xl px-4 py-10">
-        <div className="grid gap-6 md:grid-cols-2">
-          <div className="rounded-lg border border-gov-gray-200 bg-white p-6 shadow-sm">
-            <h2 className="font-heading text-lg font-bold text-gov-navy">
-              {p.docsTitle}
+      <ScrollReveal initialVisible>
+        <PageHeading title={p.heading} description={p.description} />
+      </ScrollReveal>
+      <ScrollReveal>
+        <section className="mx-auto max-w-6xl px-4 pb-6 pt-10">
+          <div className="rounded-lg border border-gov-gray-200 bg-white p-6 shadow-sm md:p-8">
+            <h2 className="font-heading text-xl font-bold text-gov-navy">
+              {p.vaccineTitle}
             </h2>
-            <ul className="mt-3 list-disc space-y-2 ps-6 text-sm leading-relaxed text-gov-gray-700">
-              {p.docsBullets.map((item) => (
-                <li key={item}>{item}</li>
-              ))}
-            </ul>
-          </div>
-          <div className="rounded-lg border border-gov-gray-200 bg-white p-6 shadow-sm">
-            <h2 className="font-heading text-lg font-bold text-gov-navy">
-              {p.notesTitle}
-            </h2>
-            <p className="mt-3 text-sm leading-relaxed text-gov-gray-700">
-              {p.notesBody}
+            <p className="mt-4 text-lg leading-relaxed text-gov-gray-700">
+              {p.vaccineBody}
             </p>
           </div>
-        </div>
-      </section>
+        </section>
+      </ScrollReveal>
+      <ScrollReveal>
+        <section className="mx-auto max-w-6xl px-4 py-10">
+          <div className="grid gap-6 md:grid-cols-2">
+            <div className="rounded-lg border border-gov-gray-200 bg-white p-6 shadow-sm">
+              <h2 className="font-heading text-lg font-bold text-gov-navy">
+                {p.docsTitle}
+              </h2>
+              <ul className="mt-3 list-disc space-y-2 ps-6 text-sm leading-relaxed text-gov-gray-700">
+                {p.docsBullets.map((item) => (
+                  <li key={item}>{item}</li>
+                ))}
+              </ul>
+            </div>
+            <div className="rounded-lg border border-gov-gray-200 bg-white p-6 shadow-sm">
+              <h2 className="font-heading text-lg font-bold text-gov-navy">
+                {p.notesTitle}
+              </h2>
+              <p className="mt-3 text-sm leading-relaxed text-gov-gray-700">
+                {p.notesBody}
+              </p>
+            </div>
+          </div>
+        </section>
+      </ScrollReveal>
     </>
   );
 }

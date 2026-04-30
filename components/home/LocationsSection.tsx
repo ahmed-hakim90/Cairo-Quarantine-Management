@@ -1,4 +1,5 @@
 import { VACCINATION_CENTERS } from "@/data/locations";
+import { OfficeContactIcons } from "@/components/ui/OfficeContactIcons";
 import type { Locale } from "@/lib/i18n/config";
 import type { Messages } from "@/lib/i18n/messages";
 
@@ -29,7 +30,43 @@ export function LocationsSection({ locale, content }: LocationsSectionProps) {
           </span>
         </p>
 
-        <div className="mt-8 overflow-x-auto rounded-lg border border-gov-gray-200 shadow-sm">
+        <ul className="mt-8 flex flex-col gap-3 md:hidden" aria-label={content.caption}>
+          {VACCINATION_CENTERS.map((row) => {
+            const office = useEnFields ? row.centerNameEn : row.centerNameAr;
+            const admin = useEnFields
+              ? row.administrationEn
+              : row.administrationAr;
+            const gov = useEnFields ? row.governorateEn : row.governorateAr;
+            const address = useEnFields ? row.addressEn : row.addressAr;
+
+            return (
+              <li
+                key={row.id}
+                className="flex flex-row items-start gap-3 rounded-lg border border-gov-gray-200 bg-white p-4 shadow-sm"
+              >
+                <div className="min-w-0 flex-1 space-y-1.5 text-sm">
+                  <p className="font-heading font-semibold text-gov-navy">
+                    {office}
+                  </p>
+                  <p className="text-gov-gray-700">{admin}</p>
+                  <p className="text-sm text-gov-gray-600">
+                    <span className="text-gov-gray-500">{content.colGov}: </span>
+                    {gov}
+                  </p>
+                  <p className="text-gov-gray-700">{address}</p>
+                </div>
+                <OfficeContactIcons
+                  phone={row.phone}
+                  mapsUrl={row.mapsUrl}
+                  ariaPhone={content.a11yPhone}
+                  ariaMap={content.a11yMap}
+                />
+              </li>
+            );
+          })}
+        </ul>
+
+        <div className="mt-8 hidden overflow-x-auto rounded-lg border border-gov-gray-200 shadow-sm md:block">
           <table className="min-w-full border-collapse text-start text-sm">
             <caption className="sr-only">{content.caption}</caption>
             <thead className="bg-gov-navy text-white">

@@ -1,5 +1,6 @@
 import { VaccineSelector } from "@/components/home/VaccineSelector";
 import { PageHeading } from "@/components/layout/PageHeading";
+import { ScrollReveal } from "@/components/motion/ScrollReveal";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { isLocale, type Locale } from "@/lib/i18n/config";
@@ -28,24 +29,30 @@ export default async function InternationalTravelerPage({
 
   return (
     <>
-      <PageHeading title={p.heading} description={p.description} />
-      <section className="mx-auto max-w-6xl px-4 py-10">
-        <div className="rounded-lg border border-gov-gray-200 bg-white p-6 shadow-sm md:p-8">
-          <h2 className="font-heading text-xl font-bold text-gov-navy">
-            {p.beforeTravel}
-          </h2>
-          <ul className="mt-4 list-disc space-y-2 ps-6 leading-relaxed text-gov-gray-700">
-            {p.bullets.map((item) => (
-              <li key={item}>{item}</li>
-            ))}
-          </ul>
-        </div>
-      </section>
-      <VaccineSelector
-        initialCategory="international"
-        locale={locale}
-        labels={m.vaccineSelector}
-      />
+      <ScrollReveal initialVisible>
+        <PageHeading title={p.heading} description={p.description} />
+      </ScrollReveal>
+      <ScrollReveal>
+        <section className="mx-auto max-w-6xl px-4 py-10">
+          <div className="rounded-lg border border-gov-gray-200 bg-white p-6 shadow-sm md:p-8">
+            <h2 className="font-heading text-xl font-bold text-gov-navy">
+              {p.beforeTravel}
+            </h2>
+            <ul className="mt-4 list-disc space-y-2 ps-6 leading-relaxed text-gov-gray-700">
+              {p.bullets.map((item) => (
+                <li key={item}>{item}</li>
+              ))}
+            </ul>
+          </div>
+        </section>
+      </ScrollReveal>
+      <ScrollReveal>
+        <VaccineSelector
+          initialCategory="international"
+          locale={locale}
+          labels={m.vaccineSelector}
+        />
+      </ScrollReveal>
     </>
   );
 }

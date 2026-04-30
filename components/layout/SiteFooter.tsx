@@ -1,4 +1,5 @@
 import type { Messages } from "@/lib/i18n/messages";
+import { PORTFOLIO_CREDIT_URL } from "@/lib/site-credits";
 
 type SiteFooterProps = {
   messages: Messages;
@@ -27,9 +28,19 @@ export function SiteFooter({ messages }: SiteFooterProps) {
             </ul>
           </div>
         </div>
-        <p className="mt-8 border-t border-gov-gray-200 pt-6 text-center text-xs text-gov-gray-600">
-          © {year} — {f.copyright}
-        </p>
+        <div className="mt-8 border-t border-gov-gray-200 pt-6 text-center text-xs text-gov-gray-600">
+          <p>© {year} — {f.copyright}</p>
+          <p className="mt-2">
+            <a
+              href={PORTFOLIO_CREDIT_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline underline-offset-2 transition-colors hover:text-gov-navy"
+            >
+              {f.creditLinkLabel}
+            </a>
+          </p>
+        </div>
       </div>
     </footer>
   );

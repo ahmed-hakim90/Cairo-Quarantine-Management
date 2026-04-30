@@ -22,6 +22,7 @@ export type Messages = {
     email: string;
     address: string;
     copyright: string;
+    creditLinkLabel: string;
   };
   hero: {
     title: string;
@@ -74,6 +75,19 @@ export type Messages = {
     colPhone: string;
     colMaps: string;
     mapsLink: string;
+    a11yPhone: string;
+    a11yMap: string;
+  };
+  travelerStats: {
+    heading: string;
+    intro: string;
+    caption: string;
+    pendingValue: string;
+    viewDetails: string;
+    footnote: string;
+    periodLabel: string;
+    sourceLink: string;
+    sourcePending: string;
   };
   hajjTable: {
     heading: string;
@@ -92,6 +106,9 @@ export type Messages = {
     phoneMissing: string;
     serviceTravelers: string;
     serviceUmrahOnly: string;
+    a11yPhone: string;
+    a11yMap: string;
+    a11yPhoneUnavailable: string;
   };
   pages: {
     international: {
@@ -166,6 +183,7 @@ const ar: Messages = {
     address: "العنوان: القاهرة، جمهورية مصر العربية",
     copyright:
       "جميع الحقوق محفوظة. المحتوى المعروض للتوعية ولا يغني عن التوجيه الطبي المباشر.",
+    creditLinkLabel: "صنع ب فريق من إدارة الحجر الصحي بالقاهرة",
   },
   hero: {
     title: "إدارة الحجر الصحي بالقاهرة",
@@ -227,6 +245,22 @@ const ar: Messages = {
     colPhone: "الهاتف",
     colMaps: "الموقع",
     mapsLink: "خريطة Google",
+    a11yPhone: "اتصال هاتفي بهذا المكتب",
+    a11yMap: "فتح موقع المكتب على الخريطة",
+  },
+  travelerStats: {
+    heading: "أعداد المسافرين والفئات المرتبطة بخدمات الحجر الصحي",
+    intro:
+      "عرض توجيهي يقابل مسارات الخدمات الثلاثة على البوابة. تُحدَّث الأرقام عند توفر بيانات منشورة رسميًا من الجهات المختصة.",
+    caption:
+      "بطاقات تعرض العدد المرجعي أو حالة التحديث لكل فئة مع رابط للتفاصيل",
+    pendingValue: "قيد التحديث",
+    viewDetails: "عرض الصفحة",
+    footnote:
+      "الأرقام المعروضة لا تغني عن النشر الرسمي؛ يُرجى اعتماد المصدر المحدّد من الجهة صاحبة الشأن.",
+    periodLabel: "المرجع:",
+    sourceLink: "المصدر الرسمي",
+    sourcePending: "سيُذكر رابط المصدر عند اعتماد الرقم من جهة رسمية.",
   },
   hajjTable: {
     heading: "قائمة مكاتب تطعيم المسافرين بالقاهرة لعام 2026",
@@ -247,6 +281,9 @@ const ar: Messages = {
     phoneMissing: "——",
     serviceTravelers: "حجاج ومعتمرين ومسافرين",
     serviceUmrahOnly: "حجاج ومعتمرين فقط",
+    a11yPhone: "اتصال هاتفي بهذا المكتب",
+    a11yMap: "فتح موقع المكتب على الخريطة",
+    a11yPhoneUnavailable: "لا يتوفر رقم هاتف مسجل لهذا المكتب",
   },
   pages: {
     international: {
@@ -342,6 +379,7 @@ const en: Messages = {
     address: "Address: Cairo, Arab Republic of Egypt",
     copyright:
       "All rights reserved. Content is for awareness only and does not replace direct medical advice.",
+    creditLinkLabel: "Crafted with care by Hakim",
   },
   hero: {
     title: "Cairo Quarantine Administration",
@@ -404,6 +442,23 @@ const en: Messages = {
     colPhone: "Phone",
     colMaps: "Map",
     mapsLink: "Google Maps",
+    a11yPhone: "Call this office by phone",
+    a11yMap: "Open this office location on the map",
+  },
+  travelerStats: {
+    heading: "Traveller volumes aligned with portal service paths",
+    intro:
+      "Indicative figures matching the three service routes on this portal. Numbers are updated when competent authorities publish official statistics.",
+    caption:
+      "Cards showing reference counts or update status per category with detail links",
+    pendingValue: "Pending update",
+    viewDetails: "Open page",
+    footnote:
+      "Displayed figures do not replace official publications; defer to the cited source from the responsible authority.",
+    periodLabel: "Reference:",
+    sourceLink: "Official source",
+    sourcePending:
+      "A source link will appear once figures are adopted from an official body.",
   },
   hajjTable: {
     heading:
@@ -425,6 +480,9 @@ const en: Messages = {
     phoneMissing: "—",
     serviceTravelers: "Hajj, Umrah & travellers",
     serviceUmrahOnly: "Hajj & Umrah only",
+    a11yPhone: "Call this office by phone",
+    a11yMap: "Open this office location on the map",
+    a11yPhoneUnavailable: "No phone number on file for this office",
   },
   pages: {
     international: {
@@ -520,6 +578,7 @@ const zh: Messages = {
     address: "地址：埃及开罗",
     copyright:
       "保留所有权利。内容仅供宣传参考，不能替代直接医疗建议。",
+    creditLinkLabel: "哈基姆用心制作",
   },
   hero: {
     title: "开罗检疫管理处",
@@ -577,6 +636,21 @@ const zh: Messages = {
     colPhone: "电话",
     colMaps: "地图",
     mapsLink: "Google 地图",
+    a11yPhone: "拨打此门诊电话",
+    a11yMap: "在地图上打开此门诊位置",
+  },
+  travelerStats: {
+    heading: "与检疫服务路径对应的旅客规模（参考）",
+    intro:
+      "与本门户三类服务路径相对应的参考数据。主管部门正式发布统计数据后将予以更新。",
+    caption: "各类参考人数或更新状态及详情链接",
+    pendingValue: "待更新",
+    viewDetails: "打开页面",
+    footnote:
+      "所示数字不能替代正式发布；请以主管部门公布的来源为准。",
+    periodLabel: "参考：",
+    sourceLink: "官方来源",
+    sourcePending: "待主管部门采纳数字后将附上来源链接。",
   },
   hajjTable: {
     heading: "开罗旅客接种门诊 — 2026（参考清单）",
@@ -597,6 +671,9 @@ const zh: Messages = {
     phoneMissing: "—",
     serviceTravelers: "朝觐、副朝及旅客",
     serviceUmrahOnly: "仅朝觐与副朝",
+    a11yPhone: "拨打此门诊电话",
+    a11yMap: "在地图上打开此门诊位置",
+    a11yPhoneUnavailable: "此门诊无登记电话号码",
   },
   pages: {
     international: {
