@@ -140,7 +140,7 @@ export const VACCINATION_CENTERS: VaccinationCenterRow[] = [
   },
   {
     id: "10",
-    centerNameAr: "وحدة صحة مدينة نصر الأولى",
+    centerNameAr: "وحدة صحة مدينة نصر اول",
     centerNameEn: "Nasr City 1 health unit",
     administrationAr: "شرق مدينة نصر",
     administrationEn: "East Nasr City",
@@ -153,7 +153,7 @@ export const VACCINATION_CENTERS: VaccinationCenterRow[] = [
   },
   {
     id: "11",
-    centerNameAr: "وحدة صحة مدينة نصر الثانية",
+    centerNameAr: "وحدة صحة مدينة نصر ثان",
     centerNameEn: "Nasr City 2 health unit",
     administrationAr: "غرب مدينة نصر",
     administrationEn: "West Nasr City",

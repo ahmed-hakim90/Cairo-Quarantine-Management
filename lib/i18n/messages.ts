@@ -13,6 +13,8 @@ export type Messages = {
     switchToEn: string;
     switchToZh: string;
     switchLangAria: string;
+    bookVaccination: string;
+    bookVaccinationAria: string;
   };
   footer: {
     title: string;
@@ -150,9 +152,6 @@ export type Messages = {
       description: string;
       vaccineTitle: string;
       vaccineBody: string;
-      /** Lines merged into LocationsSection intro (with shared table headings/columns) */
-      locationsIntroLead: string;
-      locationsIntroHighlight: string;
       docsTitle: string;
       docsBullets: string[];
       notesTitle: string;
@@ -180,6 +179,8 @@ const ar: Messages = {
     switchToEn: "English",
     switchToZh: "中文",
     switchLangAria: "تغيير اللغة",
+    bookVaccination: "حجز تطعيم",
+    bookVaccinationAria: "فتح نموذج حجز التطعيم في نافذة جديدة",
   },
   footer: {
     title: "إدارة الحجر الصحي بالقاهرة",
@@ -349,11 +350,7 @@ const ar: Messages = {
         "معلومات موجهة للمواطنين داخل الجمهورية حول التطعيمات المتاحة والأسعار التوجيهية. الخدمات الفعلية والمواعيد تُحدَّد عبر المراكز المعتمدة والقنوات الرسمية.",
       vaccineTitle: "التطعيم المتاح للمواطنين",
       vaccineBody:
-        "المواطنين.",
-      locationsIntroLead:
-        "جدول مراكز التطعيم المعتمدة بمحافظة القاهرة لعام ٢٠٢٦؛ يمكن للمواطنين المراجعة والحجز في",
-      locationsIntroHighlight:
-        "المقرات التالية (تخدم أيضاً مسافري الحج والعمرة والخارج حسب كل مركز).",
+        "للمواطنين: لقاح المكورات السحائية ثنائي المصلّى ٢٠٠ جنيه؛ الإنفلونزا الموسمية ٢٦٠ جنيه؛ التهاب الكبد بّ حسب النوع — مصري ١٠٠، أجنبي ٢٠٠، مصري مسافر ١٥٠، أجنبي مسافر ٣٠٠ (أسعار توجيهية؛ للتفاصيل استخدم أداة الاستعلام في الصفحة الرئيسية).",
       docsTitle: "الوثائق المطلوبة",
       docsBullets: ["البطاقة الشخصية (الرقم القومي) سارية ."],
       notesTitle: "ملاحظات عامة",
@@ -382,6 +379,8 @@ const en: Messages = {
     switchToEn: "English",
     switchToZh: "中文",
     switchLangAria: "Change language",
+    bookVaccination: "Book vaccination",
+    bookVaccinationAria: "Open vaccination booking form in a new tab",
   },
   footer: {
     title: "Cairo Quarantine Administration",
@@ -555,10 +554,6 @@ const en: Messages = {
       vaccineTitle: "Vaccination for citizens",
       vaccineBody:
         "For citizens: bivalent meningococcal vaccine 200 EGP; seasonal influenza 260 EGP; hepatitis vaccines by type — Egyptian 100 EGP, foreign 200 EGP, Egyptian travelling abroad 150 EGP, foreign traveller 300 EGP (indicative prices; use the home-page lookup for details).",
-      locationsIntroLead:
-        "Approved vaccination centres in Cairo Governorate for 2026. Citizens may attend or book at",
-      locationsIntroHighlight:
-        "the offices listed below (many also serve Hajj, Umrah, and international travellers).",
       docsTitle: "Documents to bring",
       docsBullets: ["Valid national ID card only."],
       notesTitle: "General notes",
@@ -587,6 +582,8 @@ const zh: Messages = {
     switchToEn: "English",
     switchToZh: "中文",
     switchLangAria: "切换语言",
+    bookVaccination: "预约接种",
+    bookVaccinationAria: "在新标签页打开疫苗接种预约表单",
   },
   footer: {
     title: "开罗检疫管理处",
@@ -751,9 +748,6 @@ const zh: Messages = {
       vaccineTitle: "公民接种",
       vaccineBody:
         "公民：双价脑膜炎疫苗 200 埃及镑；季节性流感 260 埃及镑；乙肝疫苗按类型 — 埃及产 100、进口 200、埃及产且出境 150、进口且出境 300（均为参考价；详情可用首页查询工具）。",
-      locationsIntroLead: "开罗省2026年授权接种中心一览；公民可在下列",
-      locationsIntroHighlight:
-        "门诊预约或到场接种（部分网点同时服务朝觐、副朝与国际旅客）。",
       docsTitle: "所需材料",
       docsBullets: ["仅需携带有效的国民身份证。"],
       notesTitle: "一般提示",

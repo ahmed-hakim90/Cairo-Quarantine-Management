@@ -1,4 +1,4 @@
-import { LocationsSection } from "@/components/home/LocationsSection";
+import { HajjTravelerOfficesTable } from "@/components/hajj/HajjTravelerOfficesTable";
 import { VaccineSelector } from "@/components/home/VaccineSelector";
 import { PageHeading } from "@/components/layout/PageHeading";
 import { ScrollReveal } from "@/components/motion/ScrollReveal";
@@ -55,6 +55,10 @@ export default async function CitizenServicesPage({
               sectionId="citizen-vaccine-selector"
               locale={locale}
               labels={m.vaccineSelector}
+              bookingNav={{
+                label: m.nav.bookVaccination,
+                ariaLabel: m.nav.bookVaccinationAria,
+              }}
             />
           </div>
         </section>
@@ -84,14 +88,7 @@ export default async function CitizenServicesPage({
         </section>
       </ScrollReveal>
       <ScrollReveal>
-        <LocationsSection
-          locale={locale}
-          content={{
-            ...m.locations,
-            introLead: p.locationsIntroLead,
-            introHighlight: p.locationsIntroHighlight,
-          }}
-        />
+        <HajjTravelerOfficesTable content={m.hajjTable} />
       </ScrollReveal>
     </>
   );

@@ -8,6 +8,7 @@ import {
 } from "@/data/vaccines";
 import type { Locale } from "@/lib/i18n/config";
 import type { Messages } from "@/lib/i18n/messages";
+import { getVaccinationBookingFormUrl } from "@/lib/site-booking";
 
 const CATEGORY_ORDER: UserCategory[] = [
   "international",
@@ -30,6 +31,8 @@ type VaccineSelectorProps = {
   embedded?: boolean;
   locale: Locale;
   labels: Messages["vaccineSelector"];
+  /** Shown below the lookup when `NEXT_PUBLIC_VACCINATION_BOOKING_FORM_URL` is set */
+  bookingNav?: { label: string; ariaLabel: string };
 };
 
 function vaccineName(record: VaccineRecord, locale: Locale): string {
@@ -48,7 +51,23 @@ export function VaccineSelector({
   embedded = false,
   locale,
   labels,
+  bookingNav,
 }: VaccineSelectorProps) {
+  const bookingUrl = getVaccinationBookingFormUrl();
+  const bookingBlock =
+    bookingUrl && bookingNav ? (
+      <div className="mt-10 flex justify-center border-t border-gov-gray-200 pt-10">
+        <a
+          href={bookingUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex min-h-12 items-center justify-center rounded-lg bg-gov-accent px-8 py-3 text-center text-base font-semibold text-white shadow-md transition-colors hover:bg-gov-accent/90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gov-navy"
+          aria-label={bookingNav.ariaLabel}
+        >
+          {bookingNav.label}
+        </a>
+      </div>
+    ) : null;
   const categoryOrder = useMemo(() => {
     if (!allowedCategories?.length) return CATEGORY_ORDER;
     return CATEGORY_ORDER.filter((c) => allowedCategories.includes(c));
@@ -267,12 +286,15 @@ export function VaccineSelector({
 
   if (embedded) {
     return (
-      <div
-        id={sectionId}
-        className="mt-10 grid gap-8 lg:grid-cols-2 lg:items-start"
-      >
-        {lookupGrid}
-      </div>
+      <>
+        <div
+          id={sectionId}
+          className="mt-10 grid gap-8 lg:grid-cols-2 lg:items-start"
+        >
+          {lookupGrid}
+        </div>
+        {bookingBlock}
+      </>
     );
   }
 
@@ -294,6 +316,7 @@ export function VaccineSelector({
         <div className="mt-10 grid gap-8 lg:grid-cols-2 lg:items-start">
           {lookupGrid}
         </div>
+        {bookingBlock}
       </div>
     </section>
   );

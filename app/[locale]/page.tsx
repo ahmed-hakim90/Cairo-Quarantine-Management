@@ -37,7 +37,14 @@ export default async function HomePage({
         />
       </ScrollReveal>
       <ScrollReveal>
-        <VaccineSelector locale={locale} labels={m.vaccineSelector} />
+        <VaccineSelector
+          locale={locale}
+          labels={m.vaccineSelector}
+          bookingNav={{
+            label: m.nav.bookVaccination,
+            ariaLabel: m.nav.bookVaccinationAria,
+          }}
+        />
       </ScrollReveal>
       <ScrollReveal>
         <ImportantLinks locale={locale} content={m.importantLinks} />

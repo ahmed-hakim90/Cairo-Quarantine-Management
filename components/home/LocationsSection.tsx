@@ -6,10 +6,21 @@ import type { Messages } from "@/lib/i18n/messages";
 type LocationsSectionProps = {
   locale: Locale;
   content: Messages["locations"];
+  /** When set (e.g. citizen services), replaces content.heading */
+  sectionTitle?: string;
+  /** When set, replaces content.caption for the table/list accessible name */
+  tableCaption?: string;
 };
 
-export function LocationsSection({ locale, content }: LocationsSectionProps) {
+export function LocationsSection({
+  locale,
+  content,
+  sectionTitle,
+  tableCaption,
+}: LocationsSectionProps) {
   const useEnFields = locale !== "ar";
+  const headingText = sectionTitle ?? content.heading;
+  const captionText = tableCaption ?? content.caption;
 
   return (
     <section
@@ -21,7 +32,7 @@ export function LocationsSection({ locale, content }: LocationsSectionProps) {
           id="locations-heading"
           className="font-heading text-2xl font-bold text-gov-navy sm:text-3xl"
         >
-          {content.heading}
+          {headingText}
         </h2>
         <p className="mt-2 max-w-2xl text-gov-gray-600">
           {content.introLead}{" "}
@@ -30,7 +41,7 @@ export function LocationsSection({ locale, content }: LocationsSectionProps) {
           </span>
         </p>
 
-        <ul className="mt-8 flex flex-col gap-3 md:hidden" aria-label={content.caption}>
+        <ul className="mt-8 flex flex-col gap-3 md:hidden" aria-label={captionText}>
           {VACCINATION_CENTERS.map((row) => {
             const office = useEnFields ? row.centerNameEn : row.centerNameAr;
             const admin = useEnFields
@@ -68,7 +79,7 @@ export function LocationsSection({ locale, content }: LocationsSectionProps) {
 
         <div className="mt-8 hidden overflow-x-auto rounded-lg border border-gov-gray-200 shadow-sm md:block">
           <table className="min-w-full border-collapse text-start text-sm">
-            <caption className="sr-only">{content.caption}</caption>
+            <caption className="sr-only">{captionText}</caption>
             <thead className="bg-gov-navy text-white">
               <tr>
                 <th scope="col" className="px-4 py-4 font-heading font-semibold">

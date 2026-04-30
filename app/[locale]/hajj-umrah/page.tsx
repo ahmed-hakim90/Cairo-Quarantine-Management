@@ -67,6 +67,10 @@ export default async function HajjUmrahPage({
           allowedCategories={["hajj", "umrah"]}
           locale={locale}
           labels={m.vaccineSelector}
+          bookingNav={{
+            label: m.nav.bookVaccination,
+            ariaLabel: m.nav.bookVaccinationAria,
+          }}
         />
       </ScrollReveal>
       <ScrollReveal>
