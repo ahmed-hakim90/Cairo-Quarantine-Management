@@ -1,36 +1,68 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# إدارة الحجر الصحي بالقاهرة — بوابة الويب
 
-## Getting Started
+بوابة معلوماتية متعددة اللغات لخدمات الحجر الصحي والمسافرين (مصر — القاهرة)، مبنية بـ [Next.js](https://nextjs.org) (App Router).
 
-First, run the development server:
+**Cairo Quarantine Administration** — multilingual informational portal for quarantine and traveler services.
+
+## الميزات | Features
+
+- **لغات**: العربية (افتراضي)، الإنجليزية، الصينية — مع اتجاه النص RTL/LTR حسب اللغة.
+- **صفحات**: الرئيسية، المسافر الدولي، الحج والعمرة، خدمات المواطن.
+- **محتوى**: بطاقات الخدمات، دليل اللقاحات والأسعار، إحصاءات المسافرين، روابط مهمة PDF، جدول مواقع المكاتب، زر واتساب عائم (اختياري عبر المتغير البيئي).
+
+## المتطلبات | Prerequisites
+
+- [Node.js](https://nodejs.org/) (يُفضَّل الإصدار المتوافق مع Next.js 16؛ LTS حديث)
+- مدير حزم: `npm` أو `pnpm` أو `yarn` أو `bun`
+
+## التشغيل المحلي | Local development
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+ثم افتح [http://localhost:3000](http://localhost:3000) — سيتم التوجيه تلقائياً إلى `/ar` (اللغة الافتراضية).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+مسارات جاهزة للمعاينة:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- `/ar` — العربية
+- `/en` — English
+- `/zh` — 中文
 
-## Learn More
+## الأوامر | Scripts
 
-To learn more about Next.js, take a look at the following resources:
+| الأمر        | الوظيفة        |
+| ------------ | -------------- |
+| `npm run dev`    | خادم التطوير   |
+| `npm run build`  | بناء الإنتاج   |
+| `npm run start`  | تشغيل بعد البناء |
+| `npm run lint`   | فحص ESLint     |
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## متغيرات البيئة | Environment variables
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+أنشئ ملف `.env.local` في جذر المشروع عند الحاجة:
 
-## Deploy on Vercel
+| المتغير | الوصف |
+| ------- | ----- |
+| `NEXT_PUBLIC_WHATSAPP_COMPLAINTS_PHONE` | رقم واتساب الشكاوى والاقتراحات (أرقام فقط مع كود الدولة، مثال مصر: `201012345678`). إن لم يُضبط، قد لا يظهر رابط الواتساب بشكل صحيح. |
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## هيكل المشروع | Project structure ( مختصر )
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```
+app/
+  [locale]/          # الصفحات حسب اللغة (ar | en | zh)
+components/          # واجهات الصفحة والتخطيط
+lib/i18n/            # إعدادات اللغات والرسائل (messages)
+middleware.ts        # إعادة توجيه الجذر إلى اللغة الافتراضية
+```
+
+النصوص الظاهرة للمستخدم موجودة في `lib/i18n/messages.ts` لكل لغة.
+
+## النشر | Deploy
+
+يمكن نشر التطبيق على أي منصة تدعم Next.js، مثل [Vercel](https://vercel.com/docs/frameworks/nextjs). تأكد من ضبط متغيرات البيئة في لوحة التحكم قبل الإنتاج.
+
+## ملاحظة للمساهمين | Note for contributors
+
+هذا المشروع يستخدم Next.js 16؛ راجع وثائق الإصدار الحالية في المستودع أو في `node_modules/next/dist/docs/` عند تعديل APIs أو هيكل الملفات.
