@@ -1,9 +1,23 @@
 import {
   CAIRO_TRAVELER_VACCINATION_OFFICES,
-  serviceLabelAr,
+  type TravelerVaccinationService,
 } from "@/data/hajj-traveler-offices-cairo";
+import type { Messages } from "@/lib/i18n/messages";
 
-export function HajjTravelerOfficesTable() {
+type HajjTravelerOfficesTableProps = {
+  content: Messages["hajjTable"];
+};
+
+function serviceLabel(
+  service: TravelerVaccinationService,
+  content: Messages["hajjTable"],
+): string {
+  return service === "hajj_umrah_travelers"
+    ? content.serviceTravelers
+    : content.serviceUmrahOnly;
+}
+
+export function HajjTravelerOfficesTable({ content }: HajjTravelerOfficesTableProps) {
   return (
     <section
       className="mx-auto max-w-6xl px-4 py-14"
@@ -13,44 +27,40 @@ export function HajjTravelerOfficesTable() {
         id="cairo-traveler-offices-heading"
         className="font-heading text-2xl font-bold text-gov-navy sm:text-3xl"
       >
-        قائمة مكاتب تطعيم المسافرين بالقاهرة لعام 2026
+        {content.heading}
       </h2>
       <p className="mt-2 max-w-3xl text-gov-gray-600 leading-relaxed">
-        البيانات معروضة للتوجيه؛ يُرجى التحقق من المواعيد والخدمات عبر القنوات
-        الرسمية لوزارة الصحة قبل الحضور.
+        {content.intro}
       </p>
 
       <div className="mt-8 overflow-x-auto rounded-lg border border-gov-gray-200 shadow-sm">
         <table className="min-w-[56rem] border-collapse text-start text-sm">
-          <caption className="sr-only">
-            مكاتب تطعيم المسافرين في محافظة القاهرة مع الإدارة والعنوان
-            والهاتف ورابط الخرائط ونوع الخدمة
-          </caption>
+          <caption className="sr-only">{content.caption}</caption>
           <thead className="bg-gov-navy text-white">
             <tr>
               <th scope="col" className="px-3 py-3 font-heading font-semibold">
-                المحافظة
+                {content.colGov}
               </th>
               <th scope="col" className="px-3 py-3 font-heading font-semibold">
-                الإدارة
+                {content.colAdmin}
               </th>
               <th scope="col" className="px-3 py-3 font-heading font-semibold">
-                م.&nbsp;المحافظة
+                {content.colSerial}
               </th>
               <th scope="col" className="px-3 py-3 font-heading font-semibold">
-                اسم المكتب
+                {content.colOffice}
               </th>
               <th scope="col" className="px-3 py-3 font-heading font-semibold">
-                عنوان المكتب
+                {content.colAddress}
               </th>
               <th scope="col" className="px-3 py-3 font-heading font-semibold">
-                رقم التليفون
+                {content.colPhone}
               </th>
               <th scope="col" className="px-3 py-3 font-heading font-semibold">
-                الموقع
+                {content.colMaps}
               </th>
               <th scope="col" className="px-3 py-3 font-heading font-semibold">
-                نوع الخدمة
+                {content.colService}
               </th>
             </tr>
           </thead>
@@ -65,7 +75,7 @@ export function HajjTravelerOfficesTable() {
                 }
               >
                 <td className="whitespace-nowrap px-3 py-3 align-top text-gov-gray-700">
-                  القاهرة
+                  {content.governorate}
                 </td>
                 <td className="whitespace-nowrap px-3 py-3 align-top text-gov-gray-700">
                   {row.administrationAr}
@@ -76,14 +86,18 @@ export function HajjTravelerOfficesTable() {
                 <th
                   scope="row"
                   className="max-w-[160px] px-3 py-3 align-top font-medium text-gov-navy"
+                  lang="ar"
                 >
                   {row.officeNameAr}
                 </th>
-                <td className="min-w-[200px] px-3 py-3 align-top text-gov-gray-700">
+                <td
+                  className="min-w-[200px] px-3 py-3 align-top text-gov-gray-700"
+                  lang="ar"
+                >
                   {row.addressAr}
                 </td>
                 <td className="whitespace-nowrap px-3 py-3 align-top font-mono text-gov-gray-700">
-                  {row.phone ?? "——"}
+                  {row.phone ?? content.phoneMissing}
                 </td>
                 <td className="whitespace-nowrap px-3 py-3 align-top">
                   <a
@@ -92,11 +106,11 @@ export function HajjTravelerOfficesTable() {
                     rel="noopener noreferrer"
                     className="text-gov-accent underline-offset-2 hover:underline"
                   >
-                    خرائط Google
+                    {content.mapsLink}
                   </a>
                 </td>
                 <td className="max-w-[11rem] px-3 py-3 align-top text-gov-gray-800">
-                  {serviceLabelAr(row.service)}
+                  {serviceLabel(row.service, content)}
                 </td>
               </tr>
             ))}

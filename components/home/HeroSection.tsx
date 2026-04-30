@@ -1,9 +1,14 @@
 import Image from "next/image";
+import type { Messages } from "@/lib/i18n/messages";
 
 const HERO_IMAGE =
   "https://images.unsplash.com/photo-1436491865332-7a61a109cc05?auto=format&fit=crop&w=1920&q=80";
 
-export function HeroSection() {
+type HeroSectionProps = {
+  content: Messages["hero"];
+};
+
+export function HeroSection({ content }: HeroSectionProps) {
   return (
     <section
       className="relative min-h-[min(100vh,520px)] overflow-hidden bg-gov-navy-deep"
@@ -27,19 +32,20 @@ export function HeroSection() {
           id="hero-title"
           className="font-heading text-3xl font-bold leading-tight text-white sm:text-4xl md:text-5xl"
         >
-          إدارة الحجر الصحي بالقاهرة
+          {content.title}
         </h1>
         <div className="max-w-2xl space-y-4 text-base leading-relaxed text-white/95 sm:text-lg">
           <p>
-            <span className="font-semibold text-gov-accent-muted">الرؤية: </span>
-            تعزيز صحة المجتمع وسلامة المسافرين عبر خدمات حجر صحي موثوقة وشفافة
-            ومتاحة للجميع.
+            <span className="font-semibold text-gov-accent-muted">
+              {content.visionLabel}{" "}
+            </span>
+            {content.vision}
           </p>
           <p>
-            <span className="font-semibold text-gov-accent-muted">الرسالة: </span>
-            تقديم إرشادات رسمية، وتنسيق التطعيمات والفحوصات المطلوبة، ودعم
-            التكامل مع الجهات المعنية بما يضمن الامتثال للمعايير الصحية
-            الوطنية والدولية.
+            <span className="font-semibold text-gov-accent-muted">
+              {content.missionLabel}{" "}
+            </span>
+            {content.mission}
           </p>
         </div>
       </div>

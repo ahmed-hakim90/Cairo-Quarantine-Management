@@ -1,28 +1,34 @@
-export function SiteFooter() {
+import type { Messages } from "@/lib/i18n/messages";
+
+type SiteFooterProps = {
+  messages: Messages;
+};
+
+export function SiteFooter({ messages }: SiteFooterProps) {
+  const f = messages.footer;
+  const year = new Date().getFullYear();
+
   return (
     <footer className="border-t border-gov-gray-200 bg-gov-gray-50 text-gov-gray-700">
       <div className="mx-auto max-w-6xl px-4 py-10">
         <div className="grid gap-8 md:grid-cols-2">
           <div>
             <p className="font-heading text-base font-bold text-gov-navy">
-              إدارة الحجر الصحي بالقاهرة
+              {f.title}
             </p>
-            <p className="mt-2 max-w-md text-sm leading-relaxed">
-              بوابة معلومات رسمية للمسافرين والمواطنين. للاستفسارات الطارئة يرجى
-              التواصل عبر الخطوط المعتمدة أو زيارة أقرب مركز تطعيم معتمد.
-            </p>
+            <p className="mt-2 max-w-md text-sm leading-relaxed">{f.blurb}</p>
           </div>
           <div className="text-sm">
-            <p className="font-semibold text-gov-navy">معلومات الاتصال (عرض توضيحي)</p>
+            <p className="font-semibold text-gov-navy">{f.contactTitle}</p>
             <ul className="mt-3 space-y-2">
-              <li>الخط الساخن: ١٦٥٢٨ — على مدار الساعة</li>
-              <li>البريد الإلكتروني: info@cqm.gov.eg</li>
-              <li>العنوان: القاهرة، جمهورية مصر العربية</li>
+              <li>{f.hotline}</li>
+              <li>{f.email}</li>
+              <li>{f.address}</li>
             </ul>
           </div>
         </div>
         <p className="mt-8 border-t border-gov-gray-200 pt-6 text-center text-xs text-gov-gray-600">
-          © {new Date().getFullYear()} — جميع الحقوق محفوظة. المحتوى المعروض للتوعية ولا يغني عن التوجيه الطبي المباشر.
+          © {year} — {f.copyright}
         </p>
       </div>
     </footer>

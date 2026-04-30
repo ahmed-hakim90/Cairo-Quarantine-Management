@@ -272,9 +272,3 @@ export const CAIRO_TRAVELER_VACCINATION_OFFICES: CairoTravelerVaccinationOffice[
       service: "hajj_umrah_only",
     },
   ];
-
-export function serviceLabelAr(service: TravelerVaccinationService): string {
-  return service === "hajj_umrah_travelers"
-    ? "حجاج ومعتمرين ومسافرين"
-    : "حجاج ومعتمرين فقط";
-}

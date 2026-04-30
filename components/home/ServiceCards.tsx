@@ -1,9 +1,11 @@
-import Link from "next/link";
+import { LocaleLink } from "@/components/i18n/LocaleLink";
+import type { Locale } from "@/lib/i18n/config";
+import type { Messages } from "@/lib/i18n/messages";
 
-type Card = {
+type CardDef = {
   href: string;
-  titleAr: string;
-  descriptionAr: string;
+  titleKey: "internationalTitle" | "hajjTitle" | "citizenTitle";
+  descKey: "internationalDesc" | "hajjDesc" | "citizenDesc";
   icon: React.ReactNode;
 };
 
@@ -58,30 +60,33 @@ function IconCitizen() {
   );
 }
 
-const CARDS: Card[] = [
+const CARD_DEFS: CardDef[] = [
   {
     href: "/international-traveler",
-    titleAr: "مسافر دولي",
-    descriptionAr:
-      "التطعيمات والإجراءات الصحية للسفر خارج البلاد أو العودة من الخارج.",
+    titleKey: "internationalTitle",
+    descKey: "internationalDesc",
     icon: <IconGlobe />,
   },
   {
     href: "/hajj-umrah",
-    titleAr: "مسافر للحج / العمرة",
-    descriptionAr:
-      "المتطلبات الصحية المعتمدة للحج والعمرة والمواعيد الإرشادية.",
+    titleKey: "hajjTitle",
+    descKey: "hajjDesc",
     icon: <IconKaaba />,
   },
   {
     href: "/citizen-services",
-    titleAr: "مواطن",
-    descriptionAr: "خدمات التطعيم والتوعية الصحية للمواطنين داخل الجمهورية.",
+    titleKey: "citizenTitle",
+    descKey: "citizenDesc",
     icon: <IconCitizen />,
   },
 ];
 
-export function ServiceCards() {
+type ServiceCardsProps = {
+  locale: Locale;
+  content: Messages["services"];
+};
+
+export function ServiceCards({ locale, content }: ServiceCardsProps) {
   return (
     <section
       className="mx-auto max-w-6xl px-4 py-14"
@@ -91,31 +96,30 @@ export function ServiceCards() {
         id="services-heading"
         className="font-heading text-2xl font-bold text-gov-navy sm:text-3xl"
       >
-        الخدمات الرئيسية
+        {content.heading}
       </h2>
-      <p className="mt-2 max-w-2xl text-gov-gray-600">
-        اختر المسار المناسب للاطلاع على المتطلبات والأسعار التوجيهية للقاحات.
-      </p>
+      <p className="mt-2 max-w-2xl text-gov-gray-600">{content.intro}</p>
       <ul className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        {CARDS.map((card) => (
+        {CARD_DEFS.map((card) => (
           <li key={card.href}>
-            <Link
+            <LocaleLink
               href={card.href}
+              locale={locale}
               className="group flex h-full min-h-[180px] flex-col rounded-lg border border-gov-gray-200 bg-white p-6 shadow-sm transition-shadow hover:border-gov-accent/40 hover:shadow-md"
             >
               <span className="mb-4 inline-flex rounded-md bg-gov-gray-50 p-3 ring-1 ring-gov-gray-100 transition-colors group-hover:bg-gov-accent-muted/40">
                 {card.icon}
               </span>
               <span className="font-heading text-xl font-bold text-gov-navy">
-                {card.titleAr}
+                {content[card.titleKey]}
               </span>
               <span className="mt-2 flex-1 text-sm leading-relaxed text-gov-gray-600">
-                {card.descriptionAr}
+                {content[card.descKey]}
               </span>
               <span className="mt-4 text-sm font-semibold text-gov-accent">
-                عرض التفاصيل
+                {content.viewDetails}
               </span>
-            </Link>
+            </LocaleLink>
           </li>
         ))}
       </ul>

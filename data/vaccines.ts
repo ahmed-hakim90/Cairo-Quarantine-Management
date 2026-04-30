@@ -7,108 +7,95 @@ export type UserCategory = "international" | "hajj" | "umrah" | "citizen";
 export type VaccineRecord = {
   id: string;
   nameAr: string;
+  nameEn: string;
   /** Price in EGP; ignored when free is true */
   priceEgp: number | null;
   free: boolean;
 };
 
-export const USER_CATEGORY_LABELS: Record<UserCategory, string> = {
-  international: "مسافر دولي",
-  hajj: "حج",
-  umrah: "عمرة",
-  citizen: "مواطن",
-};
-
 export const VACCINES_BY_CATEGORY: Record<UserCategory, VaccineRecord[]> = {
   international: [
     {
+      id: "meningitis-quad-travel",
+      nameAr: "السحائي الرباعي للمسافرين للخارج",
+      nameEn: "Quadrivalent meningococcal (international travellers)",
+      priceEgp: 800,
+      free: false,
+    },
+    {
       id: "yellow-fever",
-      nameAr: "حمى صفراء",
-      priceEgp: null,
-      free: true,
-    },
-    {
-      id: "meningitis-acyw",
-      nameAr: "التهاب السحايا رباعي التكافؤ (ACYW)",
-      priceEgp: 450,
+      nameAr: "الحمى الصفراء",
+      nameEn: "Yellow fever",
+      priceEgp: 1250,
       free: false,
     },
     {
-      id: "covid-19",
-      nameAr: "كوفيد-19",
-      priceEgp: 350,
+      id: "cholera",
+      nameAr: "الكوليرا",
+      nameEn: "Cholera",
+      priceEgp: 360,
       free: false,
     },
     {
-      id: "polio-ipv",
-      nameAr: "شلل الأطفال (المحقن IPV)",
+      id: "polio",
+      nameAr: "شلل الأطفال",
+      nameEn: "Polio",
+      priceEgp: 80,
+      free: false,
+    },
+    {
+      id: "seasonal-flu",
+      nameAr: "الإنفلونزا الموسمية",
+      nameEn: "Seasonal influenza",
+      priceEgp: 260,
+      free: false,
+    },
+    {
+      id: "malaria",
+      nameAr: "الملاريا",
+      nameEn: "Malaria",
       priceEgp: null,
       free: true,
     },
   ],
   hajj: [
     {
-      id: "meningitis-required",
-      nameAr: "التهاب السحايا (إلزامي للحج)",
-      priceEgp: null,
-      free: true,
-    },
-    {
-      id: "flu-seasonal",
-      nameAr: "الإنفلونزا الموسمية",
-      priceEgp: 200,
+      id: "meningitis-quad-hajj",
+      nameAr: "السحائي الرباعي للحج",
+      nameEn: "Quadrivalent meningococcal (Hajj)",
+      priceEgp: 670,
       free: false,
     },
     {
-      id: "covid-19-booster",
-      nameAr: "جرعة معززة كوفيد-19",
-      priceEgp: 300,
+      id: "flu-seasonal-hajj",
+      nameAr: "الإنفلونزا الموسمية",
+      nameEn: "Seasonal influenza",
+      priceEgp: 260,
       free: false,
     },
   ],
   umrah: [
     {
-      id: "meningitis-required-umrah",
-      nameAr: "التهاب السحايا (إلزامي للعمرة)",
-      priceEgp: null,
-      free: true,
-    },
-    {
-      id: "flu-seasonal-u",
-      nameAr: "الإنفلونزا الموسمية",
+      id: "meningitis-bivalent-umrah",
+      nameAr: "السحائي الثنائي",
+      nameEn: "Bivalent meningococcal",
       priceEgp: 200,
       free: false,
     },
     {
-      id: "covid-19-u",
-      nameAr: "كوفيد-19",
-      priceEgp: 300,
+      id: "flu-seasonal-umrah",
+      nameAr: "الإنفلونزا الموسمية",
+      nameEn: "Seasonal influenza",
+      priceEgp: 260,
       free: false,
     },
   ],
   citizen: [
     {
-      id: "hepatitis-b",
-      nameAr: "التهاب الكبد ب",
-      priceEgp: 180,
-      free: false,
-    },
-    {
-      id: "mmr",
-      nameAr: "الحصبة والنكاف والحصبة الألمانية",
-      priceEgp: null,
-      free: true,
-    },
-    {
-      id: "tdap",
-      nameAr: "التيتانوس والدفتيريا والسعال الديكي",
-      priceEgp: 220,
-      free: false,
-    },
-    {
-      id: "hepatitis-a",
-      nameAr: "التهاب الكبد أ",
-      priceEgp: 350,
+      id: "meningitis-bivalent-citizen",
+      nameAr: "السحائي الثنائي",
+      nameEn: "Bivalent meningococcal",
+      priceEgp: 200,
       free: false,
     },
   ],

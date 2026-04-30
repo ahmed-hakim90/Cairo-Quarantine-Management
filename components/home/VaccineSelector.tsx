@@ -2,11 +2,12 @@
 
 import { useMemo, useState } from "react";
 import {
-  USER_CATEGORY_LABELS,
   VACCINES_BY_CATEGORY,
   type UserCategory,
   type VaccineRecord,
 } from "@/data/vaccines";
+import type { Locale } from "@/lib/i18n/config";
+import type { Messages } from "@/lib/i18n/messages";
 
 const CATEGORY_ORDER: UserCategory[] = [
   "international",
@@ -18,17 +19,38 @@ const CATEGORY_ORDER: UserCategory[] = [
 type VaccineSelectorProps = {
   /** Pre-select audience (e.g. on dedicated service pages) */
   initialCategory?: UserCategory;
+  /** If set, only these audiences appear in the dropdown */
+  allowedCategories?: UserCategory[];
   /** Anchor id for in-page links */
   sectionId?: string;
+  locale: Locale;
+  labels: Messages["vaccineSelector"];
 };
+
+function vaccineName(record: VaccineRecord, locale: Locale): string {
+  return locale === "en" ? record.nameEn : record.nameAr;
+}
 
 export function VaccineSelector({
   initialCategory = "international",
+  allowedCategories,
   sectionId = "vaccine-selector",
+  locale,
+  labels,
 }: VaccineSelectorProps) {
-  const [category, setCategory] = useState<UserCategory>(initialCategory);
+  const categoryOrder = useMemo(() => {
+    if (!allowedCategories?.length) return CATEGORY_ORDER;
+    return CATEGORY_ORDER.filter((c) => allowedCategories.includes(c));
+  }, [allowedCategories]);
+
+  const resolvedInitial = useMemo((): UserCategory => {
+    if (categoryOrder.includes(initialCategory)) return initialCategory;
+    return categoryOrder[0] ?? initialCategory;
+  }, [initialCategory, categoryOrder]);
+
+  const [category, setCategory] = useState<UserCategory>(resolvedInitial);
   const [vaccineId, setVaccineId] = useState<string>(
-    () => VACCINES_BY_CATEGORY[initialCategory][0]?.id ?? "",
+    () => VACCINES_BY_CATEGORY[resolvedInitial][0]?.id ?? "",
   );
 
   const list: VaccineRecord[] = VACCINES_BY_CATEGORY[category];
@@ -43,6 +65,8 @@ export function VaccineSelector({
     [list, vaccineId],
   );
 
+  const numberLocale = locale === "ar" ? "ar-EG" : "en-US";
+
   return (
     <section
       id={sectionId}
@@ -54,12 +78,9 @@ export function VaccineSelector({
           id="vaccine-selector-heading"
           className="font-heading text-2xl font-bold text-gov-navy sm:text-3xl"
         >
-          استعلام القاحات والتكلفة التوجيهية
+          {labels.heading}
         </h2>
-        <p className="mt-2 max-w-2xl text-gov-gray-600">
-          اختر الفئة ثم نوع اللقاح لعرض السعر التوجيهي. قد تختلف التكلفة الفعلية
-          بحسب السياسات المحدثة أو التغطية التأمينية.
-        </p>
+        <p className="mt-2 max-w-2xl text-gov-gray-600">{labels.intro}</p>
 
         <div className="mt-10 grid gap-8 lg:grid-cols-2 lg:items-start">
           <div className="space-y-6">
@@ -68,7 +89,7 @@ export function VaccineSelector({
                 htmlFor="user-type"
                 className="block text-sm font-semibold text-gov-navy"
               >
-                نوع المستخدم
+                {labels.userType}
               </label>
               <select
                 id="user-type"
@@ -78,9 +99,9 @@ export function VaccineSelector({
                 }
                 className="mt-2 min-h-14 w-full rounded-md border border-gov-gray-200 bg-white px-4 py-3 text-lg text-gov-gray-900 shadow-sm focus:border-gov-accent focus:outline-none focus:ring-2 focus:ring-gov-accent/30"
               >
-                {CATEGORY_ORDER.map((key) => (
+                {categoryOrder.map((key) => (
                   <option key={key} value={key}>
-                    {USER_CATEGORY_LABELS[key]}
+                    {labels.categories[key]}
                   </option>
                 ))}
               </select>
@@ -91,7 +112,7 @@ export function VaccineSelector({
                 htmlFor="vaccine-type"
                 className="block text-sm font-semibold text-gov-navy"
               >
-                اللقاح
+                {labels.vaccine}
               </label>
               <select
                 id="vaccine-type"
@@ -101,7 +122,7 @@ export function VaccineSelector({
               >
                 {list.map((v) => (
                   <option key={v.id} value={v.id}>
-                    {v.nameAr}
+                    {vaccineName(v, locale)}
                   </option>
                 ))}
               </select>
@@ -113,33 +134,32 @@ export function VaccineSelector({
             aria-live="polite"
           >
             <p className="text-sm font-semibold text-gov-gray-600">
-              التكلفة التوجيهية
+              {labels.guidancePrice}
             </p>
             <p className="mt-2 font-heading text-lg font-bold text-gov-navy">
-              {selected?.nameAr}
+              {selected ? vaccineName(selected, locale) : ""}
             </p>
             <div className="mt-6 border-t border-gov-gray-100 pt-6">
               {selected?.free ? (
                 <p
                   className="font-heading text-4xl font-bold tracking-tight text-gov-accent sm:text-5xl"
-                  lang="ar"
+                  lang={locale === "ar" ? "ar" : "en"}
                 >
-                  مجاناً
+                  {labels.free}
                 </p>
               ) : (
                 <p className="flex flex-wrap items-baseline gap-2">
                   <span className="font-heading text-4xl font-bold tabular-nums text-gov-navy sm:text-5xl">
-                    {selected?.priceEgp?.toLocaleString("ar-EG")}
+                    {selected?.priceEgp?.toLocaleString(numberLocale)}
                   </span>
                   <span className="text-lg font-medium text-gov-gray-600">
-                    جنيه مصري
+                    {labels.currency}
                   </span>
                 </p>
               )}
             </div>
             <p className="mt-6 text-sm leading-relaxed text-gov-gray-600">
-              للحجز والدفع، يرجى مراجعة المركز المعتمد أو القنوات الرسمية عند
-              ربط النظام بالخدمات الإلكترونية لاحقاً.
+              {labels.footnote}
             </p>
           </div>
         </div>

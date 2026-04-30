@@ -1,6 +1,15 @@
 import { VACCINATION_CENTERS } from "@/data/locations";
+import type { Locale } from "@/lib/i18n/config";
+import type { Messages } from "@/lib/i18n/messages";
 
-export function LocationsSection() {
+type LocationsSectionProps = {
+  locale: Locale;
+  content: Messages["locations"];
+};
+
+export function LocationsSection({ locale, content }: LocationsSectionProps) {
+  const isEn = locale === "en";
+
   return (
     <section
       className="bg-white py-14"
@@ -11,41 +20,37 @@ export function LocationsSection() {
           id="locations-heading"
           className="font-heading text-2xl font-bold text-gov-navy sm:text-3xl"
         >
-          مراكز التطعيم المعتمدة
+          {content.heading}
         </h2>
         <p className="mt-2 max-w-2xl text-gov-gray-600">
-          قائمة مكاتب تطعيم المسافرين بالقاهرة لعام ٢٠٢٦ — خدمات{" "}
+          {content.introLead}{" "}
           <span className="font-medium text-gov-navy">
-            حجاج ومعتمرين ومسافرين
+            {content.introHighlight}
           </span>
-         
-         
         </p>
 
         <div className="mt-8 overflow-x-auto rounded-lg border border-gov-gray-200 shadow-sm">
           <table className="min-w-full border-collapse text-start text-sm">
-            <caption className="sr-only">
-              جدول مكاتب التطعيم المعتمدة بالقاهرة: اسم المكتب، الإدارة، المحافظة، العنوان، الهاتف، رابط الموقع
-            </caption>
+            <caption className="sr-only">{content.caption}</caption>
             <thead className="bg-gov-navy text-white">
               <tr>
                 <th scope="col" className="px-4 py-4 font-heading font-semibold">
-                  اسم المكتب
+                  {content.colOffice}
                 </th>
                 <th scope="col" className="px-4 py-4 font-heading font-semibold">
-                  الإدارة
+                  {content.colAdmin}
                 </th>
                 <th scope="col" className="px-4 py-4 font-heading font-semibold">
-                  المحافظة
+                  {content.colGov}
                 </th>
                 <th scope="col" className="px-4 py-4 font-heading font-semibold">
-                  العنوان
+                  {content.colAddress}
                 </th>
                 <th scope="col" className="px-4 py-4 font-heading font-semibold">
-                  الهاتف
+                  {content.colPhone}
                 </th>
                 <th scope="col" className="px-4 py-4 font-heading font-semibold">
-                  الموقع
+                  {content.colMaps}
                 </th>
               </tr>
             </thead>
@@ -59,16 +64,16 @@ export function LocationsSection() {
                     scope="row"
                     className="max-w-[220px] px-4 py-4 font-medium text-gov-navy"
                   >
-                    {row.centerNameAr}
+                    {isEn ? row.centerNameEn : row.centerNameAr}
                   </th>
                   <td className="whitespace-nowrap px-4 py-4 text-gov-gray-700">
-                    {row.administrationAr}
+                    {isEn ? row.administrationEn : row.administrationAr}
                   </td>
                   <td className="whitespace-nowrap px-4 py-4 text-gov-gray-700">
-                    {row.governorateAr}
+                    {isEn ? row.governorateEn : row.governorateAr}
                   </td>
                   <td className="min-w-[200px] px-4 py-4 text-gov-gray-700">
-                    {row.addressAr}
+                    {isEn ? row.addressEn : row.addressAr}
                   </td>
                   <td className="whitespace-nowrap px-4 py-4 font-mono text-gov-gray-700">
                     {row.phone}
@@ -81,7 +86,7 @@ export function LocationsSection() {
                         rel="noopener noreferrer"
                         className="text-gov-navy underline decoration-gov-gray-300 underline-offset-2 hover:decoration-gov-navy"
                       >
-                        خريطة Google
+                        {content.mapsLink}
                       </a>
                     ) : (
                       "—"
