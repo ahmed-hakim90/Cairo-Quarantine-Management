@@ -164,6 +164,7 @@ export type Messages = {
       metaTitle: string;
       heading: string;
       description: string;
+      tocTitle: string;
     };
   };
 };
@@ -381,6 +382,7 @@ const ar: Messages = {
       heading: "ميثاق المتعاملين",
       description:
         "ميثاق مكتب تطعيمات المسافرين: التزامات المكتب وحقوق وواجبات المتعاملين وآلية الشكاوى والمقترحات.",
+      tocTitle: "في هذه الوثيقة",
     },
   },
 };
@@ -601,6 +603,7 @@ const en: Messages = {
       heading: "Stakeholder charter",
       description:
         "Charter of the travel vaccinations office: commitments to the public, stakeholder rights and duties, and how complaints and suggestions are handled.",
+      tocTitle: "In this document",
     },
   },
 };
@@ -812,6 +815,7 @@ const zh: Messages = {
       heading: "利益相关方章程",
       description:
         "旅客接种门诊章程：对公众的承诺、权利与义务，以及投诉与建议处理机制。",
+      tocTitle: "本文档结构",
     },
   },
 };

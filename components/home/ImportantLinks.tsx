@@ -1,13 +1,14 @@
-import { LocaleLink } from "@/components/i18n/LocaleLink";
-import type { Locale } from "@/lib/i18n/config";
 import type { Messages } from "@/lib/i18n/messages";
 
+/** Ministry health guidance PDF (الإرشادات الصحية لأداء مناسك الحج) — Google Drive direct download */
+const HAJJ_UMRAH_INSTRUCTIONS_PDF =
+  "https://drive.google.com/uc?export=download&id=1iYO2zem5h2zWP1g4uxfwpGgPZlJsgXHU";
+
 type ImportantLinksProps = {
-  locale: Locale;
   content: Messages["importantLinks"];
 };
 
-export function ImportantLinks({ locale, content }: ImportantLinksProps) {
+export function ImportantLinks({ content }: ImportantLinksProps) {
   return (
     <section
       className="mx-auto max-w-6xl px-4 py-14"
@@ -27,13 +28,15 @@ export function ImportantLinks({ locale, content }: ImportantLinksProps) {
         >
           {content.pdf}
         </a>
-        <LocaleLink
-          href="/hajj-umrah#instructions"
-          locale={locale}
+        <a
+          href={HAJJ_UMRAH_INSTRUCTIONS_PDF}
           className="flex min-h-14 items-center justify-center rounded-md border-2 border-gov-navy bg-white px-6 py-4 text-center text-base font-semibold text-gov-navy transition-colors hover:bg-gov-gray-50"
+          target="_blank"
+          rel="noopener noreferrer"
+          download
         >
           {content.hajjInstructions}
-        </LocaleLink>
+        </a>
       </div>
     </section>
   );

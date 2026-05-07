@@ -36,13 +36,17 @@ export default async function CharterPage({
       </ScrollReveal>
       <ScrollReveal>
         <section
-          className="mx-auto max-w-6xl px-4 py-10"
+          className="border-y border-gov-gray-200 bg-gov-gray-50 py-14"
           aria-labelledby="charter-document-heading"
         >
-          <h2 id="charter-document-heading" className="sr-only">
-            {charterDoc.title}
-          </h2>
-          <TravelerVaccinationsCharter locale={locale} document={charterDoc} />
+          <div className="mx-auto max-w-6xl px-4">
+            <TravelerVaccinationsCharter
+              locale={locale}
+              document={charterDoc}
+              titleHeadingId="charter-document-heading"
+              tocTitle={p.tocTitle}
+            />
+          </div>
         </section>
       </ScrollReveal>
     </>
