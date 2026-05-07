@@ -9,6 +9,7 @@ export type Messages = {
     international: string;
     hajjUmrah: string;
     citizen: string;
+    charter: string;
     switchToAr: string;
     switchToEn: string;
     switchToZh: string;
@@ -129,6 +130,8 @@ export type Messages = {
       metaTitle: string;
       heading: string;
       description: string;
+      beforeTravel: string;
+      documentBullets: [string, string, string];
       basicsTitle: string;
       basicsBody: string;
       pricing: {
@@ -153,9 +156,14 @@ export type Messages = {
       vaccineTitle: string;
       vaccineBody: string;
       docsTitle: string;
-      docsBullets: string[];
+      docsBullets: [string, string, string];
       notesTitle: string;
       notesBody: string;
+    };
+    charter: {
+      metaTitle: string;
+      heading: string;
+      description: string;
     };
   };
 };
@@ -175,6 +183,7 @@ const ar: Messages = {
     international: "مسافر دولي",
     hajjUmrah: "الحج والعمرة",
     citizen: "خدمات المواطنين",
+    charter: "ميثاق المتعاملين",
     switchToAr: "العربية",
     switchToEn: "English",
     switchToZh: "中文",
@@ -196,12 +205,12 @@ const ar: Messages = {
   },
   hero: {
     title: "إدارة الحجر الصحي بالقاهرة",
-    visionLabel: "الرؤية:",
+    visionLabel: "رؤيتنا:",
     vision:
-      "لضمان رحلة آمنة خالية من المخاطر الصحية ",
-    missionLabel: "الرسالة:",
+      "الريادة في تقديم خدمات تطعيم المسافرين بكفاءة وجودة عالية لضمان سفر آمن وصحي.",
+    missionLabel: "رسالتنا:",
     mission:
-      "نلتزم بتقديم خدمات تطعيم  متكاملة للمسافرين (حجاج، معتمرين، ومسافرين لجميع دول العالم) مع توفير معلومات دقيقة وحديثة عن الاشتراطات الصحية الدولية، بما يضمن حمايتكم من الأمراض المعدية",
+      "تقديم خدمات التطعيم والاستشارات الوقائية للمسافرين بطريقة آمنة تحقق رضا المتعاملين وتدعم الصحة العامة.",
   },
   services: {
     heading: "الخدمات الرئيسية",
@@ -308,9 +317,9 @@ const ar: Messages = {
         "إرشادات رسمية حول التطعيمات  وفق وجهة السفر وحالة الوصول إلى جمهورية مصر العربية. يرجى التحقق من آخر التحديثات الصادرة عن الجهات المختصة قبل السفر.",
       beforeTravel: "قبل السفر",
       bullets: [
-        "احرص على إحضار البطاقة الشخصية (الرقم القومي) سارية المفعول فقط.",
-        "راجع متطلبات وجهتك بخصوص التطعيمات الإلزامية أو الموصى بها.",
-        "احجز موعداً مسبقاً في مركز تطعيم معتمد عند الحاجة (مكاتب التحصين الدولية).",
+        "أحضر جواز سفر ساريًا — للمسافر الدولي",
+        "بطاقة الرقم القومي سارية",
+        "صورة شخصية حديثة",
       ],
     },
     hajj: {
@@ -318,12 +327,18 @@ const ar: Messages = {
       heading: "الحج والعمرة — المتطلبات الصحية",
       description:
         "تنظم هذه الصفحة المعلومات التوجيهية الخاصة بالتطعيمات المعتمدة للحج والعمرة. يجب الالتزام بالقرارات الرسمية الصادرة عن وزارة الصحة والجهات  المختصة.",
+      beforeTravel: "قبل السفر",
+      documentBullets: [
+        "أحضر جواز سفر ساريًا — للمسافر الدولي",
+        "بطاقة الرقم القومي سارية",
+        "صورة شخصية حديثة",
+      ],
       basicsTitle: "التطعيمات الأساسية",
       basicsBody:
         "يُطلب عادةً استكمال تطعيم التهاب السحايا وفق اللقاحات المعتمدة، مع الاحتفاظ بشهادة معتمدة تُعرض عند السفر. قد تُحدَّث القائمة وفق الموسم؛ يُرجى متابعة الإعلانات الرسمية.",
       instructionsTitle: "تعليمات الحج والعمرة",
       instructions: [
-        "احضر بطاقة الهوية أو جواز السفر وأصل شهادات التطعيم المعتمدة، وتأكد من مطابقة البيانات الشخصية لجميع الوثائق.",
+        "احضر أصل شهادات التطعيم المعتمدة، وتأكد من مطابقة البيانات الشخصية لجميع الوثائق.",
         "في حال ظهور أعراض تنفسية حادة، يُفضَّل تأجيل السفر والتواصل مع خط الإرشاد الطبي قبل الحضور إلى المركز.",
         "احتفظ بنسخة إلكترونية من الوثائق الصحية وتجنّب ازدحام غير منظم داخل المراكز؛ إجراءات التنظيم تُعلَن رسمياً عبر القنوات المعتمدة.",
       ],
@@ -352,10 +367,20 @@ const ar: Messages = {
       vaccineBody:
         "للمواطنين: ",
       docsTitle: "الوثائق المطلوبة",
-      docsBullets: ["البطاقة الشخصية (الرقم القومي) سارية ."],
+      docsBullets: [
+        "أحضر جواز سفر ساريًا — للمسافر الدولي",
+        "بطاقة الرقم القومي سارية",
+        "صورة شخصية حديثة",
+      ],
       notesTitle: "ملاحظات عامة",
       notesBody:
         "يرجى مراجعة المركز المعتمد أو القنوات الرسمية لوزارة الصحة لتأكيد المواعيد والخدمات الفعلية.",
+    },
+    charter: {
+      metaTitle: "ميثاق المتعاملين — مكتب تطعيمات المسافرين",
+      heading: "ميثاق المتعاملين",
+      description:
+        "ميثاق مكتب تطعيمات المسافرين: التزامات المكتب وحقوق وواجبات المتعاملين وآلية الشكاوى والمقترحات.",
     },
   },
 };
@@ -375,6 +400,7 @@ const en: Messages = {
     international: "International traveller",
     hajjUmrah: "Hajj & Umrah",
     citizen: "Citizen services",
+    charter: "Stakeholder charter",
     switchToAr: "العربية",
     switchToEn: "English",
     switchToZh: "中文",
@@ -396,12 +422,12 @@ const en: Messages = {
   },
   hero: {
     title: "Cairo Quarantine Administration",
-    visionLabel: "Vision:",
+    visionLabel: "Our vision:",
     vision:
-      "Protect community health and traveller safety through reliable, transparent quarantine services that are accessible to everyone.",
-    missionLabel: "Mission:",
+      "To lead in delivering traveller vaccination services with efficiency and high quality, ensuring safe and healthy travel.",
+    missionLabel: "Our mission:",
     mission:
-      "Provide official guidance, coordinate required vaccinations and screenings, and support cooperation with stakeholders to meet national and international health standards.",
+      "Provide vaccination and preventive consultation services to travellers in a safe way that achieves stakeholder satisfaction and supports public health.",
   },
   services: {
     heading: "Main services",
@@ -511,9 +537,9 @@ const en: Messages = {
         "Official guidance on vaccinations and tests required by destination and entry rules for Egypt. Always confirm the latest updates from competent authorities before travel.",
       beforeTravel: "Before you travel",
       bullets: [
-        "Bring a valid national ID card only.",
-        "Check your destination’s mandatory or recommended vaccinations.",
-        "Book ahead at an authorised vaccination centre when needed.",
+        "Valid passport — international travellers",
+        "Valid national ID card",
+        "Recent passport-style photo",
       ],
     },
     hajj: {
@@ -521,12 +547,18 @@ const en: Messages = {
       heading: "Hajj & Umrah — health requirements",
       description:
         "This page summarises guidance on approved vaccinations for Hajj and Umrah. Follow official decisions from Egypt’s Ministry of Health and other authorities.",
+      beforeTravel: "Before you travel",
+      documentBullets: [
+        "Valid passport — international travellers",
+        "Valid national ID card",
+        "Recent passport-style photo",
+      ],
       basicsTitle: "Core vaccinations",
       basicsBody:
         "Meningitis vaccination is commonly required with an approved certificate for travel. The list may change by season — follow official announcements.",
       instructionsTitle: "Hajj & Umrah instructions",
       instructions: [
-        "Bring ID or passport and original approved vaccination certificates; personal details must match all documents.",
+        "Bring original approved vaccination certificates; personal details must match all documents.",
         "If you have severe respiratory symptoms, postpone travel and contact medical guidance before visiting a centre.",
         "Keep electronic copies of health documents and avoid unmanaged crowding; centre organisation is announced through official channels.",
       ],
@@ -555,10 +587,20 @@ const en: Messages = {
       vaccineBody:
         "For citizens: bivalent meningococcal vaccine 200 EGP; seasonal influenza 260 EGP; hepatitis vaccines by type — Egyptian 100 EGP, foreign 200 EGP, Egyptian travelling abroad 150 EGP, foreign traveller 300 EGP (indicative prices; use the home-page lookup for details).",
       docsTitle: "Documents to bring",
-      docsBullets: ["Valid national ID card only."],
+      docsBullets: [
+        "Valid passport — international travellers",
+        "Valid national ID card",
+        "Recent passport-style photo",
+      ],
       notesTitle: "General notes",
       notesBody:
         "Confirm appointment times and available services with your authorised centre or official Ministry of Health channels.",
+    },
+    charter: {
+      metaTitle: "Stakeholder charter — Travel vaccinations office",
+      heading: "Stakeholder charter",
+      description:
+        "Charter of the travel vaccinations office: commitments to the public, stakeholder rights and duties, and how complaints and suggestions are handled.",
     },
   },
 };
@@ -578,6 +620,7 @@ const zh: Messages = {
     international: "国际旅客",
     hajjUmrah: "朝觐与副朝",
     citizen: "公民服务",
+    charter: "利益相关方章程",
     switchToAr: "العربية",
     switchToEn: "English",
     switchToZh: "中文",
@@ -599,12 +642,12 @@ const zh: Messages = {
   },
   hero: {
     title: "开罗检疫管理处",
-    visionLabel: "愿景：",
+    visionLabel: "我们的愿景：",
     vision:
-      "通过可靠、透明、人人可及的检疫服务，保障公众健康与旅客安全。",
-    missionLabel: "使命：",
+      "以高效、高质量的旅客疫苗接种服务领先同行，保障安全、健康的出行。",
+    missionLabel: "我们的使命：",
     mission:
-      "提供官方指引，协调所需疫苗与筛查，并支持与各方的协作，以符合国内与国际卫生标准。",
+      "以安全的方式为旅客提供接种与预防咨询服务，提升服务对象满意度并支持公共卫生。",
   },
   services: {
     heading: "主要服务",
@@ -705,9 +748,9 @@ const zh: Messages = {
         "关于按目的地与入境埃及规定所需的疫苗与检测的官方说明。出行前请务必向主管部门核实最新要求。",
       beforeTravel: "出行前",
       bullets: [
-        "仅需携带有效的国民身份证。",
-        "查询目的地对强制或建议接种的要求。",
-        "如需请提前预约授权接种中心。",
+        "有效护照 — 国际旅客",
+        "有效国民身份证",
+        "近照证件照",
       ],
     },
     hajj: {
@@ -715,12 +758,18 @@ const zh: Messages = {
       heading: "朝觐与副朝 — 卫生要求",
       description:
         "本页汇总朝觐与副朝获批疫苗的参考信息。请遵循埃及卫生部与沙特主管部门的正式决定。",
+      beforeTravel: "出行前",
+      documentBullets: [
+        "有效护照 — 国际旅客",
+        "有效国民身份证",
+        "近照证件照",
+      ],
       basicsTitle: "核心疫苗",
       basicsBody:
         "通常须按规定完成脑膜炎球菌等获批疫苗接种并持有旅行用接种证明。清单可能随季节调整，请以官方公告为准。",
       instructionsTitle: "朝觐与副朝须知",
       instructions: [
-        "携带身份证件或护照及原件接种证明；个人信息须与各文件一致。",
+        "携带接种证明原件；个人信息须与各文件一致。",
         "若有严重呼吸道症状，建议暂缓出行并于到访中心前咨询医疗指引。",
         "保存健康文件电子版，避免无序聚集；现场安排以官方渠道发布为准。",
       ],
@@ -749,10 +798,20 @@ const zh: Messages = {
       vaccineBody:
         "公民：双价脑膜炎疫苗 200 埃及镑；季节性流感 260 埃及镑；乙肝疫苗按类型 — 埃及产 100、进口 200、埃及产且出境 150、进口且出境 300（均为参考价；详情可用首页查询工具）。",
       docsTitle: "所需材料",
-      docsBullets: ["仅需携带有效的国民身份证。"],
+      docsBullets: [
+        "有效护照 — 国际旅客",
+        "有效国民身份证",
+        "近照证件照",
+      ],
       notesTitle: "一般提示",
       notesBody:
         "预约时间与开放服务请以授权中心或卫生部官方渠道确认为准。",
+    },
+    charter: {
+      metaTitle: "利益相关方章程 — 旅客接种门诊",
+      heading: "利益相关方章程",
+      description:
+        "旅客接种门诊章程：对公众的承诺、权利与义务，以及投诉与建议处理机制。",
     },
   },
 };

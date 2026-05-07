@@ -3,6 +3,7 @@ import {
   type TravelerVaccinationService,
 } from "@/data/hajj-traveler-offices-cairo";
 import { OfficeContactIcons } from "@/components/ui/OfficeContactIcons";
+import { resolveOfficeMapUrlAr } from "@/lib/google-maps-url";
 import type { Messages } from "@/lib/i18n/messages";
 
 type HajjTravelerOfficesTableProps = {
@@ -50,7 +51,13 @@ export function HajjTravelerOfficesTable({
         className="mt-8 flex flex-col gap-3 md:hidden"
         aria-label={content.caption}
       >
-        {rows.map((row) => (
+        {rows.map((row) => {
+          const mapsUrl = resolveOfficeMapUrlAr({
+            mapsUrl: row.mapsUrl,
+            placeTitle: row.officeNameAr,
+            address: row.addressAr,
+          });
+          return (
           <li
             key={row.id}
             className={
@@ -73,14 +80,15 @@ export function HajjTravelerOfficesTable({
             </div>
             <OfficeContactIcons
               phone={row.phone ?? undefined}
-              mapsUrl={row.mapsUrl}
+              mapsUrl={mapsUrl}
               ariaPhone={content.a11yPhone}
               ariaMap={content.a11yMap}
               ariaPhoneUnavailable={content.a11yPhoneUnavailable}
               phoneMissingTitle={content.phoneMissing}
             />
           </li>
-        ))}
+        );
+        })}
       </ul>
 
       <div className="mt-8 hidden overflow-x-auto rounded-lg border border-gov-gray-200 shadow-sm md:block">
@@ -115,7 +123,13 @@ export function HajjTravelerOfficesTable({
             </tr>
           </thead>
           <tbody className="divide-y divide-gov-gray-200">
-            {rows.map((row) => (
+            {rows.map((row) => {
+              const mapsUrl = resolveOfficeMapUrlAr({
+                mapsUrl: row.mapsUrl,
+                placeTitle: row.officeNameAr,
+                address: row.addressAr,
+              });
+              return (
               <tr
                 key={row.id}
                 className={
@@ -151,7 +165,7 @@ export function HajjTravelerOfficesTable({
                 </td>
                 <td className="whitespace-nowrap px-3 py-3 align-top">
                   <a
-                    href={row.mapsUrl}
+                    href={mapsUrl}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-gov-accent underline-offset-2 hover:underline"
@@ -163,7 +177,8 @@ export function HajjTravelerOfficesTable({
                   {serviceLabel(row.service, content)}
                 </td>
               </tr>
-            ))}
+            );
+            })}
           </tbody>
         </table>
       </div>

@@ -1,6 +1,6 @@
+import { HajjTravelerOfficesTable } from "@/components/hajj/HajjTravelerOfficesTable";
 import { HeroSection } from "@/components/home/HeroSection";
 import { ImportantLinks } from "@/components/home/ImportantLinks";
-import { LocationsSection } from "@/components/home/LocationsSection";
 import { ServiceCards } from "@/components/home/ServiceCards";
 import { TravelerStatsSection } from "@/components/home/TravelerStatsSection";
 import { VaccineSelector } from "@/components/home/VaccineSelector";
@@ -50,7 +50,7 @@ export default async function HomePage({
         <ImportantLinks locale={locale} content={m.importantLinks} />
       </ScrollReveal>
       <ScrollReveal>
-        <LocationsSection locale={locale} content={m.locations} />
+        <HajjTravelerOfficesTable content={m.hajjTable} />
       </ScrollReveal>
     </>
   );

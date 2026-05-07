@@ -1,5 +1,6 @@
 import { VACCINATION_CENTERS } from "@/data/locations";
 import { OfficeContactIcons } from "@/components/ui/OfficeContactIcons";
+import { resolveOfficeMapUrl } from "@/lib/google-maps-url";
 import type { Locale } from "@/lib/i18n/config";
 import type { Messages } from "@/lib/i18n/messages";
 
@@ -49,6 +50,12 @@ export function LocationsSection({
               : row.administrationAr;
             const gov = useEnFields ? row.governorateEn : row.governorateAr;
             const address = useEnFields ? row.addressEn : row.addressAr;
+            const mapsUrl = resolveOfficeMapUrl({
+              mapsUrl: row.mapsUrl,
+              placeTitle: office,
+              address,
+              locale,
+            });
 
             return (
               <li
@@ -68,7 +75,7 @@ export function LocationsSection({
                 </div>
                 <OfficeContactIcons
                   phone={row.phone}
-                  mapsUrl={row.mapsUrl}
+                  mapsUrl={mapsUrl}
                   ariaPhone={content.a11yPhone}
                   ariaMap={content.a11yMap}
                 />
@@ -103,7 +110,16 @@ export function LocationsSection({
               </tr>
             </thead>
             <tbody className="divide-y divide-gov-gray-200 bg-white">
-              {VACCINATION_CENTERS.map((row, i) => (
+              {VACCINATION_CENTERS.map((row, i) => {
+                const office = useEnFields ? row.centerNameEn : row.centerNameAr;
+                const address = useEnFields ? row.addressEn : row.addressAr;
+                const mapsUrl = resolveOfficeMapUrl({
+                  mapsUrl: row.mapsUrl,
+                  placeTitle: office,
+                  address,
+                  locale,
+                });
+                return (
                 <tr
                   key={row.id}
                   className={i % 2 === 0 ? "bg-white" : "bg-gov-gray-50/70"}
@@ -112,7 +128,7 @@ export function LocationsSection({
                     scope="row"
                     className="max-w-[220px] px-4 py-4 font-medium text-gov-navy"
                   >
-                    {useEnFields ? row.centerNameEn : row.centerNameAr}
+                    {office}
                   </th>
                   <td className="whitespace-nowrap px-4 py-4 text-gov-gray-700">
                     {useEnFields ? row.administrationEn : row.administrationAr}
@@ -121,27 +137,24 @@ export function LocationsSection({
                     {useEnFields ? row.governorateEn : row.governorateAr}
                   </td>
                   <td className="min-w-[200px] px-4 py-4 text-gov-gray-700">
-                    {useEnFields ? row.addressEn : row.addressAr}
+                    {address}
                   </td>
                   <td className="whitespace-nowrap px-4 py-4 font-mono text-gov-gray-700">
                     {row.phone}
                   </td>
                   <td className="whitespace-nowrap px-4 py-4 text-gov-gray-700">
-                    {row.mapsUrl ? (
-                      <a
-                        href={row.mapsUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-gov-navy underline decoration-gov-gray-300 underline-offset-2 hover:decoration-gov-navy"
-                      >
-                        {content.mapsLink}
-                      </a>
-                    ) : (
-                      "—"
-                    )}
+                    <a
+                      href={mapsUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-gov-navy underline decoration-gov-gray-300 underline-offset-2 hover:decoration-gov-navy"
+                    >
+                      {content.mapsLink}
+                    </a>
                   </td>
                 </tr>
-              ))}
+              );
+              })}
             </tbody>
           </table>
         </div>

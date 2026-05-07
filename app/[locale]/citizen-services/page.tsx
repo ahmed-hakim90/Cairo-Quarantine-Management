@@ -48,6 +48,22 @@ export default async function CitizenServicesPage({
             <p className="mt-4 max-w-3xl text-lg leading-relaxed text-gov-gray-700">
               {p.vaccineBody}
             </p>
+            <div
+              className="mt-6 max-w-3xl"
+              aria-labelledby="citizen-docs-inline-heading"
+            >
+              <h3
+                id="citizen-docs-inline-heading"
+                className="font-heading text-base font-bold text-gov-navy"
+              >
+                {p.docsTitle}
+              </h3>
+              <ul className="mt-3 list-disc space-y-2 ps-6 text-base leading-relaxed text-gov-gray-700">
+                {p.docsBullets.map((item) => (
+                  <li key={item}>{item}</li>
+                ))}
+              </ul>
+            </div>
             <VaccineSelector
               embedded
               initialCategory="citizen"
@@ -65,25 +81,13 @@ export default async function CitizenServicesPage({
       </ScrollReveal>
       <ScrollReveal>
         <section className="mx-auto max-w-6xl px-4 py-10">
-          <div className="grid gap-6 md:grid-cols-2">
-            <div className="rounded-lg border border-gov-gray-200 bg-white p-6 shadow-sm">
-              <h2 className="font-heading text-lg font-bold text-gov-navy">
-                {p.docsTitle}
-              </h2>
-              <ul className="mt-3 list-disc space-y-2 ps-6 text-sm leading-relaxed text-gov-gray-700">
-                {p.docsBullets.map((item) => (
-                  <li key={item}>{item}</li>
-                ))}
-              </ul>
-            </div>
-            <div className="rounded-lg border border-gov-gray-200 bg-white p-6 shadow-sm">
-              <h2 className="font-heading text-lg font-bold text-gov-navy">
-                {p.notesTitle}
-              </h2>
-              <p className="mt-3 text-sm leading-relaxed text-gov-gray-700">
-                {p.notesBody}
-              </p>
-            </div>
+          <div className="rounded-lg border border-gov-gray-200 bg-white p-6 shadow-sm md:p-8">
+            <h2 className="font-heading text-lg font-bold text-gov-navy">
+              {p.notesTitle}
+            </h2>
+            <p className="mt-3 text-sm leading-relaxed text-gov-gray-700 md:text-base">
+              {p.notesBody}
+            </p>
           </div>
         </section>
       </ScrollReveal>

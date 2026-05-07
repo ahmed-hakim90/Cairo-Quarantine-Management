@@ -1,5 +1,5 @@
 /**
- * رابط نموذج حجز التطعيم (Google Form).
+ * رابط حجز التطعيم / البوابة الرسمية (مثلاً Google Sites أو نموذج Google).
  * ضبط NEXT_PUBLIC_VACCINATION_BOOKING_FORM_URL في `.env.local`.
  */
 export function getVaccinationBookingFormUrl(): string | null {
