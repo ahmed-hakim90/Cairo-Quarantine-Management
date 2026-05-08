@@ -1,5 +1,6 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
+import pngToIco from "png-to-ico";
 import sharp from "sharp";
 
 const ROOT = path.resolve(process.cwd());
@@ -81,9 +82,19 @@ await sharp(SOURCE)
   .toFile(path.join(APP_DIR, "apple-icon.png"));
 console.log("✓ app/apple-icon.png");
 
-// Generate a 32×32 favicon ICO-replacement as PNG (Next will still serve the
-// old favicon.ico if present; we leave it untouched but also export a fresh
-// 32×32 PNG that callers can use if they delete favicon.ico).
+// Generate a multi-size favicon.ico (16, 32, 48) and write it both to
+// public/ (for direct /favicon.ico requests) and to app/ (Next.js convention,
+// takes precedence over app/icon.png for the /favicon.ico route).
+const faviconBuffers = await Promise.all(
+  [16, 32, 48].map((size) =>
+    sharp(SOURCE).resize(size, size, { fit: "cover" }).png().toBuffer()
+  )
+);
+const icoBuffer = await pngToIco(faviconBuffers);
+await writeFile(path.join(APP_DIR, "favicon.ico"), icoBuffer);
+console.log("✓ app/favicon.ico");
+
+// Also keep a 32×32 PNG export for tooling that prefers PNG favicons.
 await sharp(SOURCE)
   .resize(32, 32, { fit: "cover" })
   .png({ compressionLevel: 9 })
