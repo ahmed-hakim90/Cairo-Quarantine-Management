@@ -167,6 +167,14 @@ export type Messages = {
       tocTitle: string;
     };
   };
+  pwa: {
+    installTitle: string;
+    installBody: string;
+    installButton: string;
+    installDismiss: string;
+    iosHelp: string;
+    installAria: string;
+  };
 };
 
 const ar: Messages = {
@@ -184,13 +192,14 @@ const ar: Messages = {
     international: "مسافر دولي",
     hajjUmrah: "الحج والعمرة",
     citizen: "خدمات المواطنين",
-    charter: "ميثاق المتعاملين",
+    charter: " ميثاق",
     switchToAr: "العربية",
     switchToEn: "English",
     switchToZh: "中文",
     switchLangAria: "تغيير اللغة",
     bookVaccination: "حجز تطعيم",
-    bookVaccinationAria: "فتح نموذج حجز التطعيم في نافذة جديدة",
+    bookVaccinationAria:
+      "فتح البوابة الإلكترونية الرسمية لإدارة الحجر الصحي بالقاهرة في نافذة جديدة",
   },
   footer: {
     title: "إدارة الحجر الصحي بالقاهرة",
@@ -385,6 +394,16 @@ const ar: Messages = {
       tocTitle: "في هذه الوثيقة",
     },
   },
+  pwa: {
+    installTitle: "ثبّت تطبيق الحجر الصحي",
+    installBody:
+      "وصول أسرع لخدمات التطعيمات والميثاق وبيانات المكاتب من شاشتك الرئيسية.",
+    installButton: "تثبيت التطبيق",
+    installDismiss: "ليس الآن",
+    iosHelp:
+      "للتثبيت على iPhone: اضغط زر «المشاركة» في Safari ثم اختر «أضف إلى الشاشة الرئيسية».",
+    installAria: "اقتراح تثبيت التطبيق على الجهاز",
+  },
 };
 
 const en: Messages = {
@@ -408,7 +427,8 @@ const en: Messages = {
     switchToZh: "中文",
     switchLangAria: "Change language",
     bookVaccination: "Book vaccination",
-    bookVaccinationAria: "Open vaccination booking form in a new tab",
+    bookVaccinationAria:
+      "Open the official Cairo Quarantine Administration electronic portal in a new tab",
   },
   footer: {
     title: "Cairo Quarantine Administration",
@@ -606,6 +626,16 @@ const en: Messages = {
       tocTitle: "In this document",
     },
   },
+  pwa: {
+    installTitle: "Install the Quarantine app",
+    installBody:
+      "Add it to your home screen for faster access to vaccinations, the charter and office details.",
+    installButton: "Install app",
+    installDismiss: "Not now",
+    iosHelp:
+      "To install on iPhone: tap the Share button in Safari, then choose “Add to Home Screen”.",
+    installAria: "Install app suggestion",
+  },
 };
 
 const zh: Messages = {
@@ -629,7 +659,7 @@ const zh: Messages = {
     switchToZh: "中文",
     switchLangAria: "切换语言",
     bookVaccination: "预约接种",
-    bookVaccinationAria: "在新标签页打开疫苗接种预约表单",
+    bookVaccinationAria: "在新标签页打开开罗检疫管理处官方电子门户",
   },
   footer: {
     title: "开罗检疫管理处",
@@ -817,6 +847,16 @@ const zh: Messages = {
         "旅客接种门诊章程：对公众的承诺、权利与义务，以及投诉与建议处理机制。",
       tocTitle: "本文档结构",
     },
+  },
+  pwa: {
+    installTitle: "安装检疫服务应用",
+    installBody:
+      "添加到主屏幕，更快访问疫苗接种、章程及办事处信息。",
+    installButton: "安装应用",
+    installDismiss: "暂不安装",
+    iosHelp:
+      "在 iPhone 上安装：点按 Safari 的「分享」按钮，然后选择「添加到主屏幕」。",
+    installAria: "应用安装建议",
   },
 };
 

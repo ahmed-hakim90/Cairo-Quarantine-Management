@@ -4,7 +4,7 @@ import { defaultLocale, isLocale } from "@/lib/i18n/config";
 
 const FILE_EXTENSION = /\.[^/]+$/;
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   if (

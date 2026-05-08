@@ -31,7 +31,7 @@ type VaccineSelectorProps = {
   embedded?: boolean;
   locale: Locale;
   labels: Messages["vaccineSelector"];
-  /** Shown below the lookup when `NEXT_PUBLIC_VACCINATION_BOOKING_FORM_URL` is set */
+  /** Shown below the lookup when a booking portal URL resolves (env or built-in default) */
   bookingNav?: { label: string; ariaLabel: string };
 };
 

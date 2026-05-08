@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Almarai, IBM_Plex_Sans_Arabic, Noto_Sans_SC } from "next/font/google";
 import { notFound } from "next/navigation";
 import "../globals.css";
@@ -6,6 +6,8 @@ import { FloatingVaccinationBookingButton } from "@/components/layout/FloatingVa
 import { FloatingWhatsAppButton } from "@/components/layout/FloatingWhatsAppButton";
 import { SiteFooter } from "@/components/layout/SiteFooter";
 import { SiteHeader } from "@/components/layout/SiteHeader";
+import { InstallPrompt } from "@/components/pwa/InstallPrompt";
+import { ServiceWorkerRegistrar } from "@/components/pwa/ServiceWorkerRegistrar";
 import {
   isLocale,
   locales,
@@ -38,6 +40,16 @@ export function generateStaticParams() {
   return locales.map((locale) => ({ locale }));
 }
 
+export const viewport: Viewport = {
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#0c2340" },
+    { media: "(prefers-color-scheme: dark)", color: "#0c2340" },
+  ],
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+};
+
 export async function generateMetadata({
   params,
 }: {
@@ -51,6 +63,21 @@ export async function generateMetadata({
       template: `%s | ${m.meta.siteName}`,
     },
     description: m.meta.siteDescription,
+    applicationName: m.meta.siteName,
+    manifest: "/manifest.webmanifest",
+    appleWebApp: {
+      capable: true,
+      statusBarStyle: "default",
+      title: m.meta.siteName,
+    },
+    icons: {
+      apple: [
+        { url: "/icons/apple-touch-icon-180.png", sizes: "180x180" },
+        { url: "/icons/apple-touch-icon-167.png", sizes: "167x167" },
+        { url: "/icons/apple-touch-icon-152.png", sizes: "152x152" },
+        { url: "/icons/apple-touch-icon-120.png", sizes: "120x120" },
+      ],
+    },
   };
 }
 
@@ -92,6 +119,8 @@ export default async function LocaleLayout({
           label={messages.nav.bookVaccination}
           ariaLabel={messages.nav.bookVaccinationAria}
         />
+        <ServiceWorkerRegistrar />
+        <InstallPrompt pwa={messages.pwa} />
       </body>
     </html>
   );
