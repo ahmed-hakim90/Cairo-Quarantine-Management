@@ -125,6 +125,8 @@ export type Messages = {
       description: string;
       beforeTravel: string;
       bullets: [string, string, string];
+      destinationVaccinesWhatsapp: string;
+      destinationVaccinesWhatsappAria: string;
     };
     hajj: {
       metaTitle: string;
@@ -197,7 +199,7 @@ const ar: Messages = {
     switchToEn: "English",
     switchToZh: "中文",
     switchLangAria: "تغيير اللغة",
-    bookVaccination: "حجز تطعيم",
+    bookVaccination: " حجز موعد تطعيم / تقديم شكوى ",
     bookVaccinationAria:
       "فتح البوابة الإلكترونية الرسمية لإدارة الحجر الصحي بالقاهرة في نافذة جديدة",
   },
@@ -207,7 +209,7 @@ const ar: Messages = {
       "بوابة معلومات رسمية للمسافرين والمواطنين. للاستفسارات الطارئة يرجى التواصل عبر الخطوط المعتمدة أو زيارة أقرب مركز تطعيم معتمد.",
     contactTitle: "معلومات الاتصال (عرض توضيحي)",
     hotline: "الخط الساخن: ١٦٥٢٨ — على مدار الساعة",
-    email: "البريد الإلكتروني: info@cqm.gov.eg",
+    email: "البريد الإلكتروني: cairovirology@gmail.com",
     address: "العنوان: القاهرة، جمهورية مصر العربية",
     copyright:
       "جميع الحقوق محفوظة. المحتوى المعروض للتوعية ولا يغني عن التوجيه الطبي المباشر.",
@@ -331,6 +333,10 @@ const ar: Messages = {
         "بطاقة الرقم القومي سارية",
         "صورة شخصية حديثة",
       ],
+      destinationVaccinesWhatsapp:
+        "لمعرفة طعوم الدولة المتجه إليها تواصل على واتساب.",
+      destinationVaccinesWhatsappAria:
+        "فتح واتساب لمعرفة طعوم الدولة المتجه إليها",
     },
     hajj: {
       metaTitle: "الحج والعمرة",
@@ -563,6 +569,10 @@ const en: Messages = {
         "Valid national ID card",
         "Recent passport-style photo",
       ],
+      destinationVaccinesWhatsapp:
+        "To learn which vaccines are needed for your destination, contact us on WhatsApp.",
+      destinationVaccinesWhatsappAria:
+        "Open WhatsApp to ask about destination vaccines",
     },
     hajj: {
       metaTitle: "Hajj & Umrah",
@@ -785,6 +795,9 @@ const zh: Messages = {
         "有效国民身份证",
         "近照证件照",
       ],
+      destinationVaccinesWhatsapp:
+        "如需了解目的地所需疫苗，请通过 WhatsApp 联系我们。",
+      destinationVaccinesWhatsappAria: "打开 WhatsApp 咨询目的地疫苗",
     },
     hajj: {
       metaTitle: "朝觐与副朝",

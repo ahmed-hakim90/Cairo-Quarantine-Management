@@ -22,7 +22,7 @@ export function SiteFooter({ messages }: SiteFooterProps) {
           <div className="text-sm">
             <p className="font-semibold text-gov-navy">{f.contactTitle}</p>
             <ul className="mt-3 space-y-2">
-              <li>{f.hotline}</li>
+                {/* <li>{f.hotline}</li> */}
               <li>{f.email}</li>
               <li>{f.address}</li>
             </ul>

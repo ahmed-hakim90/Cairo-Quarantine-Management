@@ -3,7 +3,7 @@ import { getWhatsappComplaintsDigits } from "@/lib/site-contact";
 const DEFAULT_MESSAGE =
   "السلام عليكم، أود التواصل بخصوص شكوى أو اقتراح بخصوص خدمات الحجر الصحي بالقاهرة.";
 
-function WhatsAppIcon({ className }: { className?: string }) {
+export function WhatsAppIcon({ className }: { className?: string }) {
   return (
     <svg
       className={className}
