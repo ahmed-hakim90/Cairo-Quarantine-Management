@@ -215,6 +215,9 @@ export function TravelerVaccinationsCharter({
             </dt>
             <dd>{d.workingHours.except}</dd>
           </dl>
+          <p className="mt-4 rounded-lg border border-gov-gray-200 bg-gov-gray-50 p-4 font-medium text-gov-navy">
+            {d.workingHours.note}
+          </p>
         </CharterBodySection>
       </div>
 

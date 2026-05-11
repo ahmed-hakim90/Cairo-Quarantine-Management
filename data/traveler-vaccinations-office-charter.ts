@@ -53,6 +53,7 @@ export type TravelerVaccinationsOfficeCharter = {
     from: string;
     to: string;
     except: string;
+    note: string;
   };
   closing: string;
 };
@@ -142,9 +143,10 @@ const travelerVaccinationsOfficeCharterAr: TravelerVaccinationsOfficeCharter =
       dailyFromLabel: "يوميًا من:",
       dailyToLabel: "حتى:",
       exceptLabel: "ما عدا:",
-      from: "..........",
-      to: "..........",
-      except: "..........",
+      from: "٨ صباحًا",
+      to: "٦ مساءً",
+      except: "الجُمع والعطلات الرسمية",
+      note: "ملحوظة: مركز تطعيم مطار القاهرة الدولي يعمل ٢٤ ساعة كل أيام الأسبوع.",
     },
     closing: "معًا نحو خدمة صحية آمنة",
   };
@@ -234,9 +236,10 @@ const travelerVaccinationsOfficeCharterEn: TravelerVaccinationsOfficeCharter = {
     dailyFromLabel: "Daily from:",
     dailyToLabel: "Until:",
     exceptLabel: "Except:",
-    from: "..........",
-    to: "..........",
-    except: "..........",
+    from: "8:00 AM",
+    to: "6:00 PM",
+    except: "Fridays and official holidays",
+    note: "Note: Cairo International Airport vaccination center operates 24 hours a day, every day of the week.",
   },
   closing: "Together towards safe health services",
 };
@@ -324,9 +327,10 @@ const travelerVaccinationsOfficeCharterZh: TravelerVaccinationsOfficeCharter = {
     dailyFromLabel: "每日自：",
     dailyToLabel: "至：",
     exceptLabel: "除外：",
-    from: "..........",
-    to: "..........",
-    except: "..........",
+    from: "上午 8:00",
+    to: "下午 6:00",
+    except: "星期五及法定节假日",
+    note: "注意：开罗国际机场接种中心每周全天 24 小时开放。",
   },
   closing: "携手共建安全健康服务",
 };
