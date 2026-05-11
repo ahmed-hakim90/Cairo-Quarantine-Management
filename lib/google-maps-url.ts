@@ -15,7 +15,10 @@ export function googleMapsOfficeSearchUrl(args: {
 }
 
 /** Hajj/traveler tables are Arabic-only copy; keep query consistent with list data. */
-export function googleMapsOfficeSearchUrlAr(placeTitle: string, address: string): string {
+export function googleMapsOfficeSearchUrlAr(
+  placeTitle: string,
+  address: string,
+): string {
   return googleMapsOfficeSearchUrl({
     placeTitle,
     address,
@@ -23,7 +26,18 @@ export function googleMapsOfficeSearchUrlAr(placeTitle: string, address: string)
   });
 }
 
-/** Prefer a curated Maps link (pin-accurate); fall back to text search if missing. */
+function isGoogleMapsShortUrl(url: string): boolean {
+  try {
+    return new URL(url).hostname === "maps.app.goo.gl";
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Prefer a curated Maps link when it is stable; short Maps URLs can break from
+ * one mistyped character, so use search links for them across all office lists.
+ */
 export function resolveOfficeMapUrl(args: {
   mapsUrl?: string | null;
   placeTitle: string;
@@ -31,7 +45,7 @@ export function resolveOfficeMapUrl(args: {
   locale: Locale;
 }): string {
   const direct = args.mapsUrl?.trim();
-  if (direct) return direct;
+  if (direct && !isGoogleMapsShortUrl(direct)) return direct;
   return googleMapsOfficeSearchUrl({
     placeTitle: args.placeTitle,
     address: args.address,
