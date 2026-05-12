@@ -92,6 +92,15 @@ export default async function CitizenServicesPage({
         </section>
       </ScrollReveal>
       <ScrollReveal>
+        <section className="mx-auto max-w-6xl px-4 pb-10">
+          <div className="rounded-lg border border-amber-200 bg-amber-50 p-6 shadow-sm md:p-8">
+            <p className="whitespace-pre-line text-sm leading-relaxed text-amber-900 md:text-base">
+              {p.splenectomyNote}
+            </p>
+          </div>
+        </section>
+      </ScrollReveal>
+      <ScrollReveal>
         <HajjTravelerOfficesTable content={m.hajjTable} />
       </ScrollReveal>
     </>

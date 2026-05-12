@@ -161,6 +161,7 @@ export type Messages = {
       docsBullets: [string, string, string];
       notesTitle: string;
       notesBody: string;
+      splenectomyNote: string;
     };
     charter: {
       metaTitle: string;
@@ -391,6 +392,8 @@ const ar: Messages = {
       notesTitle: "ملاحظات عامة",
       notesBody:
         "يرجى مراجعة المركز المعتمد أو القنوات الرسمية لوزارة الصحة لتأكيد المواعيد والخدمات الفعلية.",
+      splenectomyNote:
+        "إذا قمت بإجراء عملية استئصال طحال أو أي إجراء يتطلب إعادة التحصين ببعض التطعيمات، لا تترد في الاستفسار من خلال الواتساب، أو يمكنكم التوجه لأقرب مكتب تحصين مسافرين لتلقي المعلومات الكاملة لهذا الشأن.\nولا تنسَ إحضار تقريرك الطبي.\nدمتم سالمين 🌻",
     },
     charter: {
       metaTitle: "ميثاق المتعاملين — مكتب تطعيمات المسافرين",
@@ -627,6 +630,8 @@ const en: Messages = {
       notesTitle: "General notes",
       notesBody:
         "Confirm appointment times and available services with your authorised centre or official Ministry of Health channels.",
+      splenectomyNote:
+        "If you have undergone a splenectomy or any procedure that requires re-vaccination, do not hesitate to enquire via WhatsApp or visit your nearest traveller vaccination office for full information on this matter.\nDon't forget to bring your medical report.\nStay safe 🌻",
     },
     charter: {
       metaTitle: "Stakeholder charter — Travel vaccinations office",
@@ -852,6 +857,8 @@ const zh: Messages = {
       notesTitle: "一般提示",
       notesBody:
         "预约时间与开放服务请以授权中心或卫生部官方渠道确认为准。",
+      splenectomyNote:
+        "如果您曾进行脾切除手术或任何需要重新接种疫苗的手术，请随时通过 WhatsApp 咨询，或前往最近的旅客疫苗接种门诊获取完整信息。\n请勿忘记携带您的医疗报告。\n保重身体 🌻",
     },
     charter: {
       metaTitle: "利益相关方章程 — 旅客接种门诊",
