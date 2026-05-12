@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Almarai, IBM_Plex_Sans_Arabic, Noto_Sans_SC } from "next/font/google";
 import { notFound } from "next/navigation";
 import "../globals.css";
+import { FloatingTextToSpeechButton } from "@/components/layout/FloatingTextToSpeechButton";
 import { FloatingVaccinationBookingButton } from "@/components/layout/FloatingVaccinationBookingButton";
 import { FloatingWhatsAppButton } from "@/components/layout/FloatingWhatsAppButton";
 import { SiteFooter } from "@/components/layout/SiteFooter";
@@ -115,6 +116,7 @@ export default async function LocaleLayout({
         </main>
         <SiteFooter messages={messages} />
         <FloatingWhatsAppButton />
+        <FloatingTextToSpeechButton locale={locale} labels={messages.tts} />
         <FloatingVaccinationBookingButton
           label={messages.nav.bookVaccination}
           ariaLabel={messages.nav.bookVaccinationAria}

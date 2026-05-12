@@ -170,6 +170,23 @@ export type Messages = {
       tocTitle: string;
     };
   };
+  tts: {
+    read: string;
+    pause: string;
+    resume: string;
+    stop: string;
+    unsupported: string;
+  };
+  chat: {
+    title: string;
+    greeting: string;
+    placeholder: string;
+    send: string;
+    openAria: string;
+    closeAria: string;
+    error: string;
+    billingError: string;
+  };
   pwa: {
     installTitle: string;
     installBody: string;
@@ -402,6 +419,26 @@ const ar: Messages = {
         "ميثاق مكتب تطعيمات المسافرين: التزامات المكتب وحقوق وواجبات المتعاملين وآلية الشكاوى والمقترحات.",
       tocTitle: "في هذه الوثيقة",
     },
+  },
+  tts: {
+    read: "اقرأ لي المحتوى",
+    pause: "إيقاف مؤقت للقراءة",
+    resume: "استئناف القراءة",
+    stop: "إيقاف القراءة",
+    unsupported: "القراءة الصوتية غير مدعومة في هذا المتصفح",
+  },
+  chat: {
+    title: "المساعد الذكي",
+    greeting:
+      "أهلاً! أنا المساعد الذكي. اسألني عن خدمات الحجر الصحي والتطعيمات، وسأساعدك بخطوات سهلة وبسيطة.",
+    placeholder: "اكتب سؤالك...",
+    send: "إرسال",
+    openAria: "فتح المساعد الذكي",
+    closeAria: "إغلاق المساعد الذكي",
+    error:
+      "عذرًا، حدث خطأ أثناء الرد. يرجى المحاولة مرة أخرى بعد لحظات.",
+    billingError:
+      "رصيد OpenRouter غير كافٍ لتشغيل المساعد الآن. يرجى مراجعة إعدادات الحساب أو شحن الرصيد.",
   },
   pwa: {
     installTitle: "ثبّت تطبيق الحجر الصحي",
@@ -641,6 +678,25 @@ const en: Messages = {
       tocTitle: "In this document",
     },
   },
+  tts: {
+    read: "Read page aloud",
+    pause: "Pause reading",
+    resume: "Resume reading",
+    stop: "Stop reading",
+    unsupported: "Text-to-speech is not supported in this browser",
+  },
+  chat: {
+    title: "Smart Assistant",
+    greeting:
+      "Hello! I'm your smart assistant. Ask me about quarantine and vaccination services, and I will guide you with simple steps.",
+    placeholder: "Type your question...",
+    send: "Send",
+    openAria: "Open smart assistant",
+    closeAria: "Close smart assistant",
+    error: "Sorry, something went wrong while replying. Please try again shortly.",
+    billingError:
+      "OpenRouter credit is not sufficient to run the assistant right now. Please check billing or add credits.",
+  },
   pwa: {
     installTitle: "Install the Quarantine app",
     installBody:
@@ -867,6 +923,25 @@ const zh: Messages = {
         "旅客接种门诊章程：对公众的承诺、权利与义务，以及投诉与建议处理机制。",
       tocTitle: "本文档结构",
     },
+  },
+  tts: {
+    read: "朗读页面内容",
+    pause: "暂停朗读",
+    resume: "继续朗读",
+    stop: "停止朗读",
+    unsupported: "此浏览器不支持文字转语音",
+  },
+  chat: {
+    title: "智能助手",
+    greeting:
+      "您好！我是智能助手。您可以询问检疫和疫苗接种服务，我会用简单步骤帮助您。",
+    placeholder: "输入您的问题...",
+    send: "发送",
+    openAria: "打开智能助手",
+    closeAria: "关闭智能助手",
+    error: "抱歉，回复时出现问题。请稍后再试。",
+    billingError:
+      "OpenRouter 余额不足，暂时无法运行智能助手。请检查账单或充值。",
   },
   pwa: {
     installTitle: "安装检疫服务应用",
