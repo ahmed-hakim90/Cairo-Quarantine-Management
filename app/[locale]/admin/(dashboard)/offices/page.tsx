@@ -3,7 +3,7 @@ import { OfficeFormDialog } from "@/components/admin/OfficeFormDialog";
 import { SetOfficeActiveForm } from "@/components/admin/SetOfficeActiveForm";
 import { isLocale } from "@/lib/i18n/config";
 import { getAdminSession } from "@/lib/office-requests/session";
-import { listOffices } from "@/lib/office-requests/store";
+import { listOffices, listTravelerStates } from "@/lib/office-requests/store";
 import type { Office } from "@/lib/office-requests/types";
 
 const SERVICE_LABELS: Record<Office["service"], string> = {
@@ -25,7 +25,10 @@ export default async function AdminOfficesPage({
     redirect(`/${locale}/admin`);
   }
 
-  const offices = await listOffices({ includeInactive: true });
+  const [offices, travelerStates] = await Promise.all([
+    listOffices({ includeInactive: true }),
+    listTravelerStates({ includeInactive: true }),
+  ]);
 
   return (
     <div className="mx-auto max-w-7xl">
@@ -46,6 +49,7 @@ export default async function AdminOfficesPage({
             <OfficeFormDialog
               locale={locale}
               office={null}
+              travelerStates={travelerStates}
               buttonLabel="إضافة مكتب"
               buttonClassName="inline-flex min-h-10 items-center justify-center rounded-md bg-gov-accent px-4 py-2 text-sm font-bold text-white transition hover:bg-gov-navy"
             />
@@ -99,6 +103,7 @@ export default async function AdminOfficesPage({
                       <OfficeFormDialog
                         locale={locale}
                         office={office}
+                        travelerStates={travelerStates}
                         buttonLabel="تعديل"
                       />
                       {office.active ? (

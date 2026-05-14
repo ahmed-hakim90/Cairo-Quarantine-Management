@@ -3,18 +3,16 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import {
+  defaultTravelerStatesFromLegacyLabels,
+  effectiveTravelerStateIdOnRequest,
+  mergeTravelerStateLabelsWithLegacy,
+} from "@/lib/office-requests/office-traveler-state";
+import {
   REQUEST_STATUS_LABELS,
   REQUEST_TYPE_LABELS,
-  TRAVELER_CATEGORY_LABELS,
   type OfficeRequest,
-  type TravelerCategory,
+  type TravelerState,
 } from "@/lib/office-requests/types";
-
-const TRAVELER_FILTER_KEYS = [
-  "international",
-  "hajj_umrah",
-  "citizen",
-] as const satisfies readonly TravelerCategory[];
 
 type RequestTypeFilter = "all" | "complaint" | "proposal";
 
@@ -27,6 +25,7 @@ const TYPE_TABS: { id: RequestTypeFilter; label: string }[] = [
 type AdminRequestsTableProps = {
   requests: OfficeRequest[];
   locale: string;
+  travelerStates: TravelerState[];
 };
 
 const statusClass: Record<OfficeRequest["status"], string> = {
@@ -50,23 +49,28 @@ function StatusBadge({ status }: { status: OfficeRequest["status"] }) {
   );
 }
 
-function BookingMeta({ request }: { request: OfficeRequest }) {
+function BookingMeta({
+  request,
+  labelById,
+}: {
+  request: OfficeRequest;
+  labelById: Record<string, string>;
+}) {
   if (request.type !== "booking") return null;
 
-  const category = request.travelerCategory
-    ? TRAVELER_CATEGORY_LABELS[request.travelerCategory]
-    : null;
+  const tid = effectiveTravelerStateIdOnRequest(request);
+  const label = tid ? labelById[tid] ?? tid : null;
 
   return (
     <span className="mt-1 block text-xs leading-relaxed text-gov-gray-600">
-      {[category, request.preferredDate].filter(Boolean).join(" - ") || "-"}
+      {[label, request.preferredDate].filter(Boolean).join(" - ") || "-"}
     </span>
   );
 }
 
 function emptyMessage(
   typeFilter: RequestTypeFilter,
-  activeCategory: TravelerCategory | null,
+  activeTravelerStateId: string | null,
 ): string {
   if (typeFilter === "complaint") {
     return "لا توجد شكاوى ضمن آخر 200 طلباً محمّلة.";
@@ -74,19 +78,36 @@ function emptyMessage(
   if (typeFilter === "proposal") {
     return "لا توجد مقترحات ضمن آخر 200 طلباً محمّلة.";
   }
-  if (typeFilter === "all" && activeCategory === null) {
+  if (typeFilter === "all" && activeTravelerStateId === null) {
     return "لا توجد حجوزات ضمن آخر 200 طلباً محمّلة.";
   }
-  if (activeCategory !== null) {
-    return "لا توجد حجوزات مطابقة لهذه الفئة ضمن القائمة.";
+  if (activeTravelerStateId !== null) {
+    return "لا توجد حجوزات مطابقة لهذه الحالة ضمن القائمة.";
   }
   return "لا توجد طلبات مطابقة للتصفية الحالية.";
 }
 
-export function AdminRequestsTable({ requests, locale }: AdminRequestsTableProps) {
+export function AdminRequestsTable({
+  requests,
+  locale,
+  travelerStates,
+}: AdminRequestsTableProps) {
   const [typeFilter, setTypeFilter] = useState<RequestTypeFilter>("all");
-  const [activeCategory, setActiveCategory] = useState<TravelerCategory | null>(
-    null,
+  const [activeTravelerStateId, setActiveTravelerStateId] = useState<
+    string | null
+  >(null);
+
+  const filterStates = useMemo(
+    () =>
+      travelerStates.length > 0
+        ? travelerStates
+        : defaultTravelerStatesFromLegacyLabels(),
+    [travelerStates],
+  );
+
+  const labelById = useMemo(
+    () => mergeTravelerStateLabelsWithLegacy(travelerStates),
+    [travelerStates],
   );
 
   const filteredRequests = useMemo(() => {
@@ -94,15 +115,15 @@ export function AdminRequestsTable({ requests, locale }: AdminRequestsTableProps
       typeFilter === "all"
         ? requests.filter((r) => r.type === "booking")
         : requests.filter((r) => r.type === typeFilter);
-    if (activeCategory !== null) {
+    if (activeTravelerStateId !== null) {
       list = list.filter(
         (request) =>
           request.type !== "booking" ||
-          request.travelerCategory === activeCategory,
+          effectiveTravelerStateIdOnRequest(request) === activeTravelerStateId,
       );
     }
     return list;
-  }, [requests, typeFilter, activeCategory]);
+  }, [requests, typeFilter, activeTravelerStateId]);
 
   return (
     <div className="rounded-lg border border-gov-gray-200 bg-white shadow-sm">
@@ -148,21 +169,23 @@ export function AdminRequestsTable({ requests, locale }: AdminRequestsTableProps
       <div
         className="border-b border-gov-gray-200 px-4 py-3"
         role="group"
-        aria-label="تصفية حجوزات المسافرين حسب الفئة"
+        aria-label="تصفية حجوزات المسافرين حسب الحالة"
       >
         <p className="mb-2 text-xs font-bold text-gov-gray-600">
-          تصفية الحجوزات حسب فئة المسافر (اختياري)
+          تصفية الحجوزات حسب حالة المسافر (اختياري)
         </p>
         <div className="flex flex-wrap gap-2">
-          {TRAVELER_FILTER_KEYS.map((key) => {
-            const pressed = activeCategory === key;
+          {filterStates.map((s) => {
+            const pressed = activeTravelerStateId === s.id;
             return (
               <button
-                key={key}
+                key={s.id}
                 type="button"
                 aria-pressed={pressed}
                 onClick={() =>
-                  setActiveCategory((prev) => (prev === key ? null : key))
+                  setActiveTravelerStateId((prev) =>
+                    prev === s.id ? null : s.id,
+                  )
                 }
                 className={`${tagBaseClass} ${
                   pressed
@@ -170,7 +193,7 @@ export function AdminRequestsTable({ requests, locale }: AdminRequestsTableProps
                     : "border border-gov-gray-200 bg-white text-gov-navy hover:bg-gov-gray-50"
                 }`}
               >
-                {TRAVELER_CATEGORY_LABELS[key]}
+                {s.labelAr}
               </button>
             );
           })}
@@ -205,7 +228,7 @@ export function AdminRequestsTable({ requests, locale }: AdminRequestsTableProps
                   colSpan={6}
                   className="px-4 py-8 text-center text-gov-gray-600"
                 >
-                  {emptyMessage(typeFilter, activeCategory)}
+                  {emptyMessage(typeFilter, activeTravelerStateId)}
                 </td>
               </tr>
             ) : (
@@ -218,7 +241,7 @@ export function AdminRequestsTable({ requests, locale }: AdminRequestsTableProps
                   <td className="px-4 py-3">{request.officeNameAr}</td>
                   <td className="px-4 py-3">
                     {REQUEST_TYPE_LABELS[request.type]}
-                    <BookingMeta request={request} />
+                    <BookingMeta request={request} labelById={labelById} />
                   </td>
                   <td className="px-4 py-3">
                     <StatusBadge status={request.status} />

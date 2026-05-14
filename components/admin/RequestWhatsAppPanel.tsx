@@ -13,6 +13,10 @@ type RequestWhatsAppPanelProps = {
   templates: MessageTemplate[];
   request: OfficeRequest;
   office: Office;
+  locale: string;
+  /** From `headers()` on the server; may be empty behind some proxies. */
+  siteOrigin: string;
+  travelerStateLabelById?: Record<string, string>;
 };
 
 export function RequestWhatsAppPanel({
@@ -20,7 +24,19 @@ export function RequestWhatsAppPanel({
   templates,
   request,
   office,
+  locale,
+  siteOrigin: siteOriginFromServer,
+  travelerStateLabelById,
 }: RequestWhatsAppPanelProps) {
+  const siteOrigin = useMemo(() => {
+    const env = (process.env.NEXT_PUBLIC_SITE_URL ?? "").replace(/\/+$/, "");
+    if (env) return env;
+    return siteOriginFromServer.replace(/\/+$/, "");
+  }, [siteOriginFromServer]);
+
+  const templateLocale =
+    locale === "en" || locale === "zh" ? locale : "ar";
+
   const [pickId, setPickId] = useState<string | null>(null);
   const [editedOverride, setEditedOverride] = useState<string | null>(null);
 
@@ -37,8 +53,15 @@ export function RequestWhatsAppPanel({
 
   const rendered = useMemo(() => {
     if (!selectedTemplate) return "";
-    return renderTemplate({ template: selectedTemplate, request, office });
-  }, [selectedTemplate, request, office]);
+    return renderTemplate({
+      template: selectedTemplate,
+      request,
+      office,
+      siteOrigin,
+      locale: templateLocale,
+      travelerStateLabelById,
+    });
+  }, [selectedTemplate, request, office, siteOrigin, templateLocale, travelerStateLabelById]);
 
   const messageText = editedOverride !== null ? editedOverride : rendered;
   const waMeDigits = toWhatsappWaMeDigits(phone);
@@ -80,6 +103,8 @@ export function RequestWhatsAppPanel({
                 template: row,
                 request,
                 office,
+                siteOrigin,
+                locale: templateLocale,
               });
               return (
                 <tr

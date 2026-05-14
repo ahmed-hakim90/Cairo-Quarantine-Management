@@ -10,6 +10,7 @@ import { getAdminSession } from "@/lib/office-requests/session";
 import {
   listOffices,
   listRequestsForSession,
+  listTravelerStates,
 } from "@/lib/office-requests/store";
 
 function firstSearchParam(
@@ -54,11 +55,14 @@ export default async function AdminOverviewPage({
     }
   }
 
-  const requests = await listRequestsForSession({
-    role: session.profile.role,
-    officeId: session.profile.officeId,
-    ...(officeFilter ? { officeFilter } : {}),
-  });
+  const [requests, travelerStates] = await Promise.all([
+    listRequestsForSession({
+      role: session.profile.role,
+      officeId: session.profile.officeId,
+      ...(officeFilter ? { officeFilter } : {}),
+    }),
+    listTravelerStates({ includeInactive: true }),
+  ]);
 
   const newCount = requests.filter((request) => request.status === "new").length;
   const activeCount = requests.filter(
@@ -101,13 +105,17 @@ export default async function AdminOverviewPage({
                   />
                 </Suspense>
                 <div className="sm:pt-0">
-                  <SuperAdminExportLauncher offices={offices} />
+                  <SuperAdminExportLauncher
+                    offices={offices}
+                    travelerStates={travelerStates}
+                  />
                 </div>
               </>
             ) : session.profile.officeId ? (
               <div className="sm:pt-1">
                 <SuperAdminExportLauncher
                   lockedOfficeId={session.profile.officeId}
+                  travelerStates={travelerStates}
                 />
               </div>
             ) : null}

@@ -1,14 +1,24 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { BookingPassQrImage } from "@/components/booking/BookingPassQrImage";
+import { bookingPassFormCopy } from "@/lib/i18n/booking-pass-copy";
+import type { Locale } from "@/lib/i18n/config";
+import {
+  defaultTravelerStatesFromLegacyLabels,
+  effectiveTravelerStateIdOnRequest,
+  mergeTravelerStateLabelsWithLegacy,
+} from "@/lib/office-requests/office-traveler-state";
 import {
   REQUEST_STATUS_LABELS,
   REQUEST_TYPE_LABELS,
   TRAVELER_CATEGORY_LABELS,
   type PublicOfficeRequestStatus,
 } from "@/lib/office-requests/types";
-import type { Locale } from "@/lib/i18n/config";
 
+const TRAVELER_LABEL_BY_ID = mergeTravelerStateLabelsWithLegacy(
+  defaultTravelerStatesFromLegacyLabels(),
+);
 const STORAGE_KEY = "cairo-office-requests:v1";
 const POLL_INTERVAL_MS = 30_000;
 
@@ -34,12 +44,13 @@ const copy = {
     notes: "ملاحظات المتابعة",
     noNotes: "لا توجد ملاحظات متابعة حتى الآن.",
     office: "المكتب",
-    travelerCategory: "نوع المسافر",
+    travelerState: "حالة المسافر",
     preferredDate: "التاريخ المطلوب",
     createdAt: "تاريخ الإرسال",
     updatedAt: "آخر تحديث",
     missing: "لم يتم العثور على الطلب بهذا الرقم ورقم الهاتف.",
     loadError: "تعذر تحديث الطلبات حالياً.",
+    qrSectionTitle: "رمز بطاقة الحجز",
   },
   en: {
     title: "My requests",
@@ -53,12 +64,13 @@ const copy = {
     notes: "Follow-up notes",
     noNotes: "No follow-up notes yet.",
     office: "Office",
-    travelerCategory: "Traveler type",
+    travelerState: "Traveler status",
     preferredDate: "Preferred date",
     createdAt: "Submitted",
     updatedAt: "Last updated",
     missing: "No request was found for this number and phone.",
     loadError: "Requests could not be refreshed right now.",
+    qrSectionTitle: "Booking pass QR",
   },
   zh: {
     title: "我的申请",
@@ -71,12 +83,13 @@ const copy = {
     notes: "跟进备注",
     noNotes: "暂无跟进备注。",
     office: "办公室",
-    travelerCategory: "旅客类型",
+    travelerState: "旅客状态",
     preferredDate: "预约日期",
     createdAt: "提交时间",
     updatedAt: "最后更新",
     missing: "未找到与该编号和电话匹配的申请。",
     loadError: "目前无法刷新申请。",
+    qrSectionTitle: "预约凭证二维码",
   },
 } satisfies Record<Locale, Record<string, string>>;
 
@@ -266,12 +279,22 @@ export function MyRequestsPanel({ locale }: MyRequestsPanelProps) {
                     <>
                       <div>
                         <dt className="font-bold text-gov-navy">
-                          {t.travelerCategory}
+                          {t.travelerState}
                         </dt>
                         <dd className="mt-1 text-gov-gray-700">
-                          {request.travelerCategory
-                            ? TRAVELER_CATEGORY_LABELS[request.travelerCategory]
-                            : "-"}
+                          {(() => {
+                            const id =
+                              effectiveTravelerStateIdOnRequest(request);
+                            if (!id) return "-";
+                            return (
+                              TRAVELER_LABEL_BY_ID[id] ??
+                              (request.travelerCategory
+                                ? TRAVELER_CATEGORY_LABELS[
+                                    request.travelerCategory
+                                  ]
+                                : id)
+                            );
+                          })()}
                         </dd>
                       </div>
                       <div>
@@ -303,6 +326,27 @@ export function MyRequestsPanel({ locale }: MyRequestsPanelProps) {
                     </dd>
                   </div>
                 </dl>
+
+                {request.type === "booking" && request.passToken ? (
+                  <div className="mt-5 rounded-md border border-emerald-200 bg-emerald-50/50 p-4">
+                    <h3 className="text-sm font-bold text-gov-navy">
+                      {t.qrSectionTitle}
+                    </h3>
+                    <p className="mt-1 text-xs leading-relaxed text-gov-gray-600">
+                      {bookingPassFormCopy[locale].cardSubtitle}
+                    </p>
+                    <div className="mt-4 flex justify-center sm:justify-start">
+                      <BookingPassQrImage
+                        locale={locale}
+                        requestId={request.id}
+                        passToken={request.passToken}
+                        alt={bookingPassFormCopy[locale].qrAlt}
+                        displayWidth={200}
+                        imgClassName="rounded-lg border border-emerald-200/80 bg-white p-2 shadow-sm"
+                      />
+                    </div>
+                  </div>
+                ) : null}
 
                 <div className="mt-5 rounded-md bg-gov-gray-50 p-4">
                   <h3 className="text-sm font-bold text-gov-navy">

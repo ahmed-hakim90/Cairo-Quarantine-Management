@@ -7,21 +7,27 @@ import { getAdminSession, assertSuperAdmin, ADMIN_SESSION_COOKIE } from "@/lib/o
 import {
   deleteAdminUserAccount,
   deleteMessageTemplate,
+  getOffice,
   markWhatsappSentForSession,
   saveBookingSettings,
   setOfficeActive,
+  setTravelerStateActive,
   setVaccineActive,
   updateRequestForSession,
   upsertAdminUserAccount,
   upsertMessageTemplate,
   upsertOffice,
+  upsertTravelerState,
   upsertVaccine,
 } from "@/lib/office-requests/store";
+import { inferOfficeServiceFromSelectedTravelerStateIds } from "@/lib/office-requests/office-traveler-state";
 import type {
   AdminActivityActor,
   AdminRole,
   AdminSession,
+  Office,
   OfficeRequestStatus,
+  TravelerState,
   VaccineCatalogEntry,
   VaccineUserCategory,
 } from "@/lib/office-requests/types";
@@ -191,12 +197,29 @@ export async function saveOfficeAction(formData: FormData) {
   assertSuperAdmin(session);
   const locale = formValue(formData, "locale") || "ar";
   const id = formValue(formData, "id") || "new";
-  const serviceRaw = formValue(formData, "service");
   const capRaw = formValue(formData, "dailyBookingCap");
   let dailyBookingCap: number | null = null;
   if (capRaw !== "") {
     const n = Number.parseInt(capRaw, 10);
     if (Number.isFinite(n) && n > 0) dailyBookingCap = n;
+  }
+
+  const travelerStateRaw = formData.getAll("travelerStateIds");
+  const travelerStateIds = travelerStateRaw
+    .map((v) => String(v).trim())
+    .filter(Boolean);
+
+  const isNew = !id || id === "new";
+  const existing: Office | null =
+    !isNew ? await getOffice(id) : null;
+
+  let service: Office["service"];
+  if (travelerStateIds.length > 0) {
+    service = inferOfficeServiceFromSelectedTravelerStateIds(travelerStateIds);
+  } else if (existing) {
+    service = existing.service;
+  } else {
+    service = "hajj_umrah_travelers";
   }
 
   await upsertOffice(
@@ -207,18 +230,19 @@ export async function saveOfficeAction(formData: FormData) {
       addressAr: formValue(formData, "addressAr"),
       phone: formValue(formData, "phone") || null,
       mapsUrl: formValue(formData, "mapsUrl"),
-      service:
-        serviceRaw === "hajj_umrah_only"
-          ? "hajj_umrah_only"
-          : "hajj_umrah_travelers",
+      service,
       active: formData.get("active") === "on",
       dailyBookingCap,
+      travelerStateIds,
     },
     adminActorFromSession(session),
   );
 
   revalidatePath(`/${locale}/admin`);
   revalidatePath(`/${locale}/admin/offices`);
+  for (const l of locales) {
+    revalidatePath(`/${l}/booking`);
+  }
 }
 
 export async function setOfficeActiveAction(formData: FormData) {
@@ -234,6 +258,60 @@ export async function setOfficeActiveAction(formData: FormData) {
 
   revalidatePath(`/${locale}/admin`);
   revalidatePath(`/${locale}/admin/offices`);
+  for (const l of locales) {
+    revalidatePath(`/${l}/booking`);
+  }
+}
+
+export async function saveTravelerStateAction(formData: FormData) {
+  const session = await requireSession();
+  assertSuperAdmin(session);
+  const locale = formValue(formData, "locale") || "ar";
+  const id = formValue(formData, "id");
+  if (!id) throw new Error("معرّف الحالة مطلوب.");
+
+  const labelAr = formValue(formData, "labelAr");
+  const sortRaw = formValue(formData, "sortOrder");
+  const sortOrder = Number.parseInt(sortRaw, 10);
+  const sort = Number.isFinite(sortOrder) ? sortOrder : 0;
+  const active = formData.get("active") === "on";
+
+  const entry: TravelerState = {
+    id,
+    labelAr,
+    sortOrder: sort,
+    active,
+  };
+
+  await upsertTravelerState(entry, adminActorFromSession(session));
+
+  revalidatePath(`/${locale}/admin`);
+  revalidatePath(`/${locale}/admin/traveler-states`);
+  for (const l of locales) {
+    revalidatePath(`/${l}/booking`);
+  }
+}
+
+export async function setTravelerStateActiveAction(formData: FormData) {
+  const session = await requireSession();
+  assertSuperAdmin(session);
+  const locale = formValue(formData, "locale") || "ar";
+  const travelerStateId = formValue(formData, "travelerStateId");
+  const active = formValue(formData, "active") === "true";
+
+  if (!travelerStateId) throw new Error("معرّف الحالة مفقود.");
+
+  await setTravelerStateActive(
+    travelerStateId,
+    active,
+    adminActorFromSession(session),
+  );
+
+  revalidatePath(`/${locale}/admin`);
+  revalidatePath(`/${locale}/admin/traveler-states`);
+  for (const l of locales) {
+    revalidatePath(`/${l}/booking`);
+  }
 }
 
 const VACCINE_CATEGORIES: VaccineUserCategory[] = [

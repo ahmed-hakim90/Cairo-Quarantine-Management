@@ -6,6 +6,7 @@ import { getAdminSession } from "@/lib/office-requests/session";
 import {
   listOffices,
   listRequestsForSession,
+  listTravelerStates,
 } from "@/lib/office-requests/store";
 import type { Office } from "@/lib/office-requests/types";
 
@@ -22,7 +23,7 @@ export default async function AdminRequestsPage({
 
   const isSuperAdmin = session.profile.role === "super_admin";
 
-  const [offices, requests] = await Promise.all([
+  const [offices, requests, travelerStates] = await Promise.all([
     isSuperAdmin
       ? listOffices({ includeInactive: true })
       : Promise.resolve<Office[]>([]),
@@ -30,6 +31,7 @@ export default async function AdminRequestsPage({
       role: session.profile.role,
       officeId: session.profile.officeId,
     }),
+    listTravelerStates({ includeInactive: true }),
   ]);
 
   return (
@@ -44,18 +46,26 @@ export default async function AdminRequestsPage({
           </div>
           {isSuperAdmin ? (
             <div className="shrink-0 sm:pt-1">
-              <SuperAdminExportLauncher offices={offices} />
+              <SuperAdminExportLauncher
+              offices={offices}
+              travelerStates={travelerStates}
+            />
             </div>
           ) : session.profile.officeId ? (
             <div className="shrink-0 sm:pt-1">
               <SuperAdminExportLauncher
                 lockedOfficeId={session.profile.officeId}
+                travelerStates={travelerStates}
               />
             </div>
           ) : null}
         </div>
       </div>
-      <AdminRequestsTable requests={requests} locale={locale} />
+      <AdminRequestsTable
+        requests={requests}
+        locale={locale}
+        travelerStates={travelerStates}
+      />
     </div>
   );
 }

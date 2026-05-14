@@ -1,46 +1,61 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { defaultTravelerStatesFromLegacyLabels } from "@/lib/office-requests/office-traveler-state";
 import {
   REQUEST_TYPE_LABELS,
-  TRAVELER_CATEGORY_LABELS,
   type Office,
   type OfficeRequestType,
-  type TravelerCategory,
+  type TravelerState,
 } from "@/lib/office-requests/types";
-
-const TRAVELER_KEYS: TravelerCategory[] = [
-  "international",
-  "hajj_umrah",
-  "citizen",
-];
+import { SUPER_ADMIN_EXPORT_MAX_ROWS } from "@/lib/office-requests/export-limits";
 
 type SuperAdminExportLauncherProps = {
   /** لمستخدم السوبر أدمن: قائمة المكاتب في القائمة المنسدلة */
   offices?: Office[];
   /** لمستخدم المكتب: إخفاء اختيار المكتب؛ الخادم يقيّد التصدير بمكتب الجلسة */
   lockedOfficeId?: string | null;
+  /** حالات المسافرين لتصفية التصدير؛ فارغ = الافتراضي الثلاثي */
+  travelerStates?: TravelerState[];
 };
 
 export function SuperAdminExportLauncher({
   offices = [],
   lockedOfficeId = null,
+  travelerStates = [],
 }: SuperAdminExportLauncherProps) {
   const [open, setOpen] = useState(false);
   const [typeBooking, setTypeBooking] = useState(true);
   const [typeComplaint, setTypeComplaint] = useState(true);
   const [typeProposal, setTypeProposal] = useState(true);
-  const [traveler, setTraveler] = useState<Record<TravelerCategory, boolean>>({
-    international: false,
-    hajj_umrah: false,
-    citizen: false,
-  });
+  const exportFilterStates = useMemo(
+    () =>
+      travelerStates.length > 0
+        ? travelerStates
+        : defaultTravelerStatesFromLegacyLabels(),
+    [travelerStates],
+  );
+
+  const [traveler, setTraveler] = useState<Record<string, boolean>>({});
+
+  useEffect(() => {
+    setTraveler((prev) => {
+      const next: Record<string, boolean> = {};
+      for (const s of exportFilterStates) {
+        next[s.id] = prev[s.id] ?? false;
+      }
+      return next;
+    });
+  }, [exportFilterStates]);
   const [uncategorized, setUncategorized] = useState(false);
   const [officeId, setOfficeId] = useState("");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [exportSuccessNote, setExportSuccessNote] = useState<string | null>(
+    null,
+  );
 
   const isOfficeScoped = Boolean(lockedOfficeId?.trim());
 
@@ -52,6 +67,7 @@ export function SuperAdminExportLauncher({
   const close = useCallback(() => {
     setOpen(false);
     setError(null);
+    setExportSuccessNote(null);
   }, []);
 
   useEffect(() => {
@@ -65,6 +81,7 @@ export function SuperAdminExportLauncher({
 
   async function handleDownload() {
     setError(null);
+    setExportSuccessNote(null);
     const types: OfficeRequestType[] = [];
     if (typeBooking) types.push("booking");
     if (typeComplaint) types.push("complaint");
@@ -85,10 +102,12 @@ export function SuperAdminExportLauncher({
       params.set("types", types.join(","));
     }
 
-    const travelerParts: string[] = TRAVELER_KEYS.filter((k) => traveler[k]);
+    const travelerParts = exportFilterStates
+      .filter((s) => traveler[s.id])
+      .map((s) => s.id);
     if (uncategorized) travelerParts.push("uncategorized");
     if (travelerParts.length > 0) {
-      params.set("travelerCategories", travelerParts.join(","));
+      params.set("travelerStateIds", travelerParts.join(","));
     }
 
     if (!isOfficeScoped && officeId.trim()) {
@@ -131,6 +150,18 @@ export function SuperAdminExportLauncher({
 
       const blob = await res.blob();
       const capped = res.headers.get("X-Export-Capped") === "true";
+      const rowCountRaw = res.headers.get("X-Export-Row-Count");
+      const maxRowsRaw = res.headers.get("X-Export-Max-Rows");
+      const rowCount = Number.parseInt(rowCountRaw ?? "", 10);
+      const maxRows = Number.parseInt(maxRowsRaw ?? "", 10);
+      const rowCountLabel = Number.isFinite(rowCount)
+        ? rowCount.toLocaleString("ar-EG")
+        : "—";
+      const maxRowsLabel =
+        Number.isFinite(maxRows) && maxRows > 0
+          ? maxRows.toLocaleString("ar-EG")
+          : SUPER_ADMIN_EXPORT_MAX_ROWS.toLocaleString("ar-EG");
+
       const objectUrl = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = objectUrl;
@@ -143,10 +174,14 @@ export function SuperAdminExportLauncher({
 
       if (capped) {
         setError(
-          "تم التصدير لكن وُصل للحد الأقصى لعدد الصفوف في الملف — قد يكون هناك المزيد في قاعدة البيانات.",
+          `تم تصدير ${rowCountLabel} صفًا (الحد الأقصى ${maxRowsLabel} صفًا لكل ملف). قد توجد طلبات إضافية في قاعدة البيانات لم تُدرج في هذا الملف.`,
         );
       } else {
-        close();
+        setExportSuccessNote(
+          Number.isFinite(rowCount)
+            ? `تم تنزيل الملف بنجاح (${rowCountLabel} صفًا).`
+            : "تم تنزيل الملف بنجاح.",
+        );
       }
     } catch {
       setError("تعذر تنزيل الملف. تحقق من الاتصال وحاول مرة أخرى.");
@@ -162,6 +197,7 @@ export function SuperAdminExportLauncher({
         onClick={() => {
           setOpen(true);
           setError(null);
+          setExportSuccessNote(null);
         }}
         className="inline-flex min-h-10 items-center justify-center rounded-md bg-gov-navy px-4 py-2 text-sm font-bold text-white shadow-sm transition hover:bg-gov-navy/90"
       >
@@ -199,15 +235,33 @@ export function SuperAdminExportLauncher({
             </div>
 
             <p className="mt-3 text-sm text-gov-gray-600">
-              اختر ما يُدرج في الملف ثم اضغط تنزيل. التصفية على فئة المسافر
-              تؤثر على <strong>الحجوزات</strong> فقط. التواريخ حسب{" "}
-              <strong>توقيت مصر (UTC+2)</strong>.
+              اختر ما يُدرج في الملف ثم اضغط تنزيل. أي حقل فارغ أدناه يعني «بدون
+              تصفية» على هذا المحور (مثلاً بدون تواريخ = كل التواريخ ضمن
+              الاختيارات الأخرى).
+              {!isOfficeScoped ? (
+                <>
+                  {" "}
+                  اختيار <strong>مكتب</strong> يحدّ الصفوف لهذا المكتب فقط؛
+                  تركه فارغاً يعني كل المكاتب.
+                </>
+              ) : null}{" "}
+              إلغاء نوع من <strong>أنواع الطلبات</strong> يستبعده بالكامل من
+              الملف. التصفية على <strong>حالة المسافر</strong> تؤثر على{" "}
+              <strong>الحجوزات</strong> فقط؛ إن فعّلت حالات محددة دون «حجوزات
+              بدون فئة مسافر» فقد تُستبعد حجوزات قديمة بلا حقل حالة أو فئة.
+              التواريخ حسب <strong>توقيت مصر (UTC+2)</strong>.
               {isOfficeScoped ? (
                 <>
                   {" "}
                   <strong>التصدير لمكتبك فقط.</strong>
                 </>
               ) : null}
+            </p>
+            <p className="mt-2 text-sm text-gov-gray-600">
+              أقصى عدد صفوف في ملف واحد{" "}
+              <strong>{SUPER_ADMIN_EXPORT_MAX_ROWS.toLocaleString("ar-EG")}</strong>{" "}
+              صفًا؛ إن تجاوزت التصفية هذا العدد يُرسَل الملف مع تنبيه بعد
+              التنزيل.
             </p>
 
             <div className="mt-5 space-y-5">
@@ -286,30 +340,30 @@ export function SuperAdminExportLauncher({
 
               <fieldset>
                 <legend className="text-xs font-bold uppercase text-gov-gray-600">
-                  فئة المسافر (للحجوزات — اختياري)
+                  حالة المسافر (للحجوزات — اختياري)
                 </legend>
                 <p className="mt-1 text-xs text-gov-gray-500">
-                  إن لم تختر أي فئة، يُصدَّر كل الحجوزات المطابقة لأنواع الطلبات
+                  إن لم تختر أي حالة، يُصدَّر كل الحجوزات المطابقة لأنواع الطلبات
                   أعلاه.
                 </p>
                 <div className="mt-2 flex flex-wrap gap-4">
-                  {TRAVELER_KEYS.map((key) => (
+                  {exportFilterStates.map((s) => (
                     <label
-                      key={key}
+                      key={s.id}
                       className="inline-flex items-center gap-2 text-sm font-semibold text-gov-navy"
                     >
                       <input
                         type="checkbox"
-                        checked={traveler[key]}
+                        checked={Boolean(traveler[s.id])}
                         onChange={(e) =>
                           setTraveler((prev) => ({
                             ...prev,
-                            [key]: e.target.checked,
+                            [s.id]: e.target.checked,
                           }))
                         }
                         className="size-4 rounded border-gov-gray-300"
                       />
-                      {TRAVELER_CATEGORY_LABELS[key]}
+                      {s.labelAr}
                     </label>
                   ))}
                   <label className="inline-flex items-center gap-2 text-sm font-semibold text-gov-navy">
@@ -352,13 +406,22 @@ export function SuperAdminExportLauncher({
             {error ? (
               <p
                 className={`mt-4 text-sm font-semibold ${
-                  error.includes("تم التصدير")
+                  error.includes("لم تُدرج في هذا الملف")
                     ? "text-amber-800"
                     : "text-red-700"
                 }`}
                 role="alert"
               >
                 {error}
+              </p>
+            ) : null}
+
+            {exportSuccessNote ? (
+              <p
+                className="mt-4 text-sm font-semibold text-emerald-800"
+                role="status"
+              >
+                {exportSuccessNote}
               </p>
             ) : null}
 

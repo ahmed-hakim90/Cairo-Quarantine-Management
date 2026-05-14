@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { BookingRequestForm } from "@/components/booking/BookingRequestForm";
 import { RequestModeSwitcher } from "@/components/booking/RequestModeSwitcher";
+import { inferredSiteOriginFromHeaders } from "@/lib/booking-pass-url";
 import { isLocale } from "@/lib/i18n/config";
-import { getBookingSettings, listOffices } from "@/lib/office-requests/store";
+import { getBookingSettings, listOffices, listTravelerStatesForPublicBooking } from "@/lib/office-requests/store";
 
 export const metadata: Metadata = {
   title: "حجز موعد تطعيم",
@@ -17,8 +19,13 @@ export default async function BookingPage({
   const { locale } = await params;
   if (!isLocale(locale)) notFound();
 
-  const offices = await listOffices();
+  const [offices, travelerStates] = await Promise.all([
+    listOffices(),
+    listTravelerStatesForPublicBooking(),
+  ]);
   const bookingSettings = await getBookingSettings();
+  const headerList = await headers();
+  const serverSiteOrigin = inferredSiteOriginFromHeaders(headerList);
 
   return (
     <section className="bg-gov-gray-50">
@@ -43,7 +50,7 @@ export default async function BookingPage({
             <div className="rounded-md border border-gov-gray-200 bg-white p-4">
               <dt className="font-bold text-gov-navy">بيانات مطلوبة</dt>
               <dd className="mt-1 text-gov-gray-600">
-                الاسم، رقم الهاتف، المكتب، نوع المسافر، والتاريخ المطلوب.
+                الاسم، رقم الهاتف، المكتب، حالة المسافر، والتاريخ المطلوب.
               </dd>
             </div>
           </dl>
@@ -53,9 +60,11 @@ export default async function BookingPage({
           <div className="rounded-lg border border-gov-gray-200 bg-white shadow-sm">
             <BookingRequestForm
               offices={offices}
+              travelerStates={travelerStates}
               locale={locale}
               mode="booking"
               sameDayCutoffHour={bookingSettings.bookingSameDayCutoffHour}
+              serverSiteOrigin={serverSiteOrigin}
             />
           </div>
         </div>

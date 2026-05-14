@@ -9,13 +9,16 @@
     "lint": "eslint",
     "test": "vitest run",
     "seed:offices": "node --env-file=.env.local scripts/seed-firestore-offices.mjs",
+    "seed:traveler-states": "node --env-file=.env.local scripts/seed-firestore-traveler-states.mjs",
     "seed:vaccines": "node --env-file=.env.local scripts/seed-firestore-vaccines.mjs",
     "admin:create-profile": "node --env-file=.env.local scripts/create-admin-profile.mjs"
   },
   "dependencies": {
+    "@types/qrcode": "^1.5.6",
     "firebase": "^12.13.0",
     "firebase-admin": "^13.10.0",
     "next": "16.2.6",
+    "qrcode": "^1.5.4",
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "recharts": "^2.15.4",

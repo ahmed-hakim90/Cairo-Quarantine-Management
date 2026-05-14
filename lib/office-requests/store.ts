@@ -1,10 +1,17 @@
+import { randomBytes } from "node:crypto";
 import { FieldValue, Timestamp } from "firebase-admin/firestore";
 import {
   getAdminAuth,
   isFirebaseAdminConfigured,
   getAdminDb,
 } from "@/lib/firebase/admin";
+import { passTokensMatch } from "@/lib/booking-pass-token";
 import { STATIC_OFFICES } from "@/lib/office-requests/static-offices";
+import {
+  defaultTravelerStatesFromLegacyLabels,
+  effectiveTravelerStateIdOnRequest,
+  officeAcceptsTravelerState,
+} from "@/lib/office-requests/office-traveler-state";
 import { normalizePhone } from "@/lib/office-requests/whatsapp-message";
 import {
   DEFAULT_MESSAGE_TEMPLATE,
@@ -19,8 +26,11 @@ import {
   type OfficeRequestStatus,
   type OfficeRequestType,
   type AppBookingSettings,
+  type BookingPassPublic,
+  type CreatedOfficeRequestPublic,
   type PublicOfficeRequestStatus,
   type TravelerCategory,
+  type TravelerState,
   type VaccineCatalogEntry,
   type VaccineUserCategory,
   DEFAULT_BOOKING_SAME_DAY_CUTOFF_HOUR,
@@ -30,8 +40,12 @@ import {
   type UserCategory,
   type VaccineRecord,
 } from "@/data/vaccines";
+import { SUPER_ADMIN_EXPORT_MAX_ROWS } from "@/lib/office-requests/export-limits";
+
+export { SUPER_ADMIN_EXPORT_MAX_ROWS };
 
 const OFFICES = "offices";
+const TRAVELER_STATES = "traveler_states";
 const VACCINES = "vaccines";
 const REQUESTS = "requests";
 const SETTINGS = "settings";
@@ -119,12 +133,16 @@ function publicRequestStatus(
     id: request.id,
     officeNameAr: request.officeNameAr,
     type: request.type,
+    ...(request.travelerStateId
+      ? { travelerStateId: request.travelerStateId }
+      : {}),
     travelerCategory: request.travelerCategory,
     preferredDate: request.preferredDate,
     status: request.status,
     notes: request.notes,
     createdAt: request.createdAt,
     updatedAt: request.updatedAt,
+    ...(request.passToken ? { passToken: String(request.passToken) } : {}),
   };
 }
 
@@ -140,8 +158,37 @@ function clampBookingSameDayHour(hour: number): number {
   return Math.min(23, Math.max(0, Math.floor(hour)));
 }
 
+function parseTravelerStateIdsFromDoc(
+  data: FirebaseFirestore.DocumentData,
+): string[] | undefined {
+  const raw = data.travelerStateIds;
+  if (!Array.isArray(raw) || raw.length === 0) return undefined;
+  const ids = [...new Set(raw.map((x) => String(x).trim()).filter(Boolean))];
+  return ids.length > 0 ? ids : undefined;
+}
+
+function travelerStateFromDoc(
+  id: string,
+  data: FirebaseFirestore.DocumentData,
+): TravelerState {
+  const sortRaw = data.sortOrder;
+  const sortOrder =
+    typeof sortRaw === "number" && Number.isFinite(sortRaw)
+      ? sortRaw
+      : 0;
+  return {
+    id,
+    labelAr: String(data.labelAr ?? ""),
+    sortOrder,
+    active: data.active !== false,
+    createdAt: data.createdAt ? iso(data.createdAt) : undefined,
+    updatedAt: data.updatedAt ? iso(data.updatedAt) : undefined,
+  };
+}
+
 function officeFromDoc(id: string, data: FirebaseFirestore.DocumentData): Office {
   const cap = parseDailyBookingCap(data.dailyBookingCap);
+  const travelerStateIds = parseTravelerStateIdsFromDoc(data);
   return {
     id,
     administrationAr: String(data.administrationAr ?? ""),
@@ -154,6 +201,7 @@ function officeFromDoc(id: string, data: FirebaseFirestore.DocumentData): Office
         ? "hajj_umrah_only"
         : "hajj_umrah_travelers",
     active: data.active !== false,
+    ...(travelerStateIds ? { travelerStateIds } : {}),
     ...(cap !== undefined ? { dailyBookingCap: cap } : {}),
     createdAt: data.createdAt ? iso(data.createdAt) : undefined,
     updatedAt: data.updatedAt ? iso(data.updatedAt) : undefined,
@@ -342,6 +390,119 @@ export async function setVaccineActive(
   });
 }
 
+export async function listTravelerStates(options?: {
+  includeInactive?: boolean;
+}): Promise<TravelerState[]> {
+  if (!isFirebaseAdminConfigured()) {
+    return [];
+  }
+  try {
+    const snap = await getAdminDb().collection(TRAVELER_STATES).get();
+    if (snap.empty) return [];
+    let list = snap.docs.map((d) =>
+      travelerStateFromDoc(d.id, d.data() ?? {}),
+    );
+    if (!options?.includeInactive) {
+      list = list.filter((s) => s.active);
+    }
+    list.sort((a, b) => {
+      if (a.sortOrder !== b.sortOrder) return a.sortOrder - b.sortOrder;
+      return a.id.localeCompare(b.id);
+    });
+    return list;
+  } catch {
+    return [];
+  }
+}
+
+/** للنموذج العام: إن لم توجد وثائق بعد، تُستخدم الحالات الافتراضية الثلاث. */
+export async function listTravelerStatesForPublicBooking(): Promise<
+  TravelerState[]
+> {
+  const list = await listTravelerStates({ includeInactive: false });
+  if (list.length > 0) return list;
+  return defaultTravelerStatesFromLegacyLabels();
+}
+
+export function buildTravelerStateLabelById(
+  states: TravelerState[],
+): Record<string, string> {
+  return Object.fromEntries(states.map((s) => [s.id, s.labelAr]));
+}
+
+export async function upsertTravelerState(
+  input: TravelerState,
+  actor: AdminActivityActor,
+): Promise<string> {
+  if (!isFirebaseAdminConfigured()) {
+    throw new Error("Firebase غير مضبوط حالياً، لا يمكن حفظ الحالة.");
+  }
+
+  const id = input.id.trim();
+  if (!id || id === "new") {
+    throw new Error("معرّف حالة المسافر غير صالح.");
+  }
+
+  const ref = getAdminDb().collection(TRAVELER_STATES).doc(id);
+  const existed = (await ref.get()).exists;
+
+  await ref.set(
+    {
+      labelAr: input.labelAr.trim(),
+      sortOrder: input.sortOrder,
+      active: input.active,
+      updatedAt: FieldValue.serverTimestamp(),
+      createdAt: FieldValue.serverTimestamp(),
+    },
+    { merge: true },
+  );
+
+  await appendActivityLog({
+    actor,
+    action: "traveler_state.upserted",
+    summaryAr: existed
+      ? `تحديث حالة مسافر: ${input.labelAr.trim()}`
+      : `إضافة حالة مسافر: ${input.labelAr.trim()}`,
+    officeId: null,
+    meta: { travelerStateId: ref.id },
+  });
+
+  return ref.id;
+}
+
+export async function setTravelerStateActive(
+  travelerStateId: string,
+  active: boolean,
+  actor: AdminActivityActor,
+): Promise<void> {
+  if (!isFirebaseAdminConfigured()) {
+    throw new Error("Firebase غير مضبوط حالياً، لا يمكن تحديث الحالة.");
+  }
+
+  const snap = await getAdminDb()
+    .collection(TRAVELER_STATES)
+    .doc(travelerStateId)
+    .get();
+  const labelAr = snap.exists
+    ? String(snap.data()?.labelAr ?? travelerStateId)
+    : travelerStateId;
+
+  await getAdminDb().collection(TRAVELER_STATES).doc(travelerStateId).update({
+    active,
+    updatedAt: FieldValue.serverTimestamp(),
+  });
+
+  await appendActivityLog({
+    actor,
+    action: "traveler_state.active_changed",
+    summaryAr: active
+      ? `تفعيل حالة مسافر: ${labelAr}`
+      : `تعطيل حالة مسافر: ${labelAr}`,
+    officeId: null,
+    meta: { travelerStateId, active },
+  });
+}
+
 function requestFromDoc(
   id: string,
   data: FirebaseFirestore.DocumentData,
@@ -351,6 +512,9 @@ function requestFromDoc(
     officeId: String(data.officeId ?? ""),
     officeNameAr: String(data.officeNameAr ?? ""),
     type: (data.type ?? "booking") as OfficeRequestType,
+    ...(data.travelerStateId
+      ? { travelerStateId: String(data.travelerStateId).trim() }
+      : {}),
     travelerCategory: data.travelerCategory
       ? (String(data.travelerCategory) as TravelerCategory)
       : undefined,
@@ -360,6 +524,7 @@ function requestFromDoc(
     phone: String(data.phone ?? ""),
     details: String(data.details ?? ""),
     notes: String(data.notes ?? ""),
+    ...(data.passToken ? { passToken: String(data.passToken) } : {}),
     lastWhatsappAt: data.lastWhatsappAt ? iso(data.lastWhatsappAt) : undefined,
     createdAt: iso(data.createdAt),
     updatedAt: iso(data.updatedAt),
@@ -493,18 +658,28 @@ export async function countBookingRequestsForOfficeDay(
 export async function createOfficeRequest(input: {
   officeId: string;
   type: OfficeRequestType;
+  travelerStateId?: string;
   travelerCategory?: TravelerCategory;
   preferredDate?: string;
   name: string;
   phone: string;
   details: string;
-}): Promise<PublicOfficeRequestStatus> {
+}): Promise<CreatedOfficeRequestPublic> {
   if (!isFirebaseAdminConfigured()) {
     throw new Error("Firebase غير مضبوط حالياً، لا يمكن حفظ الطلب.");
   }
 
   const office = await getOffice(input.officeId);
   if (!office?.active) throw new Error("المكتب المختار غير متاح.");
+
+  if (input.type === "booking") {
+    const sid = input.travelerStateId?.trim();
+    if (sid && !officeAcceptsTravelerState(office, sid)) {
+      throw new Error(
+        "هذا المكتب لا يخدم حالة المسافر المختارة. اختر مكتباً آخر.",
+      );
+    }
+  }
 
   if (input.type === "booking" && input.preferredDate) {
     const cap = office.dailyBookingCap;
@@ -521,12 +696,15 @@ export async function createOfficeRequest(input: {
     }
   }
 
+  const passToken = randomBytes(24).toString("base64url");
   const now = FieldValue.serverTimestamp();
+  const travelerStateId = input.travelerStateId?.trim();
   const doc = await getAdminDb().collection(REQUESTS).add({
     officeId: office.id,
     officeNameAr: office.nameAr,
     type: input.type,
-    ...(input.travelerCategory
+    ...(travelerStateId ? { travelerStateId } : {}),
+    ...(input.travelerCategory && !travelerStateId
       ? { travelerCategory: input.travelerCategory }
       : {}),
     ...(input.preferredDate ? { preferredDate: input.preferredDate } : {}),
@@ -535,12 +713,58 @@ export async function createOfficeRequest(input: {
     phone: normalizePhone(input.phone),
     details: input.details.trim(),
     notes: "",
+    passToken,
     createdAt: now,
     updatedAt: now,
   });
 
   const saved = await doc.get();
-  return publicRequestStatus(requestFromDoc(doc.id, saved.data() ?? {}));
+  const full = requestFromDoc(doc.id, saved.data() ?? {});
+  return {
+    ...publicRequestStatus(full),
+    passToken,
+  };
+}
+
+export async function getBookingPassPublic(args: {
+  id: string;
+  token: string;
+}): Promise<BookingPassPublic | null> {
+  if (!isFirebaseAdminConfigured()) return null;
+
+  const id = args.id.trim();
+  const token = args.token.trim();
+  if (!id || !token) return null;
+
+  let doc: FirebaseFirestore.DocumentSnapshot;
+  try {
+    doc = await getAdminDb().collection(REQUESTS).doc(id).get();
+  } catch {
+    return null;
+  }
+
+  if (!doc.exists) return null;
+  const data = doc.data() ?? {};
+  const stored = data.passToken ? String(data.passToken) : "";
+  if (!passTokensMatch(stored, token)) return null;
+
+  const request = requestFromDoc(doc.id, data);
+  return {
+    id: request.id,
+    officeNameAr: request.officeNameAr,
+    type: request.type,
+    ...(request.travelerStateId
+      ? { travelerStateId: request.travelerStateId }
+      : {}),
+    travelerCategory: request.travelerCategory,
+    preferredDate: request.preferredDate,
+    status: request.status,
+    name: request.name,
+    details: request.details,
+    notes: request.notes,
+    createdAt: request.createdAt,
+    updatedAt: request.updatedAt,
+  };
 }
 
 export async function getPublicRequestStatus(args: {
@@ -596,8 +820,6 @@ export async function listRequestsForSession(args: {
 }
 
 const EXPORT_PAGE_SIZE = 400;
-/** أقصى عدد صفوف يُصدَّر في ملف واحد (حماية من الاستهلاك الزائد). */
-export const SUPER_ADMIN_EXPORT_MAX_ROWS = 10_000;
 
 const ALL_REQUEST_TYPES: readonly OfficeRequestType[] = [
   "booking",
@@ -610,6 +832,9 @@ export type SuperAdminExportFilters = {
   types: OfficeRequestType[];
   /** null أو غير مُمرَّر = كل المكاتب */
   officeId: string | null;
+  /** تصفية حجوزات حسب `travelerStateId` أو `travelerCategory` القديمة (نفس المعرّف). */
+  travelerStateIds: string[];
+  /** @deprecated استخدم `travelerStateIds`؛ يُدمَج معه في التصفية */
   travelerCategories: TravelerCategory[];
   includeUncategorizedBookings: boolean;
   /** تصفية على createdAt (شامل)؛ null = بدون حد */
@@ -626,16 +851,24 @@ function requestMatchesSuperAdminExport(
   );
   if (!typesSet.has(request.type)) return false;
 
+  const mergedStateKeys = new Set([
+    ...filters.travelerStateIds,
+    ...filters.travelerCategories,
+  ]);
+
   const travelerFilterActive =
-    filters.travelerCategories.length > 0 ||
-    filters.includeUncategorizedBookings;
+    mergedStateKeys.size > 0 || filters.includeUncategorizedBookings;
 
   if (request.type !== "booking" || !travelerFilterActive) return true;
 
-  if (!request.travelerCategory) {
-    return filters.includeUncategorizedBookings;
+  const effective = effectiveTravelerStateIdOnRequest(request);
+  if (mergedStateKeys.size > 0 && effective && mergedStateKeys.has(effective)) {
+    return true;
   }
-  return filters.travelerCategories.includes(request.travelerCategory);
+  if (filters.includeUncategorizedBookings && !effective) {
+    return true;
+  }
+  return false;
 }
 
 /**
@@ -1054,6 +1287,14 @@ export async function upsertOffice(
       ? { dailyBookingCap: input.dailyBookingCap }
       : { dailyBookingCap: FieldValue.delete() };
 
+  const stateIds =
+    Array.isArray(input.travelerStateIds) && input.travelerStateIds.length > 0
+      ? [...new Set(input.travelerStateIds.map(String).filter(Boolean))]
+      : null;
+  const statePayload = stateIds
+    ? { travelerStateIds: stateIds }
+    : { travelerStateIds: FieldValue.delete() };
+
   await ref.set(
     {
       administrationAr: input.administrationAr.trim(),
@@ -1063,6 +1304,7 @@ export async function upsertOffice(
       mapsUrl: input.mapsUrl.trim(),
       service: input.service,
       active: input.active,
+      ...statePayload,
       ...capPayload,
       updatedAt: FieldValue.serverTimestamp(),
       createdAt: FieldValue.serverTimestamp(),

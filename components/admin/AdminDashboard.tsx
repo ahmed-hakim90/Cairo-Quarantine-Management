@@ -1,5 +1,6 @@
 import { logoutAdmin } from "@/app/[locale]/admin/actions";
 import { AdminRequestsTable } from "@/components/admin/AdminRequestsTable";
+import { defaultTravelerStatesFromLegacyLabels } from "@/lib/office-requests/office-traveler-state";
 import { SuperAdminExportLauncher } from "@/components/admin/SuperAdminExportLauncher";
 import { SuperAdminUsersSection } from "@/components/admin/SuperAdminUsersSection";
 import {
@@ -87,7 +88,11 @@ export function AdminDashboard({
         <StatCard label="المكاتب المتاحة" value={offices.length} />
       </div>
 
-      <AdminRequestsTable requests={requests} locale={locale} />
+      <AdminRequestsTable
+        requests={requests}
+        locale={locale}
+        travelerStates={defaultTravelerStatesFromLegacyLabels()}
+      />
 
       {isSuperAdmin ? (
         <>

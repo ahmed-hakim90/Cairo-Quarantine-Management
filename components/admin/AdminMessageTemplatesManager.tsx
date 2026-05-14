@@ -1,11 +1,15 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   deleteTemplateAction,
   saveTemplateAction,
 } from "@/app/[locale]/admin/actions";
+import {
+  WHATSAPP_TEMPLATE_VARIABLES,
+  whatsappTemplatePlaceholder,
+} from "@/lib/office-requests/template-variables";
 import type { MessageTemplate } from "@/lib/office-requests/types";
 
 const fieldClass =
@@ -22,8 +26,18 @@ export function AdminMessageTemplatesManager({
 }: AdminMessageTemplatesManagerProps) {
   const router = useRouter();
   const dialogRef = useRef<HTMLDialogElement>(null);
+  const bodyTextareaRef = useRef<HTMLTextAreaElement>(null);
   const [mode, setMode] = useState<"new" | "edit" | null>(null);
   const [editing, setEditing] = useState<MessageTemplate | null>(null);
+  const [body, setBody] = useState("");
+
+  useEffect(() => {
+    if (!mode) return;
+    queueMicrotask(() => {
+      if (mode === "new") setBody("");
+      else if (editing) setBody(editing.body);
+    });
+  }, [mode, editing]);
 
   function openNew() {
     setMode("new");
@@ -41,6 +55,21 @@ export function AdminMessageTemplatesManager({
     dialogRef.current?.close();
     setMode(null);
     setEditing(null);
+    setBody("");
+  }
+
+  function insertPlaceholderAtCursor(key: string) {
+    const el = bodyTextareaRef.current;
+    if (!el) return;
+    const start = el.selectionStart;
+    const end = el.selectionEnd;
+    const token = whatsappTemplatePlaceholder(key);
+    setBody((prev) => prev.slice(0, start) + token + prev.slice(end));
+    const cursor = start + token.length;
+    requestAnimationFrame(() => {
+      el.focus();
+      el.setSelectionRange(cursor, cursor);
+    });
   }
 
   return (
@@ -58,8 +87,23 @@ export function AdminMessageTemplatesManager({
         </button>
       </div>
       <p className="mt-2 text-xs leading-relaxed text-gov-gray-600">
-        المتغيرات في النص: {"{name}"} {"{officeName}"} {"{officeAddress}"}{" "}
-        {"{officeMapUrl}"} {"{phone}"} {"{requestType}"} {"{requestDetails}"}
+        المتغيرات في النص:{" "}
+        {WHATSAPP_TEMPLATE_VARIABLES.map((v) => (
+          <code key={v.key} className="mx-0.5 rounded bg-gov-gray-100 px-1">
+            {whatsappTemplatePlaceholder(v.key)}
+          </code>
+        ))}
+        <span className="mt-1 block text-gov-gray-500">
+          عند إنشاء أو تعديل قالب، استخدم الأزرار فوق حقل الرسالة لإدراج المتغير عند
+          المؤشر.
+        </span>
+        <span className="mt-1 block text-gov-gray-500">
+          لظهور {whatsappTemplatePlaceholder("bookingPassUrl")} عيّن{" "}
+          <code className="rounded bg-gov-gray-100 px-1">NEXT_PUBLIC_SITE_URL</code>{" "}
+          في بيئة التشغيل (مثال: https://example.com). الرابط يتيح للعميل رؤية حالة
+          الطلب وملاحظات المتابعة من المتصفح حتى لو لم يُحفظ رقم واتساب كجهة اتصال؛
+          يكفي فتح الرابط من الرسالة أو حفظه.
+        </span>
       </p>
 
       {templates.length === 0 ? (
@@ -176,6 +220,7 @@ export function AdminMessageTemplatesManager({
         </div>
         <div className="px-4 py-4">
           <form
+            key={mode ? `${mode}-${editing?.id ?? "new"}` : "idle"}
             className="space-y-3"
             action={async (formData) => {
               await saveTemplateAction(formData);
@@ -199,16 +244,38 @@ export function AdminMessageTemplatesManager({
                 placeholder="مثال: متابعة حجز"
               />
             </label>
-            <label className="block text-sm font-bold text-gov-navy">
-              نص الرسالة
+            <div className="block text-sm font-bold text-gov-navy">
+              <label htmlFor="template-body" className="block">
+                نص الرسالة
+              </label>
+              <p className="mt-1 text-xs font-normal text-gov-gray-600">
+                انقر متغيرًا لإدراجه عند موضع المؤشر.
+              </p>
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                {WHATSAPP_TEMPLATE_VARIABLES.map((v) => (
+                  <button
+                    key={v.key}
+                    type="button"
+                    title={whatsappTemplatePlaceholder(v.key)}
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => insertPlaceholderAtCursor(v.key)}
+                    className="rounded-md border border-gov-gray-200 bg-gov-gray-50 px-2 py-1 text-xs font-bold text-gov-navy transition hover:bg-gov-gray-100"
+                  >
+                    {v.labelAr}
+                  </button>
+                ))}
+              </div>
               <textarea
+                id="template-body"
+                ref={bodyTextareaRef}
                 name="body"
                 required
                 rows={10}
-                defaultValue={editing?.body ?? ""}
+                value={body}
+                onChange={(e) => setBody(e.target.value)}
                 className={fieldClass}
               />
-            </label>
+            </div>
             <label className="flex items-center gap-2 text-sm font-bold text-gov-navy">
               <input
                 name="active"

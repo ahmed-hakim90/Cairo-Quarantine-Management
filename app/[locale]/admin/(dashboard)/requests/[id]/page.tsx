@@ -7,7 +7,9 @@ import {
   getRequestForSession,
   listActivityLogsForRequest,
   listMessageTemplates,
+  listTravelerStates,
 } from "@/lib/office-requests/store";
+import { mergeTravelerStateLabelsWithLegacy } from "@/lib/office-requests/office-traveler-state";
 import { DEFAULT_MESSAGE_TEMPLATE } from "@/lib/office-requests/types";
 
 export default async function AdminRequestPage({
@@ -28,7 +30,7 @@ export default async function AdminRequestPage({
   });
   if (!request) notFound();
 
-  const [office, templates, activityLogs] = await Promise.all([
+  const [office, templates, activityLogs, travelerStates] = await Promise.all([
     getOffice(request.officeId),
     listMessageTemplates(),
     listActivityLogsForRequest({
@@ -36,8 +38,11 @@ export default async function AdminRequestPage({
       role: session.profile.role,
       officeId: session.profile.officeId,
     }),
+    listTravelerStates({ includeInactive: true }),
   ]);
   if (!office) notFound();
+
+  const travelerStateLabels = mergeTravelerStateLabelsWithLegacy(travelerStates);
 
   const activeTemplates = templates.filter((item) => item.active);
   const whatsappTemplates =
@@ -59,6 +64,7 @@ export default async function AdminRequestPage({
       office={office}
       whatsappTemplates={whatsappTemplates}
       activityLogs={activityLogs}
+      travelerStateLabels={travelerStateLabels}
     />
   );
 }

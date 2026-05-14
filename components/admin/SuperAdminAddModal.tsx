@@ -10,6 +10,7 @@ import {
   OfficeFormFields,
   officeFieldClass,
 } from "@/components/admin/OfficeFormFields";
+import { defaultTravelerStatesFromLegacyLabels } from "@/lib/office-requests/office-traveler-state";
 import type { AdminUserProfile, Office } from "@/lib/office-requests/types";
 
 type SuperAdminAddModalProps = {
@@ -131,7 +132,10 @@ export function SuperAdminAddModal({
               className="space-y-1"
             >
               <input type="hidden" name="locale" value={locale} />
-              <OfficeFormFields office={null} />
+              <OfficeFormFields
+                office={null}
+                travelerStates={defaultTravelerStatesFromLegacyLabels()}
+              />
               <button
                 type="submit"
                 className="mt-4 w-full rounded-md bg-gov-accent px-4 py-3 text-sm font-bold text-white transition hover:bg-gov-navy"

@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { BookingRequestForm } from "@/components/booking/BookingRequestForm";
 import { RequestModeSwitcher } from "@/components/booking/RequestModeSwitcher";
+import { inferredSiteOriginFromHeaders } from "@/lib/booking-pass-url";
 import { isLocale } from "@/lib/i18n/config";
 import { listOffices } from "@/lib/office-requests/store";
 
@@ -18,6 +20,8 @@ export default async function ComplaintPage({
   if (!isLocale(locale)) notFound();
 
   const offices = await listOffices();
+  const headerList = await headers();
+  const serverSiteOrigin = inferredSiteOriginFromHeaders(headerList);
 
   return (
     <section className="bg-gov-gray-50">
@@ -54,6 +58,7 @@ export default async function ComplaintPage({
               offices={offices}
               locale={locale}
               mode="complaint"
+              serverSiteOrigin={serverSiteOrigin}
             />
           </div>
         </div>

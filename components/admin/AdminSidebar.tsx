@@ -41,6 +41,7 @@ function NavLinks({
 
   const superItems: NavItem[] = [
     { href: "/admin/offices", label: "المكاتب", superOnly: true },
+    { href: "/admin/traveler-states", label: "حالات المسافرين", superOnly: true },
     { href: "/admin/vaccines", label: "التطعيمات", superOnly: true },
     { href: "/admin/users", label: "المستخدمون", superOnly: true },
     { href: "/admin/settings", label: "الإعدادات", superOnly: true },

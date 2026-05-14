@@ -1,10 +1,13 @@
 import Link from "next/link";
+import { headers } from "next/headers";
 import {
   markWhatsappSentAction,
   updateRequestAction,
 } from "@/app/[locale]/admin/actions";
 import { RequestWhatsAppPanel } from "@/components/admin/RequestWhatsAppPanel";
 import { RequestActivityTimeline } from "@/components/admin/RequestActivityTimeline";
+import { inferredSiteOriginFromHeaders } from "@/lib/booking-pass-url";
+import { effectiveTravelerStateIdOnRequest } from "@/lib/office-requests/office-traveler-state";
 import {
   REQUEST_STATUS_LABELS,
   REQUEST_TYPE_LABELS,
@@ -21,6 +24,7 @@ type RequestDetailProps = {
   office: Office;
   whatsappTemplates: MessageTemplate[];
   activityLogs: AdminActivityLogEntry[];
+  travelerStateLabels: Record<string, string>;
 };
 
 const fieldClass =
@@ -34,16 +38,28 @@ const statusClass: Record<OfficeRequest["status"], string> = {
   cancelled: "bg-red-50 text-red-800 ring-red-100",
 };
 
-export function RequestDetail({
+export async function RequestDetail({
   locale,
   request,
   office,
   whatsappTemplates,
   activityLogs,
+  travelerStateLabels,
 }: RequestDetailProps) {
-  const travelerCategory = request.travelerCategory
-    ? TRAVELER_CATEGORY_LABELS[request.travelerCategory]
-    : "-";
+  const headerList = await headers();
+  const siteOrigin = inferredSiteOriginFromHeaders(headerList);
+  const travelerId =
+    request.type === "booking"
+      ? effectiveTravelerStateIdOnRequest(request)
+      : undefined;
+  const travelerDisplay = travelerId
+    ? travelerStateLabels[travelerId] ??
+      (request.travelerCategory
+        ? TRAVELER_CATEGORY_LABELS[request.travelerCategory]
+        : travelerId)
+    : request.travelerCategory
+      ? TRAVELER_CATEGORY_LABELS[request.travelerCategory]
+      : "-";
 
   return (
     <section className="bg-gov-gray-50">
@@ -69,7 +85,7 @@ export function RequestDetail({
             </p>
             {request.type === "booking" ? (
               <p className="mt-2 text-sm font-bold text-gov-navy">
-                نوع المسافر: {travelerCategory}
+                حالة المسافر: {travelerDisplay}
                 {" - "}
                 التاريخ المطلوب: {request.preferredDate ?? "-"}
               </p>
@@ -92,6 +108,13 @@ export function RequestDetail({
             <p className="mt-3 min-h-28 whitespace-pre-wrap rounded-md border border-gov-gray-200 bg-gov-gray-50 p-4 leading-relaxed text-gov-gray-700">
               {request.details}
             </p>
+            {request.type === "booking" && !request.passToken ? (
+              <p className="mt-4 rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-950">
+                هذا الطلب سجّل قبل تفعيل بطاقة الحجز الإلكترونية؛ متغير{" "}
+                <code className="rounded bg-white px-1">{"{bookingPassUrl}"}</code> في
+                قوالب واتساب سيبقى فارغاً لهذا الطلب.
+              </p>
+            ) : null}
             <h2 className="mt-6 font-heading text-lg font-bold text-gov-navy">
               رسالة واتساب
             </h2>
@@ -100,6 +123,9 @@ export function RequestDetail({
               templates={whatsappTemplates}
               request={request}
               office={office}
+              locale={locale}
+              siteOrigin={siteOrigin}
+              travelerStateLabelById={travelerStateLabels}
             />
             <form action={markWhatsappSentAction} className="mt-4">
               <input type="hidden" name="id" value={request.id} />
@@ -152,8 +178,8 @@ export function RequestDetail({
           {request.type === "booking" ? (
             <>
               <div>
-                <dt className="font-bold text-gov-navy">نوع المسافر</dt>
-                <dd className="mt-1 text-gov-gray-700">{travelerCategory}</dd>
+                <dt className="font-bold text-gov-navy">حالة المسافر</dt>
+                <dd className="mt-1 text-gov-gray-700">{travelerDisplay}</dd>
               </div>
               <div>
                 <dt className="font-bold text-gov-navy">التاريخ المطلوب</dt>

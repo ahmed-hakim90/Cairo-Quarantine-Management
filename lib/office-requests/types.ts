@@ -10,6 +10,15 @@ export type OfficeRequestStatus =
 
 export type AdminRole = "super_admin" | "office_user";
 
+export type TravelerState = {
+  id: string;
+  labelAr: string;
+  sortOrder: number;
+  active: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
 export type Office = {
   id: string;
   administrationAr: string;
@@ -19,6 +28,11 @@ export type Office = {
   mapsUrl: string;
   service: "hajj_umrah_travelers" | "hajj_umrah_only";
   active: boolean;
+  /**
+   * حالات المسافرين التي يخدمها المكتب.
+   * غير مُعرَّف أو فارغ = اشتقاق تلقائي من `service` (توافق مع المكاتب القديمة).
+   */
+  travelerStateIds?: string[];
   /** Max booking requests per calendar day for this office; omit or null = unlimited. */
   dailyBookingCap?: number | null;
   createdAt?: string;
@@ -37,6 +51,9 @@ export type OfficeRequest = {
   officeId: string;
   officeNameAr: string;
   type: OfficeRequestType;
+  /** حالة مسافر من `traveler_states` (الحجوزات الجديدة). */
+  travelerStateId?: string;
+  /** طلبات قديمة قبل إدخال حالات المسافرين الديناميكية. */
   travelerCategory?: TravelerCategory;
   preferredDate?: string;
   status: OfficeRequestStatus;
@@ -44,9 +61,31 @@ export type OfficeRequest = {
   phone: string;
   details: string;
   notes: string;
+  /** Secret segment for the public booking pass URL; absent on legacy documents. */
+  passToken?: string;
   lastWhatsappAt?: string;
   createdAt: string;
   updatedAt: string;
+};
+
+/** Read-only payload for `/booking/pass/[id]?t=…` after token verification. */
+export type BookingPassPublic = {
+  id: string;
+  officeNameAr: string;
+  type: OfficeRequestType;
+  travelerStateId?: string;
+  travelerCategory?: TravelerCategory;
+  preferredDate?: string;
+  status: OfficeRequestStatus;
+  name: string;
+  details: string;
+  notes: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type CreatedOfficeRequestPublic = PublicOfficeRequestStatus & {
+  passToken: string;
 };
 
 export type PublicOfficeRequestStatus = Pick<
@@ -54,13 +93,17 @@ export type PublicOfficeRequestStatus = Pick<
   | "id"
   | "officeNameAr"
   | "type"
+  | "travelerStateId"
   | "travelerCategory"
   | "preferredDate"
   | "status"
   | "notes"
   | "createdAt"
   | "updatedAt"
->;
+> & {
+  /** Present after phone-verified status lookup or on the device after booking. */
+  passToken?: string;
+};
 
 export type AdminUserProfile = {
   uid: string;
@@ -126,6 +169,8 @@ export type AdminActivityLogAction =
   | "office.active_changed"
   | "vaccine.upserted"
   | "vaccine.active_changed"
+  | "traveler_state.upserted"
+  | "traveler_state.active_changed"
   | "template.created"
   | "template.updated"
   | "template.deleted";
@@ -163,4 +208,4 @@ export const REQUEST_STATUS_LABELS: Record<OfficeRequestStatus, string> = {
 };
 
 export const DEFAULT_MESSAGE_TEMPLATE =
-  "مرحباً أستاذ/ة {name}\n\nنتواصل مع حضرتك بخصوص طلبك لدى {officeName}.\n\nالعنوان: {officeAddress}\nالموقع على الخريطة: {officeMapUrl}\n\nمع تحيات {officeName}";
+  "مرحباً أستاذ/ة {name}\n\nنتواصل مع حضرتك بخصوص طلبك لدى {officeName}.\n\nالعنوان: {officeAddress}\nالموقع على الخريطة: {officeMapUrl}\n\nلمتابعة حالة الطلب في أي وقت، احفظ الرابط التالي أو افتحه من هذه الرسالة (لا يشترط حفظ رقمنا في جهات الاتصال):\n{bookingPassUrl}\n\nحالة المسافر: {travelerStateAr}\n\nمع تحيات {officeName}";

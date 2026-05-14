@@ -5,25 +5,36 @@ import {
   submitOfficeRequest,
   type BookingFormState,
 } from "@/app/[locale]/(public)/booking/actions";
+import { BookingPassSuccessBlock } from "@/components/booking/BookingPassSuccessBlock";
 import { LocaleLink } from "@/components/i18n/LocaleLink";
 import { getCairoMinBookingYmd } from "@/lib/cairo-today-ymd";
 import type { Locale } from "@/lib/i18n/config";
 import {
+  defaultTravelerStatesFromLegacyLabels,
+  filterOfficesForTravelerState,
+} from "@/lib/office-requests/office-traveler-state";
+import {
   DEFAULT_BOOKING_SAME_DAY_CUTOFF_HOUR,
   type Office,
   type PublicOfficeRequestStatus,
+  type TravelerState,
 } from "@/lib/office-requests/types";
 
 type BookingRequestFormProps = {
   offices: Office[];
+  /** حالات المسافرين النشطة لنموذج الحجز؛ إن وُجدت فارغة يُستخدم الافتراضي الثلاثي. */
+  travelerStates?: TravelerState[];
   locale: Locale;
   mode: "booking" | "complaint";
   /** Cairo same-day cutoff hour (0–23), from `settings/app` on booking page. */
   sameDayCutoffHour?: number;
+  /** Public site origin from request headers (for QR / pass URL). */
+  serverSiteOrigin: string;
 };
 
 type StoredRequest = PublicOfficeRequestStatus & {
   phone: string;
+  passToken?: string;
 };
 
 const initialState: BookingFormState = {
@@ -60,17 +71,27 @@ function saveRequestToDevice(request: StoredRequest) {
 
 export function BookingRequestForm({
   offices,
+  travelerStates = [],
   locale,
   mode,
   sameDayCutoffHour = DEFAULT_BOOKING_SAME_DAY_CUTOFF_HOUR,
+  serverSiteOrigin,
 }: BookingRequestFormProps) {
+  const bookingStates = useMemo(
+    () =>
+      travelerStates.length > 0
+        ? travelerStates
+        : defaultTravelerStatesFromLegacyLabels(),
+    [travelerStates],
+  );
+
   const [state, action, pending] = useActionState(
     submitOfficeRequest,
     initialState,
   );
   const savedRequestId = useRef<string | null>(null);
   const officeRef = useRef<HTMLSelectElement>(null);
-  const travelerCategoryRef = useRef<HTMLSelectElement>(null);
+  const travelerStateRef = useRef<HTMLSelectElement>(null);
   const typeRef = useRef<HTMLSelectElement>(null);
   const preferredDateRef = useRef<HTMLInputElement>(null);
   const nameRef = useRef<HTMLInputElement>(null);
@@ -81,8 +102,8 @@ export function BookingRequestForm({
   const [preferredDate, setPreferredDate] = useState(
     state.values?.preferredDate ?? "",
   );
-  const [travelerCategory, setTravelerCategory] = useState(
-    state.values?.travelerCategory ?? "",
+  const [travelerStateId, setTravelerStateId] = useState(
+    state.values?.travelerStateId ?? "",
   );
   const [dayFull, setDayFull] = useState(false);
   const [availabilityHint, setAvailabilityHint] = useState<string | null>(
@@ -95,12 +116,43 @@ export function BookingRequestForm({
     [sameDayCutoffHour],
   );
 
+  const allowedTravelerIds = useMemo(
+    () => new Set(bookingStates.map((s) => s.id)),
+    [bookingStates],
+  );
+
+  const filteredOffices = useMemo(() => {
+    if (mode !== "booking") return offices;
+    if (!travelerStateId || !allowedTravelerIds.has(travelerStateId)) {
+      return [];
+    }
+    return filterOfficesForTravelerState(offices, travelerStateId);
+  }, [mode, offices, travelerStateId, allowedTravelerIds]);
+
+  const travelerChosen =
+    mode === "booking" &&
+    Boolean(travelerStateId) &&
+    allowedTravelerIds.has(travelerStateId);
+
+  const bookingNoMatchingOffices =
+    mode === "booking" && travelerChosen && filteredOffices.length === 0;
+
+  useEffect(() => {
+    if (mode !== "booking") return;
+    if (!travelerChosen) return;
+    const allowed = new Set(filteredOffices.map((o) => o.id));
+    if (officeId && !allowed.has(officeId)) {
+      const id = requestAnimationFrame(() => setOfficeId(""));
+      return () => cancelAnimationFrame(id);
+    }
+  }, [mode, travelerChosen, filteredOffices, officeId]);
+
   useEffect(() => {
     if (state.ok || !state.values) return;
     const id = requestAnimationFrame(() => {
       setOfficeId(state.values!.officeId);
       setPreferredDate(state.values!.preferredDate ?? "");
-      setTravelerCategory(state.values!.travelerCategory ?? "");
+      setTravelerStateId(state.values!.travelerStateId ?? "");
     });
     return () => cancelAnimationFrame(id);
   }, [state.ok, state.values]);
@@ -123,7 +175,7 @@ export function BookingRequestForm({
 
     const fields = {
       officeId: officeRef,
-      travelerCategory: travelerCategoryRef,
+      travelerStateId: travelerStateRef,
       type: typeRef,
       preferredDate: preferredDateRef,
       name: nameRef,
@@ -222,7 +274,7 @@ export function BookingRequestForm({
             </h2>
             <p className="mt-1 text-sm text-gov-gray-600">
               {mode === "booking"
-                ? "اختار المكتب ونوع المسافر والتاريخ المطلوب."
+                ? "اختار حالة المسافر ثم المكتب المناسب والتاريخ المطلوب."
                 : "الشكوى أو المقترح يذهب للمكتب الذي تختاره فقط."}
             </p>
           </div>
@@ -252,6 +304,11 @@ export function BookingRequestForm({
               >
                 متابعة طلباتي
               </LocaleLink>
+              <BookingPassSuccessBlock
+                locale={locale}
+                request={state.request}
+                serverSiteOrigin={serverSiteOrigin}
+              />
             </div>
           ) : null}
         </div>
@@ -265,64 +322,98 @@ export function BookingRequestForm({
         ) : null}
 
         <div className="grid gap-5 md:grid-cols-2">
-          <label className={labelClass}>
-            اسم المكتب
-            <select
-              ref={officeRef}
-              name="officeId"
-              required
-              className={inputClass}
-              value={officeId}
-              onChange={(e) => setOfficeId(e.target.value)}
-              disabled={offices.length === 0}
-            >
-              <option value="" disabled>
-                اختر المكتب
-              </option>
-              {offices.map((office) => (
-                <option key={office.id} value={office.id}>
-                  {office.nameAr}
-                </option>
-              ))}
-            </select>
-            <FieldError message={state.errors?.officeId} />
-          </label>
-
           {mode === "booking" ? (
-            <label className={labelClass}>
-              نوع المسافر
-              <select
-                ref={travelerCategoryRef}
-                name="travelerCategory"
-                required
-                className={inputClass}
-                value={travelerCategory}
-                onChange={(e) => setTravelerCategory(e.target.value)}
-              >
-                <option value="" disabled>
-                  اختر نوع المسافر
-                </option>
-                <option value="international">مسافر دولي</option>
-                <option value="hajj_umrah">مسافر حج وعمرة</option>
-                <option value="citizen">مواطنين</option>
-              </select>
-              <FieldError message={state.errors?.travelerCategory} />
-            </label>
+            <>
+              <label className={labelClass}>
+                حالة المسافر
+                <select
+                  ref={travelerStateRef}
+                  name="travelerStateId"
+                  required
+                  className={inputClass}
+                  value={travelerStateId}
+                  onChange={(e) => setTravelerStateId(e.target.value)}
+                >
+                  <option value="" disabled>
+                    اختر حالة المسافر
+                  </option>
+                  {bookingStates.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.labelAr}
+                    </option>
+                  ))}
+                </select>
+                <FieldError message={state.errors?.travelerStateId} />
+              </label>
+              <label className={labelClass}>
+                اسم المكتب
+                <select
+                  ref={officeRef}
+                  name="officeId"
+                  required
+                  className={inputClass}
+                  value={officeId}
+                  onChange={(e) => setOfficeId(e.target.value)}
+                  disabled={offices.length === 0 || !travelerChosen}
+                >
+                  <option value="" disabled>
+                    {!travelerChosen
+                      ? "اختر حالة المسافر أولاً"
+                      : "اختر المكتب"}
+                  </option>
+                  {filteredOffices.map((office) => (
+                    <option key={office.id} value={office.id}>
+                      {office.nameAr}
+                    </option>
+                  ))}
+                </select>
+                {bookingNoMatchingOffices ? (
+                  <p className="mt-2 text-sm font-semibold text-amber-800">
+                    لا يوجد مكتب مسجل يخدم هذه الحالة حالياً.
+                  </p>
+                ) : null}
+                <FieldError message={state.errors?.officeId} />
+              </label>
+            </>
           ) : (
-            <label className={labelClass}>
-              نوع المتابعة
-              <select
-                ref={typeRef}
-                name="type"
-                required
-                className={inputClass}
-                defaultValue={state.values?.type ?? "complaint"}
-              >
-                <option value="complaint">تقديم شكوى</option>
-                <option value="proposal">تقديم مقترح</option>
-              </select>
-              <FieldError message={state.errors?.type} />
-            </label>
+            <>
+              <label className={labelClass}>
+                اسم المكتب
+                <select
+                  ref={officeRef}
+                  name="officeId"
+                  required
+                  className={inputClass}
+                  value={officeId}
+                  onChange={(e) => setOfficeId(e.target.value)}
+                  disabled={offices.length === 0}
+                >
+                  <option value="" disabled>
+                    اختر المكتب
+                  </option>
+                  {offices.map((office) => (
+                    <option key={office.id} value={office.id}>
+                      {office.nameAr}
+                    </option>
+                  ))}
+                </select>
+                <FieldError message={state.errors?.officeId} />
+              </label>
+              <label className={labelClass}>
+                نوع المتابعة
+                <select
+                  ref={typeRef}
+                  name="type"
+                  required
+                  className={inputClass}
+                  defaultValue={state.values?.type ?? "complaint"}
+                >
+                  <option value="complaint">تقديم شكوى</option>
+                  <option value="proposal">تقديم مقترح</option>
+                </select>
+                <FieldError message={state.errors?.type} />
+              </label>
+            </>
           )}
         </div>
 
@@ -408,7 +499,12 @@ export function BookingRequestForm({
         </p>
         <button
           type="submit"
-          disabled={pending || offices.length === 0 || bookingBlocked}
+          disabled={
+            pending ||
+            offices.length === 0 ||
+            bookingBlocked ||
+            bookingNoMatchingOffices
+          }
           className="inline-flex min-h-11 items-center justify-center rounded-md bg-gov-accent px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-gov-navy disabled:cursor-not-allowed disabled:opacity-60"
         >
           {pending

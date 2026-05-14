@@ -39,6 +39,7 @@ npm run dev
 | `npm run start`  | تشغيل بعد البناء |
 | `npm run lint`   | فحص ESLint     |
 | `npm run seed:offices` | استيراد المكاتب إلى Firestore |
+| `npm run seed:traveler-states` | زرع حالات المسافرين الثلاث الافتراضية في Firestore |
 | `npm run seed:vaccines` | استيراد جدول اللقاحات إلى Firestore |
 
 ## متغيرات البيئة | Environment variables

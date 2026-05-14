@@ -4,17 +4,17 @@ import {
   getCairoMinBookingYmd,
   getCairoTodayYmd,
 } from "@/lib/cairo-today-ymd";
+import { officeAcceptsTravelerState } from "@/lib/office-requests/office-traveler-state";
 import {
   countBookingRequestsForOfficeDay,
   createOfficeRequest,
   getBookingSettings,
   getOffice,
+  listTravelerStatesForPublicBooking,
 } from "@/lib/office-requests/store";
-import {
-  TRAVELER_CATEGORY_LABELS,
-  type OfficeRequestType,
-  type PublicOfficeRequestStatus,
-  type TravelerCategory,
+import type {
+  OfficeRequestType,
+  PublicOfficeRequestStatus,
 } from "@/lib/office-requests/types";
 
 export type BookingFormState = {
@@ -24,21 +24,16 @@ export type BookingFormState = {
   values?: {
     officeId: string;
     type: OfficeRequestType;
-    travelerCategory: TravelerCategory;
+    travelerStateId: string;
     preferredDate: string;
     name: string;
     phone: string;
     details: string;
   };
-  request?: PublicOfficeRequestStatus & { phone: string };
+  request?: PublicOfficeRequestStatus & { phone: string; passToken: string };
 };
 
 const requestTypes: OfficeRequestType[] = ["booking", "complaint", "proposal"];
-const travelerCategories: TravelerCategory[] = [
-  "international",
-  "hajj_umrah",
-  "citizen",
-];
 
 function value(formData: FormData, key: string) {
   return String(formData.get(key) ?? "").trim();
@@ -50,10 +45,7 @@ export async function submitOfficeRequest(
 ): Promise<BookingFormState> {
   const officeId = value(formData, "officeId");
   const type = value(formData, "type") as OfficeRequestType;
-  const travelerCategory = value(
-    formData,
-    "travelerCategory",
-  ) as TravelerCategory;
+  const travelerStateId = value(formData, "travelerStateId");
   const preferredDate = value(formData, "preferredDate");
   const name = value(formData, "name");
   const phone = value(formData, "phone");
@@ -63,7 +55,7 @@ export async function submitOfficeRequest(
   const values = {
     officeId,
     type,
-    travelerCategory,
+    travelerStateId,
     preferredDate,
     name,
     phone,
@@ -72,11 +64,17 @@ export async function submitOfficeRequest(
   if (!officeId) errors.officeId = "اختر المكتب.";
   if (!requestTypes.includes(type)) errors.type = "اختر نوع الطلب.";
 
+  const activeStates = await listTravelerStatesForPublicBooking();
+  const allowedIds = new Set(activeStates.map((s) => s.id));
+  const labelById = Object.fromEntries(
+    activeStates.map((s) => [s.id, s.labelAr]),
+  );
+
   if (type === "booking") {
     const { bookingSameDayCutoffHour } = await getBookingSettings();
 
-    if (!travelerCategories.includes(travelerCategory)) {
-      errors.travelerCategory = "اختر نوع المسافر.";
+    if (!travelerStateId || !allowedIds.has(travelerStateId)) {
+      errors.travelerStateId = "اختر حالة المسافر.";
     }
     if (!/^\d{4}-\d{2}-\d{2}$/.test(preferredDate)) {
       errors.preferredDate = "اختر التاريخ المطلوب.";
@@ -94,14 +92,30 @@ export async function submitOfficeRequest(
       }
     }
 
+    let bookingOffice = null as Awaited<ReturnType<typeof getOffice>>;
+    if (
+      officeId &&
+      !errors.officeId &&
+      travelerStateId &&
+      allowedIds.has(travelerStateId)
+    ) {
+      bookingOffice = await getOffice(officeId);
+      if (!bookingOffice) {
+        errors.officeId = "المكتب غير موجود.";
+      } else if (!officeAcceptsTravelerState(bookingOffice, travelerStateId)) {
+        errors.officeId =
+          "هذا المكتب لا يخدم حالة المسافر المختارة. اختر مكتباً آخر.";
+      }
+    }
+
     if (
       !errors.preferredDate &&
-      officeId &&
+      !errors.officeId &&
+      bookingOffice &&
       preferredDate &&
       /^\d{4}-\d{2}-\d{2}$/.test(preferredDate)
     ) {
-      const office = await getOffice(officeId);
-      const cap = office?.dailyBookingCap;
+      const cap = bookingOffice.dailyBookingCap;
       if (typeof cap === "number" && cap > 0) {
         const used = await countBookingRequestsForOfficeDay(
           officeId,
@@ -133,23 +147,27 @@ export async function submitOfficeRequest(
   }
 
   try {
-    const request = await createOfficeRequest({
+    const stateLabel =
+      type === "booking" && travelerStateId
+        ? labelById[travelerStateId] ?? travelerStateId
+        : "";
+    const created = await createOfficeRequest({
       officeId,
       type,
-      travelerCategory: type === "booking" ? travelerCategory : undefined,
+      travelerStateId: type === "booking" ? travelerStateId : undefined,
       preferredDate: type === "booking" ? preferredDate : undefined,
       name,
       phone,
       details:
         type === "booking" && details.length === 0
-          ? `نوع المسافر: ${TRAVELER_CATEGORY_LABELS[travelerCategory]}\nالتاريخ المطلوب: ${preferredDate}`
+          ? `حالة المسافر: ${stateLabel}\nالتاريخ المطلوب: ${preferredDate}`
           : details,
     });
     return {
       ok: true,
       message: "تم إرسال الطلب بنجاح. سيتابع المكتب المختار معك قريباً.",
       request: {
-        ...request,
+        ...created,
         phone,
       },
     };

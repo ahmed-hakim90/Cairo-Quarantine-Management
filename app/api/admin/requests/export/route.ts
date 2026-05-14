@@ -1,9 +1,11 @@
 import { NextResponse } from "next/server";
 import { parseExportCreatedBounds } from "@/lib/office-requests/export-date-bounds";
 import { officeRequestsToXlsxBuffer } from "@/lib/office-requests/export-xlsx";
+import { SUPER_ADMIN_EXPORT_MAX_ROWS } from "@/lib/office-requests/export-limits";
+import { mergeTravelerStateLabelsWithLegacy } from "@/lib/office-requests/office-traveler-state";
 import {
   listRequestsForSuperAdminExport,
-  SUPER_ADMIN_EXPORT_MAX_ROWS,
+  listTravelerStates,
 } from "@/lib/office-requests/store";
 import { getAdminSession } from "@/lib/office-requests/session";
 import type {
@@ -68,12 +70,17 @@ export async function GET(request: Request) {
       : officeIdFromQuery;
 
   const travelerTokens = [
+    ...parseCommaList(searchParams.get("travelerStateIds")),
+    ...searchParams.getAll("travelerStateId"),
     ...parseCommaList(searchParams.get("travelerCategories")),
     ...searchParams.getAll("travelerCategory"),
   ];
   const includeUncategorized = travelerTokens.some(
     (t) => t.toLowerCase() === "uncategorized",
   );
+  const travelerStateIds = travelerTokens
+    .filter((t) => t.toLowerCase() !== "uncategorized")
+    .filter((t) => !VALID_TRAVELER.has(t as TravelerCategory));
   const travelerCategories = travelerTokens
     .filter((t) => t.toLowerCase() !== "uncategorized")
     .filter((t): t is TravelerCategory =>
@@ -91,13 +98,17 @@ export async function GET(request: Request) {
   const { requests, capped } = await listRequestsForSuperAdminExport({
     types,
     officeId,
+    travelerStateIds,
     travelerCategories,
     includeUncategorizedBookings: includeUncategorized,
     createdFrom: bounds.createdFrom,
     createdTo: bounds.createdTo,
   });
 
-  const buffer = officeRequestsToXlsxBuffer(requests);
+  const stateLabels = mergeTravelerStateLabelsWithLegacy(
+    await listTravelerStates({ includeInactive: true }),
+  );
+  const buffer = officeRequestsToXlsxBuffer(requests, stateLabels);
   const dateStamp = new Date().toISOString().slice(0, 10);
   const filename = `requests-${dateStamp}.xlsx`;
 
@@ -110,6 +121,7 @@ export async function GET(request: Request) {
     "Content-Disposition",
     `attachment; filename="${filename}"; filename*=UTF-8''${encodeURIComponent(filename)}`,
   );
+  headers.set("X-Export-Row-Count", String(requests.length));
   if (capped) {
     headers.set("X-Export-Capped", "true");
     headers.set("X-Export-Max-Rows", String(SUPER_ADMIN_EXPORT_MAX_ROWS));
