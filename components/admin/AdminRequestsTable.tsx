@@ -19,7 +19,7 @@ const TRAVELER_FILTER_KEYS = [
 type RequestTypeFilter = "all" | "complaint" | "proposal";
 
 const TYPE_TABS: { id: RequestTypeFilter; label: string }[] = [
-  { id: "all", label: "الكل" },
+  { id: "all", label: "الحجوزات" },
   { id: "complaint", label: "شكاوى فقط" },
   { id: "proposal", label: "مقترحات فقط" },
 ];
@@ -74,6 +74,9 @@ function emptyMessage(
   if (typeFilter === "proposal") {
     return "لا توجد مقترحات ضمن آخر 200 طلباً محمّلة.";
   }
+  if (typeFilter === "all" && activeCategory === null) {
+    return "لا توجد حجوزات ضمن آخر 200 طلباً محمّلة.";
+  }
   if (activeCategory !== null) {
     return "لا توجد حجوزات مطابقة لهذه الفئة ضمن القائمة.";
   }
@@ -89,7 +92,7 @@ export function AdminRequestsTable({ requests, locale }: AdminRequestsTableProps
   const filteredRequests = useMemo(() => {
     let list =
       typeFilter === "all"
-        ? requests
+        ? requests.filter((r) => r.type === "booking")
         : requests.filter((r) => r.type === typeFilter);
     if (activeCategory !== null) {
       list = list.filter(
@@ -110,8 +113,8 @@ export function AdminRequestsTable({ requests, locale }: AdminRequestsTableProps
         <div className="text-sm text-gov-gray-600 sm:text-end">
           <p>آخر 200 طلب حسب الصلاحية</p>
           <p className="mt-1 text-xs leading-relaxed text-gov-gray-500">
-            عند اختيار «شكاوى» أو «مقترحات» يُعرض ما يطابق التبويب ضمن هذه
-            القائمة فقط.
+            تبويب «الحجوزات» يعرض حجوزات التطعيم فقط ضمن آخر 200 طلباً؛
+            الشكاوى والمقترحات من التبويبين المخصصين.
           </p>
         </div>
       </div>

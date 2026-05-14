@@ -9,6 +9,8 @@ type AdminDashboardLayoutProps = {
   locale: string;
   displayName: string;
   role: AdminRole;
+  /** When set for an office user, shown in the header instead of displayName. */
+  officeNameAr?: string | null;
   children: React.ReactNode;
 };
 
@@ -16,9 +18,14 @@ export function AdminDashboardLayout({
   locale,
   displayName,
   role,
+  officeNameAr = null,
   children,
 }: AdminDashboardLayoutProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const headerPrimary =
+    role !== "super_admin" && officeNameAr?.trim()
+      ? officeNameAr.trim()
+      : displayName;
 
   useEffect(() => {
     if (!mobileOpen) return;
@@ -68,7 +75,7 @@ export function AdminDashboardLayout({
             </button>
             <div className="min-w-0">
               <p className="truncate text-sm font-bold text-gov-navy">
-                {displayName}
+                {headerPrimary}
               </p>
               <p className="text-xs text-gov-gray-600">
                 {role === "super_admin" ? "سوبر أدمن" : "مستخدم مكتب"}
