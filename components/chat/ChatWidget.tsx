@@ -5,11 +5,16 @@ import { useEffect, useRef, useState } from "react";
 
 type ChatLabels = {
   title: string;
+  subtitle: string;
   greeting: string;
   placeholder: string;
   send: string;
   openAria: string;
   closeAria: string;
+  visitHintTitle: string;
+  visitHintBody: string;
+  visitHintOpen: string;
+  visitHintDismissAria: string;
   error: string;
   billingError: string;
 };
@@ -24,6 +29,8 @@ type ChatWidgetProps = {
   locale: string;
   messages: ChatLabels;
 };
+
+const VISIT_HINT_DISMISSED_KEY = "cqm:chat-visit-hint-dismissed";
 
 function ChatIcon({ className }: { className?: string }) {
   return (
@@ -64,6 +71,24 @@ function CloseIcon({ className }: { className?: string }) {
 
 function createId() {
   return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
+
+function shouldShowVisitHint() {
+  if (typeof window === "undefined") return false;
+
+  try {
+    return window.localStorage.getItem(VISIT_HINT_DISMISSED_KEY) !== "1";
+  } catch {
+    return true;
+  }
+}
+
+function persistVisitHintDismissed() {
+  try {
+    window.localStorage.setItem(VISIT_HINT_DISMISSED_KEY, "1");
+  } catch {
+    /* Ignore storage failures. */
+  }
 }
 
 function getLinkLabel(href: string) {
@@ -166,27 +191,54 @@ export function ChatWidget({ locale, messages: labels }: ChatWidgetProps) {
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [showVisitHint, setShowVisitHint] = useState(false);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setShowVisitHint(shouldShowVisitHint());
+    }, 600);
+
+    return () => window.clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [chatMessages]);
 
-  function toggleOpen() {
-    setOpen((current) => {
-      const nextOpen = !current;
-      if (nextOpen && chatMessages.length === 0) {
-        setChatMessages([
-          {
-            id: createId(),
-            role: "assistant",
-            content: labels.greeting,
-          },
-        ]);
-      }
-      return nextOpen;
+  function ensureGreeting() {
+    setChatMessages((current) => {
+      if (current.length > 0) return current;
+
+      return [
+        {
+          id: createId(),
+          role: "assistant",
+          content: labels.greeting,
+        },
+      ];
     });
+  }
+
+  function openChat() {
+    setShowVisitHint(false);
+    ensureGreeting();
+    setOpen(true);
+  }
+
+  function toggleOpen() {
+    if (open) {
+      setOpen(false);
+      return;
+    }
+
+    openChat();
+  }
+
+  function dismissVisitHint() {
+    persistVisitHintDismissed();
+    setShowVisitHint(false);
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -257,6 +309,39 @@ export function ChatWidget({ locale, messages: labels }: ChatWidgetProps) {
 
   return (
     <div className="fixed bottom-24 start-5 z-[70] flex w-[calc(100vw-2.5rem)] max-w-sm flex-col items-start gap-3 sm:w-96">
+      {showVisitHint && !open && (
+        <aside
+          aria-label={labels.visitHintTitle}
+          className="w-full max-w-xs rounded-3xl border border-gov-gray-200 bg-white p-4 text-gov-gray-900 shadow-2xl shadow-gov-gray-900/20"
+        >
+          <div className="flex items-start justify-between gap-3">
+            <div className="space-y-1">
+              <p className="text-sm font-bold text-gov-navy">
+                {labels.visitHintTitle}
+              </p>
+              <p className="text-xs leading-5 text-gov-gray-700">
+                {labels.visitHintBody}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={dismissVisitHint}
+              aria-label={labels.visitHintDismissAria}
+              className="rounded-full p-1 text-gov-gray-500 transition-colors hover:bg-gov-gray-100 hover:text-gov-gray-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gov-accent"
+            >
+              <CloseIcon className="size-4" />
+            </button>
+          </div>
+          <button
+            type="button"
+            onClick={openChat}
+            className="mt-3 rounded-full bg-gov-accent px-4 py-2 text-xs font-bold text-white transition-colors hover:bg-gov-navy focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gov-accent"
+          >
+            {labels.visitHintOpen}
+          </button>
+        </aside>
+      )}
+
       {open && (
         <section
           aria-label={labels.title}
@@ -265,7 +350,7 @@ export function ChatWidget({ locale, messages: labels }: ChatWidgetProps) {
           <header className="flex items-center justify-between gap-3 bg-gov-navy px-4 py-3 text-white">
             <div>
               <p className="text-sm font-bold">{labels.title}</p>
-              <p className="text-xs text-white/80">OpenRouter AI</p>
+              <p className="text-xs text-white/80">{labels.subtitle}</p>
             </div>
             <button
               type="button"

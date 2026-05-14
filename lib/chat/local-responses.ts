@@ -1,4 +1,6 @@
 import { VACCINATION_CENTERS } from "@/data/locations";
+import type { VaccineRecord } from "@/data/vaccines";
+import { VACCINES_BY_CATEGORY } from "@/data/vaccines";
 import { defaultLocale, isLocale } from "@/lib/i18n/config";
 import { getMessages } from "@/lib/i18n/messages";
 
@@ -20,6 +22,101 @@ function getLocale(localeValue: string | undefined) {
 function getPortalPath(localeValue: string | undefined, path = "") {
   const locale = getLocale(localeValue);
   return path ? `/${locale}/${path}` : `/${locale}`;
+}
+
+function isPriceQuestion(normalized: string) {
+  return (
+    normalized.includes("تكلف") ||
+    normalized.includes("سعر") ||
+    normalized.includes("بكم") ||
+    normalized.includes("كام") ||
+    normalized.includes("جنيه") ||
+    normalized.includes("egp") ||
+    normalized.includes("مصاريف")
+  );
+}
+
+function vaccineDisplayName(record: VaccineRecord, locale: string) {
+  if (locale === "en") return record.nameEn;
+  if (locale === "zh") return record.nameEn;
+  return record.nameAr;
+}
+
+function buildVaccinePriceResponse(
+  localeValue: string | undefined,
+  trip: "umrah" | "hajj" | "both",
+) {
+  const loc = getLocale(localeValue);
+  const messages = getMessages(loc);
+  const currency = messages.vaccineSelector.currency;
+
+  const freeLabel = loc === "en" ? "free" : loc === "zh" ? "free" : "مجانا";
+  const unspecified =
+    loc === "en" ? "not listed in portal data" : loc === "zh" ? "not listed" : "غير محدد في بيانات البوابة";
+
+  function line(record: VaccineRecord) {
+    const name = vaccineDisplayName(record, loc);
+    if (record.free) return `- ${name}: ${freeLabel}`;
+    if (record.priceEgp == null) return `- ${name}: ${unspecified}`;
+    return `- ${name}: ${record.priceEgp} ${currency}`;
+  }
+
+  const lines: string[] = [];
+
+  if (trip === "umrah" || trip === "both") {
+    if (trip === "both") {
+      lines.push(
+        loc === "en"
+          ? "Umrah (indicative, from portal catalog):"
+          : loc === "zh"
+            ? "Umrah (indicative, from portal catalog):"
+            : "العمرة — أسعار استرشادية من بيانات البوابة:",
+      );
+    } else {
+      lines.push(
+        loc === "en"
+          ? "Umrah vaccination (indicative, from portal catalog):"
+          : loc === "zh"
+            ? "Umrah vaccination (indicative):"
+            : "تكلفة تطعيم العمرة (استرشادية من بيانات البوابة):",
+      );
+    }
+    lines.push(...VACCINES_BY_CATEGORY.umrah.map(line));
+    if (trip === "both") lines.push("");
+  }
+
+  if (trip === "hajj" || trip === "both") {
+    if (trip === "both") {
+      lines.push(
+        loc === "en"
+          ? "Hajj (indicative, from portal catalog):"
+          : loc === "zh"
+            ? "Hajj (indicative, from portal catalog):"
+            : "الحج — أسعار استرشادية من بيانات البوابة:",
+      );
+    } else {
+      lines.push(
+        loc === "en"
+          ? "Hajj vaccination (indicative, from portal catalog):"
+          : loc === "zh"
+            ? "Hajj vaccination (indicative):"
+            : "تكلفة تطعيم الحج (استرشادية من بيانات البوابة):",
+      );
+    }
+    lines.push(...VACCINES_BY_CATEGORY.hajj.map(line));
+  }
+
+  lines.push(
+    "",
+    loc === "en"
+      ? "Confirm the fee and required vaccines at your approved centre; prices may change."
+      : loc === "zh"
+        ? "Confirm fees and required vaccines at your approved centre."
+        : "تأكد من السعر واللقاح المطلوب في المركز المعتمد؛ قد تتغير الأسعار.",
+    `المصدر: أداة الاستعلام وصفحة الحج والعمرة: ${getPortalPath(localeValue, "hajj-umrah")}`,
+  );
+
+  return lines.join("\n");
 }
 
 function buildHajjResponse(localeValue: string | undefined) {
@@ -81,8 +178,11 @@ export function getLocalChatResponse({
   message: string;
 }) {
   const normalized = normalizeArabic(message);
-  const asksForHajj =
-    normalized.includes("حج") || normalized.includes("الحج") || normalized.includes("عمره");
+  const mentionsUmrah =
+    normalized.includes("عمره") || normalized.includes("معتم") || normalized.includes("اعتمر");
+  const mentionsHajj =
+    normalized.includes("حج") || normalized.includes("الحج") || normalized.includes("حاج");
+  const asksForHajj = mentionsHajj;
   const asksForOffice =
     normalized.includes("اقرب") ||
     normalized.includes("مكتب") ||
@@ -92,6 +192,13 @@ export function getLocalChatResponse({
     normalized.includes("مدينه نصر");
 
   if (asksForOffice) return buildNearestOfficeResponse(message, locale);
+
+  if (isPriceQuestion(normalized)) {
+    if (mentionsUmrah && !mentionsHajj) return buildVaccinePriceResponse(locale, "umrah");
+    if (mentionsHajj && !mentionsUmrah) return buildVaccinePriceResponse(locale, "hajj");
+    return buildVaccinePriceResponse(locale, "both");
+  }
+
   if (asksForHajj) return buildHajjResponse(locale);
 
   return null;

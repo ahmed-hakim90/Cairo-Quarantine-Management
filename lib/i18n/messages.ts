@@ -179,11 +179,16 @@ export type Messages = {
   };
   chat: {
     title: string;
+    subtitle: string;
     greeting: string;
     placeholder: string;
     send: string;
     openAria: string;
     closeAria: string;
+    visitHintTitle: string;
+    visitHintBody: string;
+    visitHintOpen: string;
+    visitHintDismissAria: string;
     error: string;
     billingError: string;
   };
@@ -428,13 +433,19 @@ const ar: Messages = {
     unsupported: "القراءة الصوتية غير مدعومة في هذا المتصفح",
   },
   chat: {
-    title: "المساعد الذكي",
+    title: "أنا مسافر",
+    subtitle: "المساعد الذكي",
     greeting:
-      "أهلاً! أنا المساعد الذكي. اسألني عن خدمات الحجر الصحي والتطعيمات، وسأساعدك بخطوات سهلة وبسيطة.",
+      "أهلاً! أنا المساعد الذكي «أنا مسافر». اسألني عن خدمات الحجر الصحي والتطعيمات والسفر، وسأساعدك بخطوات سهلة وبسيطة.",
     placeholder: "اكتب سؤالك...",
     send: "إرسال",
     openAria: "فتح المساعد الذكي",
     closeAria: "إغلاق المساعد الذكي",
+    visitHintTitle: "أنا مسافر هنا لمساعدتك",
+    visitHintBody:
+      "اسألني عن تطعيمات السفر، الحج والعمرة، أو أقرب مكتب تطعيمات.",
+    visitHintOpen: "اسأل أنا مسافر",
+    visitHintDismissAria: "إخفاء تنبيه المساعد الذكي",
     error:
       "عذرًا، حدث خطأ أثناء الرد. يرجى المحاولة مرة أخرى بعد لحظات.",
     billingError:
@@ -686,13 +697,19 @@ const en: Messages = {
     unsupported: "Text-to-speech is not supported in this browser",
   },
   chat: {
-    title: "Smart Assistant",
+    title: "I Am Traveler",
+    subtitle: "Smart Assistant",
     greeting:
-      "Hello! I'm your smart assistant. Ask me about quarantine and vaccination services, and I will guide you with simple steps.",
+      "Hello! I'm your smart assistant, I Am Traveler. Ask me about quarantine, vaccination, and travel services, and I will guide you with simple steps.",
     placeholder: "Type your question...",
     send: "Send",
     openAria: "Open smart assistant",
     closeAria: "Close smart assistant",
+    visitHintTitle: "I Am Traveler is here to help",
+    visitHintBody:
+      "Ask me about travel vaccines, Hajj and Umrah, or the nearest vaccination office.",
+    visitHintOpen: "Ask I Am Traveler",
+    visitHintDismissAria: "Hide smart assistant notice",
     error: "Sorry, something went wrong while replying. Please try again shortly.",
     billingError:
       "OpenRouter credit is not sufficient to run the assistant right now. Please check billing or add credits.",
@@ -932,13 +949,19 @@ const zh: Messages = {
     unsupported: "此浏览器不支持文字转语音",
   },
   chat: {
-    title: "智能助手",
+    title: "我是旅行者",
+    subtitle: "智能助手",
     greeting:
-      "您好！我是智能助手。您可以询问检疫和疫苗接种服务，我会用简单步骤帮助您。",
+      "您好！我是智能助手「我是旅行者」。您可以询问检疫、疫苗接种和旅行服务，我会用简单步骤帮助您。",
     placeholder: "输入您的问题...",
     send: "发送",
     openAria: "打开智能助手",
     closeAria: "关闭智能助手",
+    visitHintTitle: "我是旅行者，可为您提供帮助",
+    visitHintBody:
+      "您可以询问旅行疫苗、朝觐与副朝，或最近的接种门诊。",
+    visitHintOpen: "询问我是旅行者",
+    visitHintDismissAria: "隐藏智能助手提示",
     error: "抱歉，回复时出现问题。请稍后再试。",
     billingError:
       "OpenRouter 余额不足，暂时无法运行智能助手。请检查账单或充值。",
