@@ -74,11 +74,6 @@ export function LanguageSwitcher({ locale, nav }: LanguageSwitcherProps) {
     };
   }, [open]);
 
-  // Close menu after route change.
-  useEffect(() => {
-    setOpen(false);
-  }, [pathname]);
-
   return (
     <div ref={containerRef} className="relative shrink-0">
       <button

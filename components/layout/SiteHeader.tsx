@@ -18,6 +18,7 @@ export function SiteHeader({ locale, messages }: SiteHeaderProps) {
     { href: "/hajj-umrah", label: n.hajjUmrah },
     { href: "/citizen-services", label: n.citizen },
     { href: "/charter", label: n.charter },
+    { href: "/my-requests", label: n.myRequests },
   ] as const;
 
   return (

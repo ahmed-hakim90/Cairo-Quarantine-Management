@@ -53,14 +53,12 @@ export function VaccineSelector({
   labels,
   bookingNav,
 }: VaccineSelectorProps) {
-  const bookingUrl = getVaccinationBookingFormUrl();
+  const bookingUrl = getVaccinationBookingFormUrl(locale);
   const bookingBlock =
     bookingUrl && bookingNav ? (
       <div className="mt-10 flex justify-center border-t border-gov-gray-200 pt-10">
         <a
           href={bookingUrl}
-          target="_blank"
-          rel="noopener noreferrer"
           className="inline-flex min-h-12 items-center justify-center rounded-lg bg-gov-accent px-8 py-3 text-center text-base font-semibold text-white shadow-md transition-colors hover:bg-gov-accent/90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gov-navy"
           aria-label={bookingNav.ariaLabel}
         >

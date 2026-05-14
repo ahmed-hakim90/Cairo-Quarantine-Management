@@ -10,6 +10,7 @@ export type Messages = {
     hajjUmrah: string;
     citizen: string;
     charter: string;
+    myRequests: string;
     switchToAr: string;
     switchToEn: string;
     switchToZh: string;
@@ -177,21 +178,6 @@ export type Messages = {
     stop: string;
     unsupported: string;
   };
-  chat: {
-    title: string;
-    subtitle: string;
-    greeting: string;
-    placeholder: string;
-    send: string;
-    openAria: string;
-    closeAria: string;
-    visitHintTitle: string;
-    visitHintBody: string;
-    visitHintOpen: string;
-    visitHintDismissAria: string;
-    error: string;
-    billingError: string;
-  };
   pwa: {
     installTitle: string;
     installBody: string;
@@ -218,13 +204,14 @@ const ar: Messages = {
     hajjUmrah: "الحج والعمرة",
     citizen: "خدمات المواطنين",
     charter: " ميثاق",
+    myRequests: "طلباتي",
     switchToAr: "العربية",
     switchToEn: "English",
     switchToZh: "中文",
     switchLangAria: "تغيير اللغة",
-    bookVaccination: " حجز موعد تطعيم / تقديم شكوى ",
+    bookVaccination: "حجز موعد تطعيم",
     bookVaccinationAria:
-      "فتح البوابة الإلكترونية الرسمية لإدارة الحجر الصحي بالقاهرة في نافذة جديدة",
+      "فتح شاشة حجز موعد تطعيم بإدارة الحجر الصحي بالقاهرة",
   },
   footer: {
     title: "إدارة الحجر الصحي بالقاهرة",
@@ -432,25 +419,6 @@ const ar: Messages = {
     stop: "إيقاف القراءة",
     unsupported: "القراءة الصوتية غير مدعومة في هذا المتصفح",
   },
-  chat: {
-    title: "أنا مسافر",
-    subtitle: "المساعد الذكي",
-    greeting:
-      "أهلاً! أنا المساعد الذكي «أنا مسافر». اسألني عن خدمات الحجر الصحي والتطعيمات والسفر، وسأساعدك بخطوات سهلة وبسيطة.",
-    placeholder: "اكتب سؤالك...",
-    send: "إرسال",
-    openAria: "فتح المساعد الذكي",
-    closeAria: "إغلاق المساعد الذكي",
-    visitHintTitle: "أنا مسافر هنا لمساعدتك",
-    visitHintBody:
-      "اسألني عن تطعيمات السفر، الحج والعمرة، أو أقرب مكتب تطعيمات.",
-    visitHintOpen: "اسأل أنا مسافر",
-    visitHintDismissAria: "إخفاء تنبيه المساعد الذكي",
-    error:
-      "عذرًا، حدث خطأ أثناء الرد. يرجى المحاولة مرة أخرى بعد لحظات.",
-    billingError:
-      "رصيد OpenRouter غير كافٍ لتشغيل المساعد الآن. يرجى مراجعة إعدادات الحساب أو شحن الرصيد.",
-  },
   pwa: {
     installTitle: "ثبّت تطبيق الحجر الصحي",
     installBody:
@@ -479,13 +447,14 @@ const en: Messages = {
     hajjUmrah: "Hajj & Umrah",
     citizen: "Citizen services",
     charter: "Stakeholder charter",
+    myRequests: "My requests",
     switchToAr: "العربية",
     switchToEn: "English",
     switchToZh: "中文",
     switchLangAria: "Change language",
     bookVaccination: "Book vaccination",
     bookVaccinationAria:
-      "Open the official Cairo Quarantine Administration electronic portal in a new tab",
+      "Open the Cairo Quarantine Administration vaccination booking screen",
   },
   footer: {
     title: "Cairo Quarantine Administration",
@@ -696,24 +665,6 @@ const en: Messages = {
     stop: "Stop reading",
     unsupported: "Text-to-speech is not supported in this browser",
   },
-  chat: {
-    title: "I Am Traveler",
-    subtitle: "Smart Assistant",
-    greeting:
-      "Hello! I'm your smart assistant, I Am Traveler. Ask me about quarantine, vaccination, and travel services, and I will guide you with simple steps.",
-    placeholder: "Type your question...",
-    send: "Send",
-    openAria: "Open smart assistant",
-    closeAria: "Close smart assistant",
-    visitHintTitle: "I Am Traveler is here to help",
-    visitHintBody:
-      "Ask me about travel vaccines, Hajj and Umrah, or the nearest vaccination office.",
-    visitHintOpen: "Ask I Am Traveler",
-    visitHintDismissAria: "Hide smart assistant notice",
-    error: "Sorry, something went wrong while replying. Please try again shortly.",
-    billingError:
-      "OpenRouter credit is not sufficient to run the assistant right now. Please check billing or add credits.",
-  },
   pwa: {
     installTitle: "Install the Quarantine app",
     installBody:
@@ -742,12 +693,13 @@ const zh: Messages = {
     hajjUmrah: "朝觐与副朝",
     citizen: "公民服务",
     charter: "利益相关方章程",
+    myRequests: "我的申请",
     switchToAr: "العربية",
     switchToEn: "English",
     switchToZh: "中文",
     switchLangAria: "切换语言",
     bookVaccination: "预约接种",
-    bookVaccinationAria: "在新标签页打开开罗检疫管理处官方电子门户",
+    bookVaccinationAria: "打开开罗检疫管理处疫苗预约页面",
   },
   footer: {
     title: "开罗检疫管理处",
@@ -947,24 +899,6 @@ const zh: Messages = {
     resume: "继续朗读",
     stop: "停止朗读",
     unsupported: "此浏览器不支持文字转语音",
-  },
-  chat: {
-    title: "我是旅行者",
-    subtitle: "智能助手",
-    greeting:
-      "您好！我是智能助手「我是旅行者」。您可以询问检疫、疫苗接种和旅行服务，我会用简单步骤帮助您。",
-    placeholder: "输入您的问题...",
-    send: "发送",
-    openAria: "打开智能助手",
-    closeAria: "关闭智能助手",
-    visitHintTitle: "我是旅行者，可为您提供帮助",
-    visitHintBody:
-      "您可以询问旅行疫苗、朝觐与副朝，或最近的接种门诊。",
-    visitHintOpen: "询问我是旅行者",
-    visitHintDismissAria: "隐藏智能助手提示",
-    error: "抱歉，回复时出现问题。请稍后再试。",
-    billingError:
-      "OpenRouter 余额不足，暂时无法运行智能助手。请检查账单或充值。",
   },
   pwa: {
     installTitle: "安装检疫服务应用",

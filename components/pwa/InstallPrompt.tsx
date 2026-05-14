@@ -40,7 +40,6 @@ export function InstallPrompt({ pwa }: InstallPromptProps) {
     null
   );
   const [visible, setVisible] = useState(false);
-  const [isIOS, setIsIOS] = useState(false);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -57,7 +56,6 @@ export function InstallPrompt({ pwa }: InstallPromptProps) {
     const ios =
       /iPad|iPhone|iPod/.test(ua) &&
       !(window as unknown as { MSStream?: unknown }).MSStream;
-    setIsIOS(ios);
 
     const onBeforeInstall = (event: Event) => {
       event.preventDefault();
@@ -133,7 +131,7 @@ export function InstallPrompt({ pwa }: InstallPromptProps) {
           <p className="mt-1 text-xs leading-relaxed text-white/85">
             {pwa.installBody}
           </p>
-          {isIOS && !deferred ? (
+          {visible && !deferred ? (
             <p className="mt-2 text-[11px] leading-relaxed text-white/75">
               {pwa.iosHelp}
             </p>

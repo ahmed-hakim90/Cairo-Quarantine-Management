@@ -46,6 +46,29 @@ npm run dev
 | المتغير | الوصف |
 | ------- | ----- |
 | `NEXT_PUBLIC_WHATSAPP_COMPLAINTS_PHONE` | رقم واتساب الشكاوى والاقتراحات (أرقام فقط مع كود الدولة، مثال مصر: `201012345678`). إن لم يُضبط، قد لا يظهر رابط الواتساب بشكل صحيح. |
+| `NEXT_PUBLIC_FIREBASE_API_KEY` | Firebase Web API key لتسجيل دخول لوحة الإدارة. |
+| `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN` | Firebase Auth domain. |
+| `NEXT_PUBLIC_FIREBASE_PROJECT_ID` | Firebase project id للواجهة. |
+| `NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET` | Firebase storage bucket، إن وجد. |
+| `NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID` | Firebase messaging sender id. |
+| `NEXT_PUBLIC_FIREBASE_APP_ID` | Firebase app id. |
+| `FIREBASE_PROJECT_ID` | Firebase project id للـ Admin SDK. |
+| `FIREBASE_CLIENT_EMAIL` | service account client email. |
+| `FIREBASE_PRIVATE_KEY` | service account private key مع `\n` escaped في `.env.local`. |
+
+### Firebase setup
+
+1. فعّل Firebase Auth بطريقة Email/Password.
+2. أضف متغيرات البيئة السابقة.
+3. انشر قواعد `firestore.rules` على Firestore.
+4. شغّل `npm run seed:offices` لاستيراد المكاتب الحالية إلى Firestore.
+5. أنشئ أول مستخدم في Firebase Auth، ثم اربطه كسوبر أدمن:
+
+```bash
+npm run admin:create-profile -- <firebase-uid> admin@example.com "Super Admin"
+```
+
+بعدها افتح `/ar/admin/login`. رابط الحجز الداخلي أصبح `/ar/booking`.
 
 ## هيكل المشروع | Project structure ( مختصر )
 

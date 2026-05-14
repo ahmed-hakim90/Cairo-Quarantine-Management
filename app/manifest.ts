@@ -56,9 +56,15 @@ export default function manifest(): MetadataRoute.Manifest {
     ],
     shortcuts: [
       {
-        name: " حجز موعد تطعيم / تقديم شكوى ",
-        short_name: " حجز موعد تطعيم / تقديم شكوى ",
-        url: "/ar/international-traveler",
+        name: "حجز موعد تطعيم",
+        short_name: "حجز تطعيم",
+        url: "/ar/booking",
+        icons: [{ src: "/icons/icon-192.png", sizes: "192x192" }],
+      },
+      {
+        name: "تقديم شكوى أو مقترح",
+        short_name: "شكوى ومقترح",
+        url: "/ar/complaint",
         icons: [{ src: "/icons/icon-192.png", sizes: "192x192" }],
       },
       {

@@ -55,13 +55,12 @@ type Props = {
 
 export function FloatingTextToSpeechButton({ locale, labels }: Props) {
   const [state, setState] = useState<TtsState>("idle");
-  const [supported, setSupported] = useState(true);
+  const [supported] = useState(
+    () => typeof window === "undefined" || "speechSynthesis" in window,
+  );
   const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
 
   useEffect(() => {
-    if (typeof window !== "undefined" && !("speechSynthesis" in window)) {
-      setSupported(false);
-    }
     return () => {
       window.speechSynthesis?.cancel();
     };

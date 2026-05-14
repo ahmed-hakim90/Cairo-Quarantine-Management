@@ -1,0 +1,51 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function profile() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid));
+    }
+
+    function activeAdmin() {
+      return signedIn() &&
+        profile().data.active == true &&
+        (profile().data.role == "super_admin" ||
+          profile().data.role == "office_user");
+    }
+
+    function superAdmin() {
+      return activeAdmin() && profile().data.role == "super_admin";
+    }
+
+    function officeUserFor(officeId) {
+      return activeAdmin() &&
+        profile().data.role == "office_user" &&
+        profile().data.officeId == officeId;
+    }
+
+    match /offices/{officeId} {
+      allow read: if activeAdmin();
+      allow write: if superAdmin();
+    }
+
+    match /messageTemplates/{templateId} {
+      allow read: if activeAdmin();
+      allow write: if superAdmin();
+    }
+
+    match /users/{uid} {
+      allow read: if superAdmin() || (signedIn() && request.auth.uid == uid);
+      allow write: if superAdmin();
+    }
+
+    match /requests/{requestId} {
+      allow read, update: if superAdmin() || officeUserFor(resource.data.officeId);
+      allow create: if false;
+      allow delete: if superAdmin();
+    }
+  }
+}
