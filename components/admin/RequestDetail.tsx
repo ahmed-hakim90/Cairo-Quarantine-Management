@@ -3,14 +3,13 @@ import {
   markWhatsappSentAction,
   updateRequestAction,
 } from "@/app/[locale]/admin/actions";
-import {
-  renderTemplate,
-  whatsappUrl,
-} from "@/lib/office-requests/store";
+import { RequestWhatsAppPanel } from "@/components/admin/RequestWhatsAppPanel";
+import { RequestActivityTimeline } from "@/components/admin/RequestActivityTimeline";
 import {
   REQUEST_STATUS_LABELS,
   REQUEST_TYPE_LABELS,
   TRAVELER_CATEGORY_LABELS,
+  type AdminActivityLogEntry,
   type MessageTemplate,
   type Office,
   type OfficeRequest,
@@ -20,7 +19,8 @@ type RequestDetailProps = {
   locale: string;
   request: OfficeRequest;
   office: Office;
-  template: MessageTemplate;
+  whatsappTemplates: MessageTemplate[];
+  activityLogs: AdminActivityLogEntry[];
 };
 
 const fieldClass =
@@ -38,10 +38,9 @@ export function RequestDetail({
   locale,
   request,
   office,
-  template,
+  whatsappTemplates,
+  activityLogs,
 }: RequestDetailProps) {
-  const message = renderTemplate({ request, office, template });
-  const href = whatsappUrl(request.phone, message);
   const travelerCategory = request.travelerCategory
     ? TRAVELER_CATEGORY_LABELS[request.travelerCategory]
     : "-";
@@ -50,10 +49,10 @@ export function RequestDetail({
     <section className="bg-gov-gray-50">
       <div className="mx-auto max-w-6xl px-4 py-8">
         <Link
-          href={`/${locale}/admin`}
+          href={`/${locale}/admin/requests`}
           className="inline-flex min-h-10 items-center rounded-md border border-gov-gray-200 bg-white px-3 text-sm font-bold text-gov-navy shadow-sm transition hover:border-gov-accent hover:text-gov-accent"
         >
-          العودة للوحة التحكم
+          العودة إلى قائمة الطلبات
         </Link>
 
       <div className="mt-5 rounded-lg border border-gov-gray-200 bg-white shadow-sm">
@@ -96,26 +95,19 @@ export function RequestDetail({
             <h2 className="mt-6 font-heading text-lg font-bold text-gov-navy">
               رسالة واتساب
             </h2>
-            <p className="mt-3 min-h-32 whitespace-pre-wrap rounded-md border border-emerald-100 bg-emerald-50 p-4 leading-relaxed text-emerald-950">
-              {message}
-            </p>
-            <div className="mt-4 flex flex-col gap-3 sm:flex-row">
-              <a
-                href={href}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex min-h-11 items-center justify-center rounded-md bg-[#25D366] px-5 py-3 text-sm font-bold text-white transition hover:brightness-95"
-              >
-                فتح واتساب
-              </a>
-              <form action={markWhatsappSentAction}>
-                <input type="hidden" name="id" value={request.id} />
-                <input type="hidden" name="locale" value={locale} />
-                <button className="inline-flex min-h-11 items-center justify-center rounded-md border border-gov-gray-200 bg-white px-5 py-3 text-sm font-bold text-gov-navy hover:bg-gov-gray-50">
-                  تسجيل أنه تم التواصل
-                </button>
-              </form>
-            </div>
+            <RequestWhatsAppPanel
+              phone={request.phone}
+              templates={whatsappTemplates}
+              request={request}
+              office={office}
+            />
+            <form action={markWhatsappSentAction} className="mt-4">
+              <input type="hidden" name="id" value={request.id} />
+              <input type="hidden" name="locale" value={locale} />
+              <button className="inline-flex min-h-11 items-center justify-center rounded-md border border-gov-gray-200 bg-white px-5 py-3 text-sm font-bold text-gov-navy hover:bg-gov-gray-50">
+                تسجيل أنه تم التواصل
+              </button>
+            </form>
           </div>
 
           <form
@@ -188,6 +180,13 @@ export function RequestDetail({
             </dd>
           </div>
         </dl>
+
+        <div className="border-t border-gov-gray-200 p-5 md:p-7">
+          <h2 className="font-heading text-lg font-bold text-gov-navy">
+            سجل النشاط
+          </h2>
+          <RequestActivityTimeline entries={activityLogs} />
+        </div>
       </div>
       </div>
     </section>

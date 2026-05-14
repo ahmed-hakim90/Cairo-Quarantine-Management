@@ -7,7 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "test": "vitest run",
     "seed:offices": "node --env-file=.env.local scripts/seed-firestore-offices.mjs",
+    "seed:vaccines": "node --env-file=.env.local scripts/seed-firestore-vaccines.mjs",
     "admin:create-profile": "node --env-file=.env.local scripts/create-admin-profile.mjs"
   },
   "dependencies": {
@@ -15,7 +17,9 @@
     "firebase-admin": "^13.10.0",
     "next": "16.2.6",
     "react": "19.2.4",
-    "react-dom": "19.2.4"
+    "react-dom": "19.2.4",
+    "recharts": "^2.15.4",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
@@ -27,6 +31,7 @@
     "png-to-ico": "^3.0.1",
     "sharp": "^0.34.5",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^3.2.4"
   }
 }

@@ -32,6 +32,10 @@ service cloud.firestore {
       allow write: if superAdmin();
     }
 
+    match /vaccines/{vaccineId} {
+      allow read, write: if superAdmin();
+    }
+
     match /messageTemplates/{templateId} {
       allow read: if activeAdmin();
       allow write: if superAdmin();
@@ -46,6 +50,10 @@ service cloud.firestore {
       allow read, update: if superAdmin() || officeUserFor(resource.data.officeId);
       allow create: if false;
       allow delete: if superAdmin();
+    }
+
+    match /activityLogs/{logId} {
+      allow read, write: if false;
     }
   }
 }

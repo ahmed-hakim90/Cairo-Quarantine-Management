@@ -17,6 +17,9 @@ export type Messages = {
     switchLangAria: string;
     bookVaccination: string;
     bookVaccinationAria: string;
+    mainMenuHeading: string;
+    openMenuAria: string;
+    closeMenuAria: string;
   };
   footer: {
     title: string;
@@ -212,6 +215,9 @@ const ar: Messages = {
     bookVaccination: "حجز موعد تطعيم",
     bookVaccinationAria:
       "فتح شاشة حجز موعد تطعيم بإدارة الحجر الصحي بالقاهرة",
+    mainMenuHeading: "القائمة",
+    openMenuAria: "فتح قائمة التنقل الرئيسية",
+    closeMenuAria: "إغلاق قائمة التنقل",
   },
   footer: {
     title: "إدارة الحجر الصحي بالقاهرة",
@@ -455,6 +461,9 @@ const en: Messages = {
     bookVaccination: "Book vaccination",
     bookVaccinationAria:
       "Open the Cairo Quarantine Administration vaccination booking screen",
+    mainMenuHeading: "Menu",
+    openMenuAria: "Open main navigation menu",
+    closeMenuAria: "Close navigation menu",
   },
   footer: {
     title: "Cairo Quarantine Administration",
@@ -700,6 +709,9 @@ const zh: Messages = {
     switchLangAria: "切换语言",
     bookVaccination: "预约接种",
     bookVaccinationAria: "打开开罗检疫管理处疫苗预约页面",
+    mainMenuHeading: "菜单",
+    openMenuAria: "打开主导航菜单",
+    closeMenuAria: "关闭导航菜单",
   },
   footer: {
     title: "开罗检疫管理处",

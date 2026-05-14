@@ -5,20 +5,41 @@ import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 import { getAdminSession, assertSuperAdmin, ADMIN_SESSION_COOKIE } from "@/lib/office-requests/session";
 import {
+  deleteAdminUserAccount,
+  deleteMessageTemplate,
   markWhatsappSentForSession,
+  saveBookingSettings,
   setOfficeActive,
+  setVaccineActive,
   updateRequestForSession,
   upsertAdminUserAccount,
   upsertMessageTemplate,
   upsertOffice,
+  upsertVaccine,
 } from "@/lib/office-requests/store";
 import type {
+  AdminActivityActor,
   AdminRole,
+  AdminSession,
   OfficeRequestStatus,
+  VaccineCatalogEntry,
+  VaccineUserCategory,
 } from "@/lib/office-requests/types";
+import { DEFAULT_BOOKING_SAME_DAY_CUTOFF_HOUR } from "@/lib/office-requests/types";
+import { locales } from "@/lib/i18n/config";
 
 function formValue(formData: FormData, key: string) {
   return String(formData.get(key) ?? "").trim();
+}
+
+function adminActorFromSession(session: AdminSession): AdminActivityActor {
+  return {
+    uid: session.uid,
+    label:
+      session.profile.displayName ||
+      session.email ||
+      session.uid,
+  };
 }
 
 async function requireSession() {
@@ -46,9 +67,11 @@ export async function updateRequestAction(formData: FormData) {
     notes,
     role: session.profile.role,
     officeId: session.profile.officeId,
+    actor: adminActorFromSession(session),
   });
 
   revalidatePath(`/${locale}/admin`);
+  revalidatePath(`/${locale}/admin/requests`);
   revalidatePath(`/${locale}/admin/requests/${id}`);
 }
 
@@ -61,9 +84,11 @@ export async function markWhatsappSentAction(formData: FormData) {
     id,
     role: session.profile.role,
     officeId: session.profile.officeId,
+    actor: adminActorFromSession(session),
   });
 
   revalidatePath(`/${locale}/admin`);
+  revalidatePath(`/${locale}/admin/requests`);
   revalidatePath(`/${locale}/admin/requests/${id}`);
 }
 
@@ -72,14 +97,31 @@ export async function saveTemplateAction(formData: FormData) {
   assertSuperAdmin(session);
   const locale = formValue(formData, "locale") || "ar";
 
-  await upsertMessageTemplate({
-    id: formValue(formData, "id") || "new",
-    title: formValue(formData, "title"),
-    body: formValue(formData, "body"),
-    active: formData.get("active") === "on",
-  });
+  await upsertMessageTemplate(
+    {
+      id: formValue(formData, "id") || "new",
+      title: formValue(formData, "title"),
+      body: formValue(formData, "body"),
+      active: formData.get("active") === "on",
+    },
+    adminActorFromSession(session),
+  );
 
-  revalidatePath(`/${locale}/admin`);
+  revalidatePath(`/${locale}/admin`, "layout");
+  revalidatePath(`/${locale}/admin/settings`);
+}
+
+export async function deleteTemplateAction(formData: FormData) {
+  const session = await requireSession();
+  assertSuperAdmin(session);
+  const locale = formValue(formData, "locale") || "ar";
+  const id = formValue(formData, "id");
+  if (!id) throw new Error("معرّف القالب مفقود.");
+
+  await deleteMessageTemplate(id, adminActorFromSession(session));
+
+  revalidatePath(`/${locale}/admin`, "layout");
+  revalidatePath(`/${locale}/admin/settings`);
 }
 
 export async function saveUserProfileAction(formData: FormData) {
@@ -90,6 +132,7 @@ export async function saveUserProfileAction(formData: FormData) {
   const uid = formValue(formData, "uid");
 
   await upsertAdminUserAccount({
+    actor: adminActorFromSession(session),
     uid: uid || undefined,
     email: formValue(formData, "email"),
     password: formValue(formData, "password") || undefined,
@@ -100,7 +143,47 @@ export async function saveUserProfileAction(formData: FormData) {
   });
 
   revalidatePath(`/${locale}/admin`);
+  revalidatePath(`/${locale}/admin/users`);
   revalidatePath(`/${locale}/admin/offices`);
+}
+
+export async function deleteUserProfileAction(formData: FormData) {
+  const session = await requireSession();
+  assertSuperAdmin(session);
+  const locale = formValue(formData, "locale") || "ar";
+  const uid = formValue(formData, "uid");
+  if (!uid) throw new Error("معرّف المستخدم مفقود.");
+
+  await deleteAdminUserAccount({
+    uid,
+    actor: adminActorFromSession(session),
+  });
+
+  revalidatePath(`/${locale}/admin`);
+  revalidatePath(`/${locale}/admin/users`);
+  revalidatePath(`/${locale}/admin/offices`);
+}
+
+export async function saveBookingSettingsAction(formData: FormData) {
+  const session = await requireSession();
+  assertSuperAdmin(session);
+  const locale = formValue(formData, "locale") || "ar";
+  const raw = formValue(formData, "bookingSameDayCutoffHour");
+  const n = Number.parseInt(raw, 10);
+  await saveBookingSettings(
+    {
+      bookingSameDayCutoffHour: Number.isFinite(n)
+        ? n
+        : DEFAULT_BOOKING_SAME_DAY_CUTOFF_HOUR,
+    },
+    adminActorFromSession(session),
+  );
+
+  revalidatePath(`/${locale}/admin`);
+  revalidatePath(`/${locale}/admin/settings`);
+  for (const l of locales) {
+    revalidatePath(`/${l}/booking`);
+  }
 }
 
 export async function saveOfficeAction(formData: FormData) {
@@ -109,20 +192,30 @@ export async function saveOfficeAction(formData: FormData) {
   const locale = formValue(formData, "locale") || "ar";
   const id = formValue(formData, "id") || "new";
   const serviceRaw = formValue(formData, "service");
+  const capRaw = formValue(formData, "dailyBookingCap");
+  let dailyBookingCap: number | null = null;
+  if (capRaw !== "") {
+    const n = Number.parseInt(capRaw, 10);
+    if (Number.isFinite(n) && n > 0) dailyBookingCap = n;
+  }
 
-  await upsertOffice({
-    id,
-    administrationAr: formValue(formData, "administrationAr"),
-    nameAr: formValue(formData, "nameAr"),
-    addressAr: formValue(formData, "addressAr"),
-    phone: formValue(formData, "phone") || null,
-    mapsUrl: formValue(formData, "mapsUrl"),
-    service:
-      serviceRaw === "hajj_umrah_only"
-        ? "hajj_umrah_only"
-        : "hajj_umrah_travelers",
-    active: formData.get("active") === "on",
-  });
+  await upsertOffice(
+    {
+      id,
+      administrationAr: formValue(formData, "administrationAr"),
+      nameAr: formValue(formData, "nameAr"),
+      addressAr: formValue(formData, "addressAr"),
+      phone: formValue(formData, "phone") || null,
+      mapsUrl: formValue(formData, "mapsUrl"),
+      service:
+        serviceRaw === "hajj_umrah_only"
+          ? "hajj_umrah_only"
+          : "hajj_umrah_travelers",
+      active: formData.get("active") === "on",
+      dailyBookingCap,
+    },
+    adminActorFromSession(session),
+  );
 
   revalidatePath(`/${locale}/admin`);
   revalidatePath(`/${locale}/admin/offices`);
@@ -137,8 +230,88 @@ export async function setOfficeActiveAction(formData: FormData) {
 
   if (!officeId) throw new Error("معرّف المكتب مفقود.");
 
-  await setOfficeActive(officeId, active);
+  await setOfficeActive(officeId, active, adminActorFromSession(session));
 
   revalidatePath(`/${locale}/admin`);
   revalidatePath(`/${locale}/admin/offices`);
+}
+
+const VACCINE_CATEGORIES: VaccineUserCategory[] = [
+  "international",
+  "hajj",
+  "umrah",
+  "citizen",
+];
+
+function parseVaccineCategory(raw: string): VaccineUserCategory {
+  return VACCINE_CATEGORIES.includes(raw as VaccineUserCategory)
+    ? (raw as VaccineUserCategory)
+    : "international";
+}
+
+function revalidatePublicVaccinePages() {
+  for (const l of locales) {
+    revalidatePath(`/${l}`);
+    revalidatePath(`/${l}/international-traveler`);
+    revalidatePath(`/${l}/citizen-services`);
+    revalidatePath(`/${l}/hajj-umrah`);
+  }
+}
+
+export async function saveVaccineAction(formData: FormData) {
+  const session = await requireSession();
+  assertSuperAdmin(session);
+  const locale = formValue(formData, "locale") || "ar";
+
+  const id = formValue(formData, "id");
+  if (!id) throw new Error("معرّف اللقاح مطلوب.");
+
+  const category = parseVaccineCategory(formValue(formData, "category"));
+  const nameAr = formValue(formData, "nameAr");
+  const nameEn = formValue(formData, "nameEn");
+  const free = formData.get("free") === "on";
+  const active = formData.get("active") === "on";
+  const sortRaw = formValue(formData, "sortOrder");
+  const sortOrder = Number.parseInt(sortRaw, 10);
+  const sort = Number.isFinite(sortOrder) ? sortOrder : 0;
+
+  const priceRaw = formValue(formData, "priceEgp");
+  let priceEgp: number | null = null;
+  if (!free && priceRaw !== "") {
+    const n = Number.parseFloat(priceRaw);
+    priceEgp = Number.isFinite(n) ? n : null;
+  }
+
+  const entry: VaccineCatalogEntry = {
+    id,
+    category,
+    nameAr,
+    nameEn,
+    priceEgp: free ? null : priceEgp,
+    free,
+    sortOrder: sort,
+    active,
+  };
+
+  await upsertVaccine(entry, adminActorFromSession(session));
+
+  revalidatePath(`/${locale}/admin`);
+  revalidatePath(`/${locale}/admin/vaccines`);
+  revalidatePublicVaccinePages();
+}
+
+export async function setVaccineActiveAction(formData: FormData) {
+  const session = await requireSession();
+  assertSuperAdmin(session);
+  const locale = formValue(formData, "locale") || "ar";
+  const vaccineId = formValue(formData, "vaccineId");
+  const active = formValue(formData, "active") === "true";
+
+  if (!vaccineId) throw new Error("معرّف اللقاح مفقود.");
+
+  await setVaccineActive(vaccineId, active, adminActorFromSession(session));
+
+  revalidatePath(`/${locale}/admin`);
+  revalidatePath(`/${locale}/admin/vaccines`);
+  revalidatePublicVaccinePages();
 }

@@ -38,6 +38,8 @@ npm run dev
 | `npm run build`  | بناء الإنتاج   |
 | `npm run start`  | تشغيل بعد البناء |
 | `npm run lint`   | فحص ESLint     |
+| `npm run seed:offices` | استيراد المكاتب إلى Firestore |
+| `npm run seed:vaccines` | استيراد جدول اللقاحات إلى Firestore |
 
 ## متغيرات البيئة | Environment variables
 
@@ -56,13 +58,16 @@ npm run dev
 | `FIREBASE_CLIENT_EMAIL` | service account client email. |
 | `FIREBASE_PRIVATE_KEY` | service account private key مع `\n` escaped في `.env.local`. |
 
+إعدادات الحجز العامة (ساعة إغلاق حجز «نفس اليوم» بتوقيت القاهرة) تُحفظ في وثيقة Firestore `settings/app` ويُضبطها السوبر أدمن من `/ar/admin/settings` (افتراضي الساعة 14 إن لم تُنشأ الوثيقة).
+
 ### Firebase setup
 
 1. فعّل Firebase Auth بطريقة Email/Password.
 2. أضف متغيرات البيئة السابقة.
 3. انشر قواعد `firestore.rules` على Firestore.
-4. شغّل `npm run seed:offices` لاستيراد المكاتب الحالية إلى Firestore.
-5. أنشئ أول مستخدم في Firebase Auth، ثم اربطه كسوبر أدمن:
+4. شغّل `npm run seed:offices` لاستيراد المكاتب الحالية إلى Firestore، و`npm run seed:vaccines` لجدول اللقاحات والأسعار (مجموعة `vaccines`).
+5. عند استخدام **حد الحجوزات اليومي للمكتب**، أنشئ فهارس Firestore المركّبة المطلوبة (انظر [`firestore.indexes.json`](firestore.indexes.json) ثم `firebase deploy --only firestore:indexes` أو رابط الخطأ من أول استعلام).
+6. أنشئ أول مستخدم في Firebase Auth، ثم اربطه كسوبر أدمن:
 
 ```bash
 npm run admin:create-profile -- <firebase-uid> admin@example.com "Super Admin"

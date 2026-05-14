@@ -1,7 +1,7 @@
 "use client";
 
 import { useId, useMemo, useState } from "react";
-import { VACCINES_BY_CATEGORY } from "@/data/vaccines";
+import type { UserCategory, VaccineRecord } from "@/data/vaccines";
 import type { Locale } from "@/lib/i18n/config";
 import type { Messages } from "@/lib/i18n/messages";
 
@@ -11,20 +11,32 @@ type HajjUmrahTripPricingProps = {
   locale: Locale;
   pricing: Messages["pages"]["hajj"]["pricing"];
   currencyLabel: string;
+  vaccinesByCategory: Record<UserCategory, VaccineRecord[]>;
+  freeLabel: string;
 };
 
 export function HajjUmrahTripPricing({
   locale,
   pricing,
   currencyLabel,
+  vaccinesByCategory,
+  freeLabel,
 }: HajjUmrahTripPricingProps) {
   const selectId = useId();
   const [trip, setTrip] = useState<TripKind>("hajj");
 
-  const primary = useMemo(
-    () => VACCINES_BY_CATEGORY[trip][0],
-    [trip],
-  );
+  const primary = useMemo(() => {
+    const row = vaccinesByCategory[trip][0];
+    return (
+      row ?? {
+        id: "none",
+        nameAr: "—",
+        nameEn: "—",
+        priceEgp: null,
+        free: true,
+      }
+    );
+  }, [trip, vaccinesByCategory]);
 
   const numberLocale =
     locale === "ar" ? "ar-EG" : locale === "zh" ? "zh-CN" : "en-US";
@@ -76,12 +88,22 @@ export function HajjUmrahTripPricing({
               </p>
               <div className="mt-6 border-t border-gov-gray-100 pt-6">
                 <p className="flex flex-wrap items-baseline gap-2">
-                  <span className="font-heading text-4xl font-bold tabular-nums text-gov-navy sm:text-5xl">
-                    {primary.priceEgp?.toLocaleString(numberLocale)}
-                  </span>
-                  <span className="text-lg font-medium text-gov-gray-600">
-                    {currencyLabel}
-                  </span>
+                  {primary.free ? (
+                    <span className="font-heading text-2xl font-bold text-gov-accent sm:text-3xl">
+                      {freeLabel}
+                    </span>
+                  ) : (
+                    <>
+                      <span className="font-heading text-4xl font-bold tabular-nums text-gov-navy sm:text-5xl">
+                        {primary.priceEgp != null
+                          ? primary.priceEgp.toLocaleString(numberLocale)
+                          : "—"}
+                      </span>
+                      <span className="text-lg font-medium text-gov-gray-600">
+                        {currencyLabel}
+                      </span>
+                    </>
+                  )}
                 </p>
               </div>
             </div>

@@ -1,0 +1,64 @@
+import { notFound, redirect } from "next/navigation";
+import { RequestDetail } from "@/components/admin/RequestDetail";
+import { isLocale } from "@/lib/i18n/config";
+import { getAdminSession } from "@/lib/office-requests/session";
+import {
+  getOffice,
+  getRequestForSession,
+  listActivityLogsForRequest,
+  listMessageTemplates,
+} from "@/lib/office-requests/store";
+import { DEFAULT_MESSAGE_TEMPLATE } from "@/lib/office-requests/types";
+
+export default async function AdminRequestPage({
+  params,
+}: {
+  params: Promise<{ locale: string; id: string }>;
+}) {
+  const { locale, id } = await params;
+  if (!isLocale(locale)) notFound();
+
+  const session = await getAdminSession();
+  if (!session) redirect(`/${locale}/admin/login`);
+
+  const request = await getRequestForSession({
+    id,
+    role: session.profile.role,
+    officeId: session.profile.officeId,
+  });
+  if (!request) notFound();
+
+  const [office, templates, activityLogs] = await Promise.all([
+    getOffice(request.officeId),
+    listMessageTemplates(),
+    listActivityLogsForRequest({
+      requestId: id,
+      role: session.profile.role,
+      officeId: session.profile.officeId,
+    }),
+  ]);
+  if (!office) notFound();
+
+  const activeTemplates = templates.filter((item) => item.active);
+  const whatsappTemplates =
+    activeTemplates.length > 0
+      ? activeTemplates
+      : [
+          {
+            id: "default",
+            title: "رسالة متابعة افتراضية",
+            body: DEFAULT_MESSAGE_TEMPLATE,
+            active: true,
+          },
+        ];
+
+  return (
+    <RequestDetail
+      locale={locale}
+      request={request}
+      office={office}
+      whatsappTemplates={whatsappTemplates}
+      activityLogs={activityLogs}
+    />
+  );
+}

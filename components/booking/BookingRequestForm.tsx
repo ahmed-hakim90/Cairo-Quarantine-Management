@@ -1,21 +1,25 @@
 "use client";
 
-import { useActionState, useEffect, useRef } from "react";
+import { useActionState, useEffect, useMemo, useRef, useState } from "react";
 import {
   submitOfficeRequest,
   type BookingFormState,
-} from "@/app/[locale]/booking/actions";
+} from "@/app/[locale]/(public)/booking/actions";
 import { LocaleLink } from "@/components/i18n/LocaleLink";
+import { getCairoMinBookingYmd } from "@/lib/cairo-today-ymd";
 import type { Locale } from "@/lib/i18n/config";
-import type {
-  Office,
-  PublicOfficeRequestStatus,
+import {
+  DEFAULT_BOOKING_SAME_DAY_CUTOFF_HOUR,
+  type Office,
+  type PublicOfficeRequestStatus,
 } from "@/lib/office-requests/types";
 
 type BookingRequestFormProps = {
   offices: Office[];
   locale: Locale;
   mode: "booking" | "complaint";
+  /** Cairo same-day cutoff hour (0–23), from `settings/app` on booking page. */
+  sameDayCutoffHour?: number;
 };
 
 type StoredRequest = PublicOfficeRequestStatus & {
@@ -58,6 +62,7 @@ export function BookingRequestForm({
   offices,
   locale,
   mode,
+  sameDayCutoffHour = DEFAULT_BOOKING_SAME_DAY_CUTOFF_HOUR,
 }: BookingRequestFormProps) {
   const [state, action, pending] = useActionState(
     submitOfficeRequest,
@@ -71,6 +76,34 @@ export function BookingRequestForm({
   const nameRef = useRef<HTMLInputElement>(null);
   const phoneRef = useRef<HTMLInputElement>(null);
   const detailsRef = useRef<HTMLTextAreaElement>(null);
+
+  const [officeId, setOfficeId] = useState(state.values?.officeId ?? "");
+  const [preferredDate, setPreferredDate] = useState(
+    state.values?.preferredDate ?? "",
+  );
+  const [travelerCategory, setTravelerCategory] = useState(
+    state.values?.travelerCategory ?? "",
+  );
+  const [dayFull, setDayFull] = useState(false);
+  const [availabilityHint, setAvailabilityHint] = useState<string | null>(
+    null,
+  );
+  const [availabilityPending, setAvailabilityPending] = useState(false);
+
+  const minYmd = useMemo(
+    () => getCairoMinBookingYmd(new Date(), { sameDayCutoffHour }),
+    [sameDayCutoffHour],
+  );
+
+  useEffect(() => {
+    if (state.ok || !state.values) return;
+    const id = requestAnimationFrame(() => {
+      setOfficeId(state.values!.officeId);
+      setPreferredDate(state.values!.preferredDate ?? "");
+      setTravelerCategory(state.values!.travelerCategory ?? "");
+    });
+    return () => cancelAnimationFrame(id);
+  }, [state.ok, state.values]);
 
   useEffect(() => {
     if (
@@ -105,6 +138,73 @@ export function BookingRequestForm({
     field?.focus();
     field?.scrollIntoView({ behavior: "smooth", block: "center" });
   }, [state.errors]);
+
+  useEffect(() => {
+    if (mode !== "booking") {
+      const id = requestAnimationFrame(() => {
+        setDayFull(false);
+        setAvailabilityHint(null);
+        setAvailabilityPending(false);
+      });
+      return () => cancelAnimationFrame(id);
+    }
+
+    const oid = officeId.trim();
+    const d = preferredDate.trim();
+    if (!oid || !/^\d{4}-\d{2}-\d{2}$/.test(d)) {
+      const clearId = requestAnimationFrame(() => {
+        setDayFull(false);
+        setAvailabilityHint(null);
+        setAvailabilityPending(false);
+      });
+      return () => cancelAnimationFrame(clearId);
+    }
+
+    const ac = new AbortController();
+    const pendingId = requestAnimationFrame(() => {
+      setAvailabilityPending(true);
+    });
+    const timer = window.setTimeout(async () => {
+      try {
+        const res = await fetch(
+          `/api/booking/availability?officeId=${encodeURIComponent(oid)}&preferredDate=${encodeURIComponent(d)}`,
+          { signal: ac.signal },
+        );
+        const data = (await res.json()) as {
+          available?: boolean;
+          fullMessage?: string;
+        };
+        if (ac.signal.aborted) return;
+        const full = res.ok && data.available === false;
+        setDayFull(full);
+        setAvailabilityHint(
+          full
+            ? (data.fullMessage ??
+              "لا يمكن الحجز في هذا اليوم؛ تم بلوغ العدد المسموح لهذا المكتب.")
+            : null,
+        );
+      } catch {
+        if (!ac.signal.aborted) {
+          setDayFull(false);
+          setAvailabilityHint(null);
+        }
+      } finally {
+        if (!ac.signal.aborted) setAvailabilityPending(false);
+      }
+    }, 350);
+
+    return () => {
+      cancelAnimationFrame(pendingId);
+      ac.abort();
+      window.clearTimeout(timer);
+    };
+  }, [mode, officeId, preferredDate]);
+
+  const bookingBlocked =
+    mode === "booking" && (dayFull || availabilityPending);
+
+  const preferredDateError =
+    state.errors?.preferredDate ?? availabilityHint ?? undefined;
 
   return (
     <form action={action} className="space-y-0">
@@ -172,7 +272,8 @@ export function BookingRequestForm({
               name="officeId"
               required
               className={inputClass}
-              defaultValue={state.values?.officeId ?? ""}
+              value={officeId}
+              onChange={(e) => setOfficeId(e.target.value)}
               disabled={offices.length === 0}
             >
               <option value="" disabled>
@@ -195,7 +296,8 @@ export function BookingRequestForm({
                 name="travelerCategory"
                 required
                 className={inputClass}
-                defaultValue={state.values?.travelerCategory ?? ""}
+                value={travelerCategory}
+                onChange={(e) => setTravelerCategory(e.target.value)}
               >
                 <option value="" disabled>
                   اختر نوع المسافر
@@ -232,10 +334,17 @@ export function BookingRequestForm({
               name="preferredDate"
               type="date"
               required
+              min={minYmd}
               className={inputClass}
-              defaultValue={state.values?.preferredDate ?? ""}
+              value={preferredDate}
+              onChange={(e) => setPreferredDate(e.target.value)}
             />
-            <FieldError message={state.errors?.preferredDate} />
+            {availabilityPending ? (
+              <p className="mt-1 text-xs text-gov-gray-600">
+                جاري التحقق من التوفر…
+              </p>
+            ) : null}
+            <FieldError message={preferredDateError} />
           </label>
         ) : null}
 
@@ -299,7 +408,7 @@ export function BookingRequestForm({
         </p>
         <button
           type="submit"
-          disabled={pending || offices.length === 0}
+          disabled={pending || offices.length === 0 || bookingBlocked}
           className="inline-flex min-h-11 items-center justify-center rounded-md bg-gov-accent px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-gov-navy disabled:cursor-not-allowed disabled:opacity-60"
         >
           {pending

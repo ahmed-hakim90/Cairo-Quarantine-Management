@@ -1,11 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import {
-  VACCINES_BY_CATEGORY,
-  type UserCategory,
-  type VaccineRecord,
-} from "@/data/vaccines";
+import type { UserCategory, VaccineRecord } from "@/data/vaccines";
 import type { Locale } from "@/lib/i18n/config";
 import type { Messages } from "@/lib/i18n/messages";
 import { getVaccinationBookingFormUrl } from "@/lib/site-booking";
@@ -18,6 +14,7 @@ const CATEGORY_ORDER: UserCategory[] = [
 ];
 
 type VaccineSelectorProps = {
+  vaccinesByCategory: Record<UserCategory, VaccineRecord[]>;
   /** Pre-select audience (e.g. on dedicated service pages) */
   initialCategory?: UserCategory;
   /** If set, only these audiences appear in the dropdown */
@@ -39,12 +36,16 @@ function vaccineName(record: VaccineRecord, locale: Locale): string {
   return locale === "ar" ? record.nameAr : record.nameEn;
 }
 
-function idsFromCategory(cat: UserCategory): Set<string> {
-  const first = VACCINES_BY_CATEGORY[cat][0]?.id;
+function idsFromCategory(
+  cat: UserCategory,
+  vaccinesByCategory: Record<UserCategory, VaccineRecord[]>,
+): Set<string> {
+  const first = vaccinesByCategory[cat][0]?.id;
   return new Set(first ? [first] : []);
 }
 
 export function VaccineSelector({
+  vaccinesByCategory,
   initialCategory = "international",
   allowedCategories,
   sectionId = "vaccine-selector",
@@ -78,14 +79,14 @@ export function VaccineSelector({
 
   const [category, setCategory] = useState<UserCategory>(resolvedInitial);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(() =>
-    idsFromCategory(resolvedInitial),
+    idsFromCategory(resolvedInitial, vaccinesByCategory),
   );
 
-  const list: VaccineRecord[] = VACCINES_BY_CATEGORY[category];
+  const list: VaccineRecord[] = vaccinesByCategory[category];
 
   function handleCategoryChange(next: UserCategory) {
     setCategory(next);
-    setSelectedIds(idsFromCategory(next));
+    setSelectedIds(idsFromCategory(next, vaccinesByCategory));
   }
 
   function toggleVaccine(id: string) {

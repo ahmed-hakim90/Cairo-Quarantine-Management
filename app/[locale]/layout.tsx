@@ -2,13 +2,6 @@ import type { Metadata, Viewport } from "next";
 import { Almarai, IBM_Plex_Sans_Arabic, Noto_Sans_SC } from "next/font/google";
 import { notFound } from "next/navigation";
 import "../globals.css";
-import { FloatingTextToSpeechButton } from "@/components/layout/FloatingTextToSpeechButton";
-import { FloatingVaccinationBookingButton } from "@/components/layout/FloatingVaccinationBookingButton";
-import { FloatingWhatsAppButton } from "@/components/layout/FloatingWhatsAppButton";
-import { SiteFooter } from "@/components/layout/SiteFooter";
-import { SiteHeader } from "@/components/layout/SiteHeader";
-import { InstallPrompt } from "@/components/pwa/InstallPrompt";
-import { ServiceWorkerRegistrar } from "@/components/pwa/ServiceWorkerRegistrar";
 import {
   isLocale,
   locales,
@@ -92,7 +85,6 @@ export default async function LocaleLayout({
   const { locale: localeParam } = await params;
   if (!isLocale(localeParam)) notFound();
   const locale = localeParam as Locale;
-  const messages = getMessages(locale);
   const dir = locale === "ar" ? "rtl" : "ltr";
   const lang =
     locale === "ar" ? "ar" : locale === "zh" ? "zh-CN" : "en";
@@ -104,26 +96,7 @@ export default async function LocaleLayout({
   return (
     <html lang={lang} dir={dir} className={htmlClass}>
       <body className="flex min-h-full flex-col bg-background text-foreground antialiased">
-        <a
-          href="#main-content"
-          className="absolute start-4 top-0 z-[100] -translate-y-full rounded-md bg-gov-accent px-4 py-3 text-sm font-semibold text-white shadow-md transition-transform focus:translate-y-4"
-        >
-          {messages.skipLink}
-        </a>
-        <SiteHeader locale={locale} messages={messages} />
-        <main id="main-content" className="flex-1">
-          {children}
-        </main>
-        <SiteFooter messages={messages} />
-        <FloatingWhatsAppButton />
-        <FloatingTextToSpeechButton locale={locale} labels={messages.tts} />
-        <FloatingVaccinationBookingButton
-          label={messages.nav.bookVaccination}
-          ariaLabel={messages.nav.bookVaccinationAria}
-          locale={locale}
-        />
-        <ServiceWorkerRegistrar />
-        <InstallPrompt pwa={messages.pwa} />
+        {children}
       </body>
     </html>
   );

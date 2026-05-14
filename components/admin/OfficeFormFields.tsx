@@ -57,7 +57,7 @@ export function OfficeFormFields({ office }: OfficeFormFieldsProps) {
         <input
           name="mapsUrl"
           required
-          type="url"
+          type="text"
           defaultValue={office?.mapsUrl ?? ""}
           className={officeFieldClass}
         />
@@ -74,6 +74,26 @@ export function OfficeFormFields({ office }: OfficeFormFieldsProps) {
           </option>
           <option value="hajj_umrah_only">حج وعمرة فقط</option>
         </select>
+      </label>
+      <label className="mt-3 block text-sm font-bold text-gov-navy">
+        الحد الأقصى لحجوزات اليوم الواحد
+        <input
+          name="dailyBookingCap"
+          type="number"
+          min={1}
+          inputMode="numeric"
+          className={officeFieldClass}
+          placeholder="اتركه فارغاً = بلا حد"
+          defaultValue={
+            office?.dailyBookingCap != null && office.dailyBookingCap > 0
+              ? String(office.dailyBookingCap)
+              : ""
+          }
+        />
+        <span className="mt-1 block text-xs font-normal text-gov-gray-600">
+          عدد طلبات الحجز المسموح بها لكل يوم تقويمي لهذا المكتب (يشمل الطلبات
+          الملغاة في العدّ). فارغ = لا يوجد حد.
+        </span>
       </label>
       <label className="mt-3 flex items-center gap-2 text-sm font-bold text-gov-navy">
         <input

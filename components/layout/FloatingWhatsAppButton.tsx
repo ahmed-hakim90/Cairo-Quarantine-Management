@@ -27,7 +27,7 @@ export function FloatingWhatsAppButton() {
       href={href}
       target="_blank"
       rel="noopener noreferrer"
-      className="fixed bottom-5 start-5 z-[60] flex size-14 items-center justify-center rounded-full bg-[#25D366] text-white shadow-lg shadow-gov-gray-900/20 transition-transform hover:scale-105 focus-visible:scale-105 active:scale-95"
+      className="flex size-14 items-center justify-center rounded-full bg-[#25D366] text-white shadow-lg shadow-gov-gray-900/20 transition-transform hover:scale-105 focus-visible:scale-105 active:scale-95"
       aria-label="فتح واتساب للشكاوى والاقتراحات"
       title="الشكاوى والاقتراحات عبر واتساب"
     >

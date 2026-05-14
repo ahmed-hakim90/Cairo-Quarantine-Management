@@ -19,9 +19,18 @@ export type Office = {
   mapsUrl: string;
   service: "hajj_umrah_travelers" | "hajj_umrah_only";
   active: boolean;
+  /** Max booking requests per calendar day for this office; omit or null = unlimited. */
+  dailyBookingCap?: number | null;
   createdAt?: string;
   updatedAt?: string;
 };
+
+/** Persisted under Firestore `settings/app`. */
+export type AppBookingSettings = {
+  bookingSameDayCutoffHour: number;
+};
+
+export const DEFAULT_BOOKING_SAME_DAY_CUTOFF_HOUR = 14;
 
 export type OfficeRequest = {
   id: string;
@@ -73,10 +82,64 @@ export type MessageTemplate = {
   updatedAt?: string;
 };
 
+/** جمهور اللقاح في الكتالوج (يتطابق مع `UserCategory` في `data/vaccines.ts`). */
+export type VaccineUserCategory =
+  | "international"
+  | "hajj"
+  | "umrah"
+  | "citizen";
+
+export type VaccineCatalogEntry = {
+  id: string;
+  category: VaccineUserCategory;
+  nameAr: string;
+  nameEn: string;
+  priceEgp: number | null;
+  free: boolean;
+  sortOrder: number;
+  active: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
 export type AdminSession = {
   uid: string;
   email: string | null;
   profile: AdminUserProfile;
+};
+
+/** منفّذ إجراء مسجّل في سجل النشاط (يُمرَّر من الإجراءات على الخادم). */
+export type AdminActivityActor = {
+  uid: string;
+  label: string;
+};
+
+export type AdminActivityLogAction =
+  | "request.updated"
+  | "request.whatsapp_marked"
+  | "user.created"
+  | "user.updated"
+  | "user.deleted"
+  | "settings.booking_updated"
+  | "office.created"
+  | "office.updated"
+  | "office.active_changed"
+  | "vaccine.upserted"
+  | "vaccine.active_changed"
+  | "template.created"
+  | "template.updated"
+  | "template.deleted";
+
+export type AdminActivityLogEntry = {
+  id: string;
+  createdAt: string;
+  actorUid: string;
+  actorLabel: string;
+  action: AdminActivityLogAction;
+  summaryAr: string;
+  officeId: string | null;
+  requestId?: string;
+  meta?: Record<string, unknown>;
 };
 
 export const REQUEST_TYPE_LABELS: Record<OfficeRequestType, string> = {
