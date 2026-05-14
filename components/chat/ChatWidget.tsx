@@ -267,7 +267,7 @@ export function ChatWidget({ locale, messages: labels }: ChatWidgetProps) {
         </section>
       )}
 
-      {/* <button
+      <button
     
         type="button"
         onClick={toggleOpen}
@@ -276,7 +276,7 @@ export function ChatWidget({ locale, messages: labels }: ChatWidgetProps) {
         className="flex size-14 items-center justify-center rounded-full bg-gov-navy text-white shadow-lg shadow-gov-gray-900/25 transition-transform hover:scale-105 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gov-navy active:scale-95"
       >
         {open ? <CloseIcon className="size-6" /> : <ChatIcon className="size-7" />}
-      </button> */}
+      </button>
     </div>
   );
 }
