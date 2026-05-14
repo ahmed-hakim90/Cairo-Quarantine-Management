@@ -117,7 +117,7 @@ export function FloatingTextToSpeechButton({ locale, labels }: Props) {
         : labels.read;
 
   return (
-    <div className="fixed bottom-24 start-5 z-[60] flex flex-col items-center gap-2">
+    <div className="fixed bottom-44 start-5 z-[60] flex flex-col items-center gap-2">
       <button
         type="button"
         onClick={handleMainClick}
