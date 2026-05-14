@@ -1,3 +1,6 @@
+import { getLocalChatResponse } from "@/lib/chat/local-responses";
+import { buildPortalContextSnippet } from "@/lib/chat/portal-context";
+
 type ChatMessage = {
   role: "user" | "assistant";
   content: string;
@@ -26,7 +29,12 @@ function buildSystemPrompt(locale: string | undefined) {
     `The current site language is ${defaultLanguage}.`,
     "Always detect the user's message language and answer only in that same language.",
     "Help users with quarantine, traveler vaccination, Hajj/Umrah vaccination, citizen vaccination, office locations, documents, booking, and complaint steps.",
-    "When you give instructions, use clear numbered steps and simple wording.",
+    "For Arabic replies, use clear simple Modern Standard Arabic. Do not use broken Arabic, nonsense words, or dialect unless the user explicitly asks for it.",
+    "Never restate a malformed version of the user's question. If the question is unclear, ask for one short clarification sentence only.",
+    "Default answer format: first give a clear two-line maximum summary, then a numbered list of 3 to 7 practical steps.",
+    "Keep each numbered step short and useful. Do not write long paragraphs.",
+    "For Hajj/Umrah questions, prioritize required documents, core vaccinations, vaccination certificate, nearest authorized office guidance, and official confirmation.",
+    "For nearest office, address, phone, or map questions, never invent a specific office, address, phone number, or map link. Direct the user to the portal office/location table and ask them for their area if needed.",
     "Use the available conversation context and general knowledge only; do not claim that you searched the web or checked live Ministry of Health pages.",
     "If current official information is required, say clearly that the user should confirm through official Ministry channels or the nearest authorized vaccination office.",
     "Do not invent prices, appointment availability, medical advice, or legal requirements. Present medical guidance as informational and advise users to confirm with authorized health staff.",
@@ -82,9 +90,10 @@ function requestOpenRouter({
     body: JSON.stringify({
       model,
       stream: true,
-      temperature: 0.2,
+      temperature: 0.1,
       messages: [
         { role: "system", content: buildSystemPrompt(locale) },
+        { role: "system", content: buildPortalContextSnippet(locale) },
         ...messages,
       ],
     }),
@@ -152,6 +161,18 @@ function streamOpenRouterResponse(response: Response) {
   });
 }
 
+function streamTextResponse(content: string) {
+  const encoder = new TextEncoder();
+
+  return new ReadableStream<Uint8Array>({
+    start(controller) {
+      controller.enqueue(encoder.encode(`data: ${JSON.stringify({ content })}\n\n`));
+      controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+      controller.close();
+    },
+  });
+}
+
 export async function POST(request: Request) {
   const apiKey = process.env.OPENROUTER_API_KEY;
   if (!apiKey) {
@@ -174,6 +195,20 @@ export async function POST(request: Request) {
       { error: "A user message is required." },
       { status: 400 },
     );
+  }
+
+  const localResponse = getLocalChatResponse({
+    locale: body.locale,
+    message: messages[messages.length - 1].content,
+  });
+
+  if (localResponse) {
+    return new Response(streamTextResponse(localResponse), {
+      headers: {
+        "Cache-Control": "no-cache, no-transform",
+        "Content-Type": "text/event-stream; charset=utf-8",
+      },
+    });
   }
 
   const { model, fallbackModel } = getModelConfig();

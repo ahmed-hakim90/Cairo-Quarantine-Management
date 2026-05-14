@@ -66,6 +66,59 @@ function createId() {
   return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
 
+function getLinkLabel(href: string) {
+  if (href.startsWith("/")) return "فتح الصفحة";
+
+  try {
+    const url = new URL(href);
+    if (url.hostname === "maps.app.goo.gl") return "فتح الخريطة";
+    return url.hostname.replace(/^www\./, "");
+  } catch {
+    return "فتح الرابط";
+  }
+}
+
+function MessageContent({ content }: { content: string }) {
+  const urlPattern =
+    /(https?:\/\/[^\s،]+|\/(?:ar|en|zh)(?:\/[^\s،]*)?(?:#[^\s،]+)?)/g;
+  const lines = content.split("\n");
+
+  return (
+    <>
+      {lines.map((line, lineIndex) => {
+        const parts = line.split(urlPattern);
+
+        return (
+          <span key={`${line}-${lineIndex}`}>
+            {parts.map((part, partIndex) => {
+              if (!urlPattern.test(part)) return part;
+
+              urlPattern.lastIndex = 0;
+              const href = part.replace(/[.)\]]+$/, "");
+              const suffix = part.slice(href.length);
+
+              return (
+                <span key={`${part}-${partIndex}`}>
+                  <a
+                    href={href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex rounded-full bg-gov-accent/10 px-2 py-0.5 font-bold text-gov-accent underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gov-accent"
+                  >
+                    {getLinkLabel(href)}
+                  </a>
+                  {suffix}
+                </span>
+              );
+            })}
+            {lineIndex < lines.length - 1 && <br />}
+          </span>
+        );
+      })}
+    </>
+  );
+}
+
 async function readAssistantStream(
   response: Response,
   onToken: (token: string) => void,
@@ -234,11 +287,11 @@ export function ChatWidget({ locale, messages: labels }: ChatWidgetProps) {
                 dir="auto"
                 className={
                   message.role === "user"
-                    ? "max-w-[85%] self-end rounded-2xl rounded-ee-sm bg-gov-accent px-4 py-3 text-sm leading-6 text-white shadow-sm"
-                    : "max-w-[85%] self-start whitespace-pre-wrap rounded-2xl rounded-es-sm bg-white px-4 py-3 text-sm leading-6 text-gov-gray-900 shadow-sm"
+                    ? "max-w-[85%] break-words self-end rounded-2xl rounded-ee-sm bg-gov-accent px-4 py-3 text-sm leading-6 text-white shadow-sm"
+                    : "max-w-[85%] break-words self-start rounded-2xl rounded-es-sm bg-white px-4 py-3 text-sm leading-6 text-gov-gray-900 shadow-sm"
                 }
               >
-                {message.content || "..."}
+                <MessageContent content={message.content || "..."} />
               </div>
             ))}
             <div ref={messagesEndRef} />
