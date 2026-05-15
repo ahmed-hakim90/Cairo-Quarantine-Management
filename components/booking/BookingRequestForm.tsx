@@ -496,7 +496,7 @@ export function BookingRequestForm({
             className={`${inputClass} resize-y leading-relaxed`}
             placeholder={
               mode === "booking"
-                ? "اكتب أي ملاحظات خاصة بالموعد إن وجدت"
+                ? " اذا كنت من اصحاب الهمم او من كبار السن لا تتردد في اخبارنا"
                 : "اكتب تفاصيل الشكوى أو المقترح"
             }
             defaultValue={state.values?.details ?? ""}
