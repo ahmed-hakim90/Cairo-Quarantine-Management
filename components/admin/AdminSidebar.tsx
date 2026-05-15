@@ -97,7 +97,7 @@ export function AdminSidebar({ locale, role, mobileOpen, onClose }: AdminSidebar
         className={`fixed inset-y-0 z-50 flex w-[min(100%,18rem)] shrink-0 flex-col border-e border-gov-gray-200 bg-white text-gov-navy shadow-xl transition-transform duration-200 start-0 md:static md:z-0 md:w-56 md:max-w-none md:translate-x-0 md:shadow-none ${
           mobileOpen
             ? "translate-x-0"
-            : "-translate-x-full pointer-events-none md:pointer-events-auto md:translate-x-0"
+            : "max-md:ltr:-translate-x-full max-md:rtl:translate-x-full max-md:pointer-events-none md:pointer-events-auto"
         }`}
       >
         <div className="border-b border-gov-gray-200 px-4 py-4">

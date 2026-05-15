@@ -162,7 +162,7 @@ export function BookingPassSuccessBlock({
     <div className="mt-4 space-y-4 rounded-xl border border-emerald-200/60 bg-gradient-to-b from-gov-navy-deep/95 to-gov-navy p-5 text-white shadow-inner">
       <div className="text-center">
         <p className="text-xs font-bold uppercase tracking-wider text-teal-200/90">
-          {c.cardSubtitle}
+          {request.type === "complaint" ? c.cardSubtitleComplaint : c.cardSubtitle}
         </p>
         {passUrl ? (
           <p className="mt-1 break-all font-mono text-[10px] text-teal-100/70">

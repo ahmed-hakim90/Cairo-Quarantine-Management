@@ -70,7 +70,9 @@ export default async function BookingPassPage({
         <h1 className="mt-2 text-center font-heading text-2xl font-extrabold">
           {c.title}
         </h1>
-        <p className="mt-2 text-center text-sm text-teal-100/90">{c.subtitle}</p>
+        <p className="mt-2 text-center text-sm text-teal-100/90">
+          {pass.type === "complaint" ? c.subtitleComplaint : c.subtitle}
+        </p>
 
         <div className="mt-8 rounded-2xl border border-white/15 bg-white/5 p-6 shadow-xl backdrop-blur-sm">
           <dl className="space-y-4 text-sm">

@@ -4,6 +4,7 @@ export const bookingPassPageCopy = {
   ar: {
     title: "بطاقة الطلب",
     subtitle: "للمكتب — اعرض هذه الصفحة عند الوصول",
+    subtitleComplaint: "جاري متابعة الشكوى",
     invalidTitle: "الرابط غير صالح",
     invalidBody: "تأكد من مسح رمز الاستجابة السريعة كاملاً أو افتح الرابط من رسالة التأكيد.",
     requestId: "رقم الطلب",
@@ -21,6 +22,7 @@ export const bookingPassPageCopy = {
   en: {
     title: "Request pass",
     subtitle: "For the office — show this page on arrival",
+    subtitleComplaint: "Complaint follow-up in progress",
     invalidTitle: "Invalid link",
     invalidBody:
       "Scan the full QR code or open the link from your confirmation message.",
@@ -39,6 +41,7 @@ export const bookingPassPageCopy = {
   zh: {
     title: "申请凭证",
     subtitle: "到达办公室时请出示本页",
+    subtitleComplaint: "正在跟进您的投诉",
     invalidTitle: "链接无效",
     invalidBody: "请完整扫描二维码或从确认消息中打开链接。",
     requestId: "申请编号",
@@ -58,6 +61,7 @@ export const bookingPassPageCopy = {
   Record<
     | "title"
     | "subtitle"
+    | "subtitleComplaint"
     | "invalidTitle"
     | "invalidBody"
     | "requestId"
@@ -79,6 +83,7 @@ export const bookingPassFormCopy = {
   ar: {
     cardTitle: "بطاقة طلبك",
     cardSubtitle: "اعرض الرمز في المكتب أو احفظ الصورة",
+    cardSubtitleComplaint: "جاري متابعة الشكوى — احفظ الرمز أو شارك الصورة",
     downloadPng: "تحميل بطاقة الحجز (صورة)",
     shareCard: "مشاركة الصورة",
     qrAlt: "رمز الاستجابة السريعة لبطاقة الحجز",
@@ -88,6 +93,8 @@ export const bookingPassFormCopy = {
   en: {
     cardTitle: "Your request pass",
     cardSubtitle: "Show this code at the office or save the image",
+    cardSubtitleComplaint:
+      "Complaint follow-up in progress — save the code or share the image",
     downloadPng: "Download pass image",
     shareCard: "Share image",
     qrAlt: "QR code for your request pass",
@@ -97,6 +104,7 @@ export const bookingPassFormCopy = {
   zh: {
     cardTitle: "您的预约凭证",
     cardSubtitle: "到办公室出示此码或保存图片",
+    cardSubtitleComplaint: "正在跟进投诉 — 可保存二维码或分享图片",
     downloadPng: "下载凭证图片",
     shareCard: "分享图片",
     qrAlt: "预约凭证二维码",
@@ -108,6 +116,7 @@ export const bookingPassFormCopy = {
   Record<
     | "cardTitle"
     | "cardSubtitle"
+    | "cardSubtitleComplaint"
     | "downloadPng"
     | "shareCard"
     | "qrAlt"
