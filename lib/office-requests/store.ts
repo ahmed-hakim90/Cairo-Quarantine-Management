@@ -4,12 +4,17 @@ import {
   Timestamp,
   type Query as FirestoreQuery,
 } from "firebase-admin/firestore";
+import { unstable_cache } from "next/cache";
 import {
   getAdminAuth,
   isFirebaseAdminConfigured,
   getAdminDb,
 } from "@/lib/firebase/admin";
-import { passTokensMatch } from "@/lib/booking-pass-token";
+import {
+  bookingPassTokenExpiresAt,
+  isBookingPassTokenExpired,
+  passTokensMatch,
+} from "@/lib/booking-pass-token";
 import { STATIC_OFFICES } from "@/lib/office-requests/static-offices";
 import {
   defaultTravelerStatesFromLegacyLabels,
@@ -20,6 +25,7 @@ import { normalizePhone } from "@/lib/office-requests/whatsapp-message";
 import {
   DEFAULT_MESSAGE_TEMPLATE,
   REQUEST_STATUS_LABELS,
+  type AdminRole,
   type AdminActivityActor,
   type AdminActivityLogAction,
   type AdminActivityLogEntry,
@@ -29,6 +35,7 @@ import {
   type OfficeRequest,
   type OfficeRequestStatus,
   type OfficeRequestType,
+  type PaginatedResult,
   type AppBookingSettings,
   type BookingPassPublic,
   type CreatedOfficeRequestPublic,
@@ -39,6 +46,11 @@ import {
   type VaccineUserCategory,
   DEFAULT_BOOKING_SAME_DAY_CUTOFF_HOUR,
 } from "@/lib/office-requests/types";
+import {
+  adminCanAccessOffice,
+  normalizeOfficeIds,
+} from "@/lib/office-requests/admin-access";
+import { ADMIN_LIST_PAGE_SIZE } from "@/lib/office-requests/admin-list-page-size";
 import {
   VACCINES_BY_CATEGORY,
   type UserCategory,
@@ -57,6 +69,14 @@ const USERS = "users";
 const TEMPLATES = "messageTemplates";
 const ACTIVITY_LOGS = "activityLogs";
 const SETTINGS_APP_DOC = "app";
+const PUBLIC_CACHE_SECONDS = 300;
+
+export const OFFICE_REQUESTS_CACHE_TAGS = {
+  publicOffices: "public-offices",
+  publicTravelerStates: "public-traveler-states",
+  publicBookingSettings: "public-booking-settings",
+  publicVaccines: "public-vaccines",
+} as const;
 
 const VACCINE_CATEGORIES: VaccineUserCategory[] = [
   "international",
@@ -74,6 +94,16 @@ function iso(value: unknown): string {
   if (value instanceof Date) return value.toISOString();
   if (typeof value === "string") return value;
   return new Date().toISOString();
+}
+
+function dateFromFirestoreValue(value: unknown): Date | null {
+  if (value instanceof Timestamp) return value.toDate();
+  if (value instanceof Date) return value;
+  if (typeof value === "string") {
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? null : date;
+  }
+  return null;
 }
 
 function activityLogFromDoc(
@@ -132,6 +162,7 @@ async function appendActivityLog(payload: {
 
 function publicRequestStatus(
   request: OfficeRequest,
+  options?: { includePassToken?: boolean },
 ): PublicOfficeRequestStatus {
   return {
     id: request.id,
@@ -146,7 +177,9 @@ function publicRequestStatus(
     notes: request.notes,
     createdAt: request.createdAt,
     updatedAt: request.updatedAt,
-    ...(request.passToken ? { passToken: String(request.passToken) } : {}),
+    ...(options?.includePassToken && request.passToken
+      ? { passToken: String(request.passToken) }
+      : {}),
   };
 }
 
@@ -282,6 +315,21 @@ function groupActiveVaccinesPublic(
 export async function listVaccinesByCategoryForPublic(): Promise<
   Record<UserCategory, VaccineRecord[]>
 > {
+  return listVaccinesByCategoryForPublicCached();
+}
+
+const listVaccinesByCategoryForPublicCached = unstable_cache(
+  listVaccinesByCategoryForPublicUncached,
+  ["public-vaccines-by-category"],
+  {
+    revalidate: PUBLIC_CACHE_SECONDS,
+    tags: [OFFICE_REQUESTS_CACHE_TAGS.publicVaccines],
+  },
+);
+
+async function listVaccinesByCategoryForPublicUncached(): Promise<
+  Record<UserCategory, VaccineRecord[]>
+> {
   if (!isFirebaseAdminConfigured()) return VACCINES_BY_CATEGORY;
 
   try {
@@ -395,6 +443,22 @@ export async function setVaccineActive(
 }
 
 export async function listTravelerStates(options?: {
+  includeInactive?: boolean;
+}): Promise<TravelerState[]> {
+  if (!options?.includeInactive) return listTravelerStatesPublicCached();
+  return listTravelerStatesUncached(options);
+}
+
+const listTravelerStatesPublicCached = unstable_cache(
+  async () => listTravelerStatesUncached({ includeInactive: false }),
+  ["public-traveler-states"],
+  {
+    revalidate: PUBLIC_CACHE_SECONDS,
+    tags: [OFFICE_REQUESTS_CACHE_TAGS.publicTravelerStates],
+  },
+);
+
+async function listTravelerStatesUncached(options?: {
   includeInactive?: boolean;
 }): Promise<TravelerState[]> {
   if (!isFirebaseAdminConfigured()) {
@@ -529,6 +593,9 @@ function requestFromDoc(
     details: String(data.details ?? ""),
     notes: String(data.notes ?? ""),
     ...(data.passToken ? { passToken: String(data.passToken) } : {}),
+    ...(data.passTokenExpiresAt
+      ? { passTokenExpiresAt: iso(data.passTokenExpiresAt) }
+      : {}),
     lastWhatsappAt: data.lastWhatsappAt ? iso(data.lastWhatsappAt) : undefined,
     createdAt: iso(data.createdAt),
     updatedAt: iso(data.updatedAt),
@@ -539,12 +606,22 @@ function profileFromDoc(
   uid: string,
   data: FirebaseFirestore.DocumentData,
 ): AdminUserProfile {
+  const role: AdminRole =
+    data.role === "super_admin"
+      ? "super_admin"
+      : data.role === "office_admin"
+        ? "office_admin"
+        : "office_user";
+  const allowedOfficeIds = Array.isArray(data.allowedOfficeIds)
+    ? normalizeOfficeIds(data.allowedOfficeIds)
+    : [];
   return {
     uid,
     email: data.email ? String(data.email) : null,
     displayName: String(data.displayName ?? data.email ?? "مستخدم"),
-    role: data.role === "super_admin" ? "super_admin" : "office_user",
+    role,
     officeId: data.officeId ? String(data.officeId) : null,
+    ...(role === "office_admin" ? { allowedOfficeIds } : {}),
     active: data.active !== false,
     createdAt: data.createdAt ? iso(data.createdAt) : undefined,
     updatedAt: data.updatedAt ? iso(data.updatedAt) : undefined,
@@ -566,6 +643,22 @@ function templateFromDoc(
 }
 
 export async function listOffices(options?: {
+  includeInactive?: boolean;
+}): Promise<Office[]> {
+  if (!options?.includeInactive) return listOfficesPublicCached();
+  return listOfficesUncached(options);
+}
+
+const listOfficesPublicCached = unstable_cache(
+  async () => listOfficesUncached({ includeInactive: false }),
+  ["public-offices"],
+  {
+    revalidate: PUBLIC_CACHE_SECONDS,
+    tags: [OFFICE_REQUESTS_CACHE_TAGS.publicOffices],
+  },
+);
+
+async function listOfficesUncached(options?: {
   includeInactive?: boolean;
 }): Promise<Office[]> {
   if (!isFirebaseAdminConfigured()) return STATIC_OFFICES;
@@ -595,6 +688,19 @@ export async function getOffice(officeId: string): Promise<Office | null> {
 }
 
 export async function getBookingSettings(): Promise<AppBookingSettings> {
+  return getBookingSettingsCached();
+}
+
+const getBookingSettingsCached = unstable_cache(
+  getBookingSettingsUncached,
+  ["public-booking-settings"],
+  {
+    revalidate: PUBLIC_CACHE_SECONDS,
+    tags: [OFFICE_REQUESTS_CACHE_TAGS.publicBookingSettings],
+  },
+);
+
+async function getBookingSettingsUncached(): Promise<AppBookingSettings> {
   const fallback = DEFAULT_BOOKING_SAME_DAY_CUTOFF_HOUR;
   if (!isFirebaseAdminConfigured()) {
     return { bookingSameDayCutoffHour: fallback };
@@ -622,7 +728,7 @@ export async function saveBookingSettings(
   if (!isFirebaseAdminConfigured()) {
     throw new Error("Firebase غير مضبوط حالياً، لا يمكن حفظ الإعدادات.");
   }
-  const prev = await getBookingSettings();
+  const prev = await getBookingSettingsUncached();
   const hour = clampBookingSameDayHour(input.bookingSameDayCutoffHour);
   await getAdminDb().collection(SETTINGS).doc(SETTINGS_APP_DOC).set(
     {
@@ -701,6 +807,9 @@ export async function createOfficeRequest(input: {
   }
 
   const passToken = randomBytes(24).toString("base64url");
+  const passTokenExpiresAt = Timestamp.fromDate(
+    bookingPassTokenExpiresAt(new Date()),
+  );
   const now = FieldValue.serverTimestamp();
   const travelerStateId = input.travelerStateId?.trim();
   const doc = await getAdminDb().collection(REQUESTS).add({
@@ -718,6 +827,7 @@ export async function createOfficeRequest(input: {
     details: input.details.trim(),
     notes: "",
     passToken,
+    passTokenExpiresAt,
     createdAt: now,
     updatedAt: now,
   });
@@ -725,7 +835,7 @@ export async function createOfficeRequest(input: {
   const saved = await doc.get();
   const full = requestFromDoc(doc.id, saved.data() ?? {});
   return {
-    ...publicRequestStatus(full),
+    ...publicRequestStatus(full, { includePassToken: true }),
     passToken,
   };
 }
@@ -751,6 +861,14 @@ export async function getBookingPassPublic(args: {
   const data = doc.data() ?? {};
   const stored = data.passToken ? String(data.passToken) : "";
   if (!passTokensMatch(stored, token)) return null;
+
+  const expiresAt =
+    dateFromFirestoreValue(data.passTokenExpiresAt) ??
+    (() => {
+      const createdAt = dateFromFirestoreValue(data.createdAt);
+      return createdAt ? bookingPassTokenExpiresAt(createdAt) : null;
+    })();
+  if (isBookingPassTokenExpired(expiresAt)) return null;
 
   const request = requestFromDoc(doc.id, data);
   return {
@@ -797,8 +915,9 @@ export async function getPublicRequestStatus(args: {
 }
 
 export async function listRequestsForSession(args: {
-  role: "super_admin" | "office_user";
+  role: AdminRole;
   officeId: string | null;
+  allowedOfficeIds?: string[];
   status?: OfficeRequestStatus | "all";
   type?: OfficeRequestType | "all";
   officeFilter?: string;
@@ -815,10 +934,36 @@ export async function listRequestsForSession(args: {
     updatedTo != null &&
     updatedFrom.toMillis() <= updatedTo.toMillis();
 
+  const baseProfile = {
+    uid: "",
+    role: args.role,
+    officeId: args.officeId,
+    allowedOfficeIds: args.allowedOfficeIds,
+  } satisfies Pick<
+    AdminUserProfile,
+    "uid" | "role" | "officeId" | "allowedOfficeIds"
+  >;
+
   let query: FirebaseFirestore.Query = getAdminDb().collection(REQUESTS);
   if (args.role === "office_user") {
     if (!args.officeId) return [];
     query = query.where("officeId", "==", args.officeId);
+  } else if (args.role === "office_admin") {
+    if (args.officeFilter) {
+      if (!adminCanAccessOffice(baseProfile, args.officeFilter)) return [];
+      query = query.where("officeId", "==", args.officeFilter);
+    } else {
+      const officeIds = normalizeOfficeIds(args.allowedOfficeIds ?? []);
+      if (officeIds.length === 0) return [];
+      return listRequestsForAllowedOffices({
+        officeIds,
+        status: args.status,
+        type: args.type,
+        updatedFrom,
+        updatedTo,
+        useUpdatedWindow,
+      });
+    }
   } else if (args.officeFilter) {
     query = query.where("officeId", "==", args.officeFilter);
   }
@@ -843,6 +988,169 @@ export async function listRequestsForSession(args: {
   return snap.docs.map((doc) => requestFromDoc(doc.id, doc.data()));
 }
 
+async function listRequestsForAllowedOffices(args: {
+  officeIds: string[];
+  status?: OfficeRequestStatus | "all";
+  type?: OfficeRequestType | "all";
+  updatedFrom: Timestamp | null;
+  updatedTo: Timestamp | null;
+  useUpdatedWindow: boolean;
+}): Promise<OfficeRequest[]> {
+  const officeIds = normalizeOfficeIds(args.officeIds);
+  const collected: OfficeRequest[] = [];
+  for (let i = 0; i < officeIds.length; i += FIRESTORE_IN_QUERY_MAX) {
+    const batch = officeIds.slice(i, i + FIRESTORE_IN_QUERY_MAX);
+    let query: FirebaseFirestore.Query = getAdminDb()
+      .collection(REQUESTS)
+      .where("officeId", "in", batch);
+    if (args.status && args.status !== "all") {
+      query = query.where("status", "==", args.status);
+    }
+    if (args.type && args.type !== "all") {
+      query = query.where("type", "==", args.type);
+    }
+    if (args.useUpdatedWindow) {
+      query = query
+        .where("updatedAt", ">=", args.updatedFrom!)
+        .where("updatedAt", "<=", args.updatedTo!)
+        .orderBy("updatedAt", "desc")
+        .limit(200);
+    } else {
+      query = query.orderBy("createdAt", "desc").limit(200);
+    }
+    const snap = await query.get();
+    collected.push(...snap.docs.map((doc) => requestFromDoc(doc.id, doc.data())));
+  }
+  const sortKey = args.useUpdatedWindow ? "updatedAt" : "createdAt";
+  return collected
+    .sort(
+      (a, b) =>
+        new Date(b[sortKey]).getTime() - new Date(a[sortKey]).getTime(),
+    )
+    .slice(0, 200);
+}
+
+export async function listRequestsForSessionPage(args: {
+  role: AdminRole;
+  officeId: string | null;
+  allowedOfficeIds?: string[];
+  status?: OfficeRequestStatus | "all";
+  type?: OfficeRequestType | "all";
+  officeFilter?: string;
+  updatedFrom?: Timestamp | null;
+  updatedTo?: Timestamp | null;
+  sortKey?: "createdAt" | "updatedAt";
+  sortDirection?: "asc" | "desc";
+  cursor?: string | null;
+  pageSize?: number;
+}): Promise<PaginatedResult<OfficeRequest>> {
+  if (!isFirebaseAdminConfigured()) return { items: [], nextCursor: null };
+
+  const updatedFrom = args.updatedFrom ?? null;
+  const updatedTo = args.updatedTo ?? null;
+  const useUpdatedWindow =
+    updatedFrom != null &&
+    updatedTo != null &&
+    updatedFrom.toMillis() <= updatedTo.toMillis();
+  let sortKey = args.sortKey ?? "createdAt";
+  if (useUpdatedWindow && sortKey !== "updatedAt") {
+    sortKey = "updatedAt";
+  }
+  const sortDirection = args.sortDirection ?? "desc";
+  const pageSize = Math.min(Math.max(1, args.pageSize ?? ADMIN_LIST_PAGE_SIZE), 200);
+  const cursor = cursorDate(args.cursor);
+
+  const baseProfile = {
+    uid: "",
+    role: args.role,
+    officeId: args.officeId,
+    allowedOfficeIds: args.allowedOfficeIds,
+  } satisfies Pick<
+    AdminUserProfile,
+    "uid" | "role" | "officeId" | "allowedOfficeIds"
+  >;
+
+  const runQuery = async (
+    officeIds: string[] | null,
+  ): Promise<OfficeRequest[]> => {
+    const batches =
+      officeIds && officeIds.length > 0
+        ? Array.from(
+            { length: Math.ceil(officeIds.length / FIRESTORE_IN_QUERY_MAX) },
+            (_, i) =>
+              officeIds.slice(
+                i * FIRESTORE_IN_QUERY_MAX,
+                (i + 1) * FIRESTORE_IN_QUERY_MAX,
+              ),
+          )
+        : [null];
+    const collected: OfficeRequest[] = [];
+    for (const batch of batches) {
+      let query: FirebaseFirestore.Query = getAdminDb().collection(REQUESTS);
+      if (batch && batch.length === 1) {
+        query = query.where("officeId", "==", batch[0]);
+      } else if (batch && batch.length > 1) {
+        query = query.where("officeId", "in", batch);
+      }
+      if (args.status && args.status !== "all") {
+        query = query.where("status", "==", args.status);
+      }
+      if (args.type && args.type !== "all") {
+        query = query.where("type", "==", args.type);
+      }
+      if (useUpdatedWindow) {
+        query = query
+          .where("updatedAt", ">=", updatedFrom!)
+          .where("updatedAt", "<=", updatedTo!);
+      }
+      if (cursor) {
+        const cursorTs = Timestamp.fromDate(cursor);
+        query =
+          sortDirection === "desc"
+            ? query.where(sortKey, "<", cursorTs)
+            : query.where(sortKey, ">", cursorTs);
+      }
+      query = query.orderBy(sortKey, sortDirection).limit(pageSize + 1);
+      const snap = await query.get();
+      collected.push(
+        ...snap.docs.map((doc) => requestFromDoc(doc.id, doc.data())),
+      );
+    }
+    const dir = sortDirection === "desc" ? -1 : 1;
+    return collected.sort(
+      (a, b) =>
+        dir *
+        (new Date(a[sortKey]).getTime() - new Date(b[sortKey]).getTime()),
+    );
+  };
+
+  let officeIds: string[] | null = null;
+  if (args.role === "office_user") {
+    if (!args.officeId) return { items: [], nextCursor: null };
+    officeIds = [args.officeId];
+  } else if (args.role === "office_admin") {
+    if (args.officeFilter) {
+      if (!adminCanAccessOffice(baseProfile, args.officeFilter)) {
+        return { items: [], nextCursor: null };
+      }
+      officeIds = [args.officeFilter];
+    } else {
+      officeIds = normalizeOfficeIds(args.allowedOfficeIds ?? []);
+      if (officeIds.length === 0) return { items: [], nextCursor: null };
+    }
+  } else if (args.officeFilter) {
+    officeIds = [args.officeFilter];
+  }
+
+  const collected = await runQuery(officeIds);
+  const items = collected.slice(0, pageSize);
+  return {
+    items,
+    nextCursor:
+      collected.length > pageSize ? nextCursorFromRequests(items, sortKey) : null,
+  };
+}
+
 const EXPORT_PAGE_SIZE = 400;
 
 const ALL_REQUEST_TYPES: readonly OfficeRequestType[] = [
@@ -856,6 +1164,8 @@ export type SuperAdminExportFilters = {
   types: OfficeRequestType[];
   /** null أو غير مُمرَّر = كل المكاتب */
   officeId: string | null;
+  /** نطاق مكاتب مسموح؛ null/فارغ = لا تقييد إضافي. */
+  officeIds?: string[] | null;
   /** تصفية حجوزات حسب `travelerStateId` أو `travelerCategory` القديمة (نفس المعرّف). */
   travelerStateIds: string[];
   /** @deprecated استخدم `travelerStateIds`؛ يُدمَج معه في التصفية */
@@ -911,47 +1221,76 @@ export async function listRequestsForSuperAdminExport(
   let capped = false;
 
   while (collected.length < SUPER_ADMIN_EXPORT_MAX_ROWS) {
-    let q: FirebaseFirestore.Query = getAdminDb().collection(REQUESTS);
-    if (filters.officeId) {
-      q = q.where("officeId", "==", filters.officeId);
-    }
-    if (filters.createdFrom) {
-      q = q.where("createdAt", ">=", filters.createdFrom);
-    }
-    if (filters.createdTo) {
-      q = q.where("createdAt", "<=", filters.createdTo);
-    }
-    q = q.orderBy("createdAt", "desc").limit(EXPORT_PAGE_SIZE);
-    if (lastDoc) {
-      q = q.startAfter(lastDoc);
-    }
+    const scopedOfficeIds = normalizeOfficeIds(filters.officeIds ?? []);
+    const queryOfficeIds =
+      filters.officeId != null && filters.officeId.trim() !== ""
+        ? [filters.officeId.trim()]
+        : scopedOfficeIds;
+    const officeBatches =
+      queryOfficeIds.length > 0
+        ? Array.from(
+            { length: Math.ceil(queryOfficeIds.length / FIRESTORE_IN_QUERY_MAX) },
+            (_, i) =>
+              queryOfficeIds.slice(
+                i * FIRESTORE_IN_QUERY_MAX,
+                (i + 1) * FIRESTORE_IN_QUERY_MAX,
+              ),
+          )
+        : [null];
 
-    const snap = await q.get();
-    if (snap.empty) break;
+    for (const officeBatch of officeBatches) {
+      let q: FirebaseFirestore.Query = getAdminDb().collection(REQUESTS);
+      if (officeBatch && officeBatch.length === 1) {
+        q = q.where("officeId", "==", officeBatch[0]);
+      } else if (officeBatch && officeBatch.length > 1) {
+        q = q.where("officeId", "in", officeBatch);
+      }
+      if (filters.createdFrom) {
+        q = q.where("createdAt", ">=", filters.createdFrom);
+      }
+      if (filters.createdTo) {
+        q = q.where("createdAt", "<=", filters.createdTo);
+      }
+      q = q.orderBy("createdAt", "desc").limit(EXPORT_PAGE_SIZE);
+      if (lastDoc && officeBatches.length === 1) {
+        q = q.startAfter(lastDoc);
+      }
 
-    for (const doc of snap.docs) {
-      const request = requestFromDoc(doc.id, doc.data());
-      if (requestMatchesSuperAdminExport(request, filters)) {
-        collected.push(request);
-        if (collected.length >= SUPER_ADMIN_EXPORT_MAX_ROWS) {
-          capped = true;
-          break;
+      const snap = await q.get();
+      if (snap.empty) continue;
+
+      for (const doc of snap.docs) {
+        const request = requestFromDoc(doc.id, doc.data());
+        if (requestMatchesSuperAdminExport(request, filters)) {
+          collected.push(request);
+          if (collected.length >= SUPER_ADMIN_EXPORT_MAX_ROWS) {
+            capped = true;
+            break;
+          }
         }
       }
-    }
 
-    lastDoc = snap.docs[snap.docs.length - 1] ?? null;
-    if (snap.size < EXPORT_PAGE_SIZE) break;
+      if (officeBatches.length === 1) {
+        lastDoc = snap.docs[snap.docs.length - 1] ?? null;
+      }
+      if (capped) break;
+    }
+    collected.sort(
+      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+    );
+    if (officeBatches.length > 1) break;
+    if (!lastDoc) break;
     if (capped) break;
   }
 
-  return { requests: collected, capped };
+  return { requests: collected.slice(0, SUPER_ADMIN_EXPORT_MAX_ROWS), capped };
 }
 
 export async function getRequestForSession(args: {
   id: string;
-  role: "super_admin" | "office_user";
+  role: AdminRole;
   officeId: string | null;
+  allowedOfficeIds?: string[];
 }) {
   if (!isFirebaseAdminConfigured()) return null;
 
@@ -959,7 +1298,17 @@ export async function getRequestForSession(args: {
   if (!doc.exists) return null;
 
   const request = requestFromDoc(doc.id, doc.data() ?? {});
-  if (args.role === "office_user" && request.officeId !== args.officeId) {
+  if (
+    args.role !== "super_admin" &&
+    !adminCanAccessOffice(
+      {
+        role: args.role,
+        officeId: args.officeId,
+        allowedOfficeIds: args.allowedOfficeIds,
+      },
+      request.officeId,
+    )
+  ) {
     return null;
   }
   return request;
@@ -984,8 +1333,9 @@ export async function deleteOfficeRequestBySuperAdmin(
 
 export async function updateRequestForSession(args: {
   id: string;
-  role: "super_admin" | "office_user";
+  role: AdminRole;
   officeId: string | null;
+  allowedOfficeIds?: string[];
   status: OfficeRequestStatus;
   notes: string;
   actor: AdminActivityActor;
@@ -1025,8 +1375,9 @@ export async function updateRequestForSession(args: {
 
 export async function markWhatsappSentForSession(args: {
   id: string;
-  role: "super_admin" | "office_user";
+  role: AdminRole;
   officeId: string | null;
+  allowedOfficeIds?: string[];
   actor: AdminActivityActor;
 }) {
   const request = await getRequestForSession(args);
@@ -1065,6 +1416,10 @@ export async function listUserProfiles(): Promise<AdminUserProfile[]> {
 }
 
 export async function upsertUserProfile(input: AdminUserProfile) {
+  const allowedOfficeIds =
+    input.role === "office_admin"
+      ? normalizeOfficeIds(input.allowedOfficeIds ?? [])
+      : [];
   await getAdminDb()
     .collection(USERS)
     .doc(input.uid)
@@ -1074,6 +1429,7 @@ export async function upsertUserProfile(input: AdminUserProfile) {
         displayName: input.displayName,
         role: input.role,
         officeId: input.role === "office_user" ? input.officeId : null,
+        allowedOfficeIds,
         active: input.active,
         updatedAt: FieldValue.serverTimestamp(),
         createdAt: FieldValue.serverTimestamp(),
@@ -1102,6 +1458,7 @@ export async function upsertAdminUserAccount(input: {
   displayName: string;
   role: AdminUserProfile["role"];
   officeId: string | null;
+  allowedOfficeIds?: string[];
   active: boolean;
 }): Promise<AdminUserProfile> {
   if (!isFirebaseAdminConfigured()) {
@@ -1121,6 +1478,17 @@ export async function upsertAdminUserAccount(input: {
   const all = await listUserProfiles();
   const role = input.role;
   const active = input.active;
+  const allowedOfficeIds =
+    role === "office_admin"
+      ? normalizeOfficeIds(input.allowedOfficeIds ?? [])
+      : [];
+
+  if (role === "office_user" && !input.officeId?.trim()) {
+    throw new Error("اختر مكتباً لمستخدم المكتب.");
+  }
+  if (role === "office_admin" && allowedOfficeIds.length === 0) {
+    throw new Error("اختر مكتباً واحداً على الأقل لأدمن المكاتب.");
+  }
 
   if (input.uid && input.uid === input.actor.uid) {
     if (!active) {
@@ -1137,6 +1505,7 @@ export async function upsertAdminUserAccount(input: {
     displayName,
     role,
     officeId: role === "office_user" ? input.officeId : null,
+    ...(role === "office_admin" ? { allowedOfficeIds } : {}),
     active,
   };
 
@@ -1163,6 +1532,7 @@ export async function upsertAdminUserAccount(input: {
     displayName,
     role,
     officeId: role === "office_user" ? input.officeId : null,
+    ...(role === "office_admin" ? { allowedOfficeIds } : {}),
     active: input.active,
   };
 
@@ -1435,10 +1805,50 @@ export async function listActivityLogsForSuperAdmin(args?: {
   return snap.docs.map((d) => activityLogFromDoc(d.id, d.data() ?? {}));
 }
 
+export async function listActivityLogsForSuperAdminPage(args?: {
+  limit?: number;
+  createdFrom?: Timestamp | null;
+  createdTo?: Timestamp | null;
+  officeId?: string | null;
+  actorUid?: string | null;
+  cursor?: string | null;
+}): Promise<PaginatedResult<AdminActivityLogEntry>> {
+  if (!isFirebaseAdminConfigured()) return { items: [], nextCursor: null };
+  const requested = args?.limit ?? ADMIN_LIST_PAGE_SIZE;
+  const limit = Math.min(Math.max(1, requested), ACTIVITY_LOG_MAX_SUPER);
+
+  const officeId =
+    args?.officeId != null && String(args.officeId).trim() !== ""
+      ? String(args.officeId).trim()
+      : null;
+  const actorUid =
+    args?.actorUid != null && String(args.actorUid).trim() !== ""
+      ? String(args.actorUid).trim()
+      : null;
+  const cursor = cursorDate(args?.cursor);
+
+  let q: FirestoreQuery = getAdminDb().collection(ACTIVITY_LOGS);
+  if (officeId) q = q.where("officeId", "==", officeId);
+  if (actorUid) q = q.where("actorUid", "==", actorUid);
+  if (args?.createdFrom) q = q.where("createdAt", ">=", args.createdFrom);
+  if (args?.createdTo) q = q.where("createdAt", "<=", args.createdTo);
+  if (cursor) q = q.where("createdAt", "<", Timestamp.fromDate(cursor));
+  q = q.orderBy("createdAt", "desc").limit(limit + 1);
+
+  const snap = await q.get();
+  const all = snap.docs.map((d) => activityLogFromDoc(d.id, d.data() ?? {}));
+  const items = all.slice(0, limit);
+  return {
+    items,
+    nextCursor: all.length > limit ? nextCursorFromActivityLogs(items) : null,
+  };
+}
+
 export async function listActivityLogsForRequest(args: {
   requestId: string;
-  role: "super_admin" | "office_user";
+  role: AdminRole;
   officeId: string | null;
+  allowedOfficeIds?: string[];
   limit?: number;
 }): Promise<AdminActivityLogEntry[]> {
   if (!isFirebaseAdminConfigured()) return [];
@@ -1446,6 +1856,7 @@ export async function listActivityLogsForRequest(args: {
     id: args.requestId,
     role: args.role,
     officeId: args.officeId,
+    allowedOfficeIds: args.allowedOfficeIds,
   });
   if (!access) return [];
   const requested = args.limit ?? ACTIVITY_LOG_DEFAULT_REQUEST;
@@ -1461,6 +1872,39 @@ export async function listActivityLogsForRequest(args: {
 
 const FIRESTORE_IN_QUERY_MAX = 30;
 const LATEST_ACTIVITY_PER_BATCH_LIMIT = 400;
+function encodeCursor(value: string): string {
+  return Buffer.from(value, "utf8").toString("base64url");
+}
+
+function decodeCursor(cursor?: string | null): string | null {
+  if (!cursor) return null;
+  try {
+    const decoded = Buffer.from(cursor, "base64url").toString("utf8");
+    return decoded || null;
+  } catch {
+    return null;
+  }
+}
+
+function cursorDate(cursor?: string | null): Date | null {
+  const decoded = decodeCursor(cursor);
+  if (!decoded) return null;
+  const date = new Date(decoded);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function nextCursorFromRequests(
+  requests: OfficeRequest[],
+  sortKey: "createdAt" | "updatedAt",
+): string | null {
+  const last = requests[requests.length - 1];
+  return last ? encodeCursor(last[sortKey]) : null;
+}
+
+function nextCursorFromActivityLogs(logs: AdminActivityLogEntry[]): string | null {
+  const last = logs[logs.length - 1];
+  return last ? encodeCursor(last.createdAt) : null;
+}
 
 /**
  * أحدث سجل نشاط لكل طلب (حسب createdAt تنازليًا) لمجموعة معرفات دفعة واحدة.

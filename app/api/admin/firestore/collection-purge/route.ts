@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { SUPER_ADMIN_PURGE_MAX_DOCS_PER_CALL } from "@/lib/office-requests/export-limits";
 import { locales } from "@/lib/i18n/config";
 import { getAdminSession, assertSuperAdmin } from "@/lib/office-requests/session";
+import { OFFICE_REQUESTS_CACHE_TAGS } from "@/lib/office-requests/store";
 import {
   isSuperAdminPurgeOperationId,
   SUPER_ADMIN_PURGE_CONFIRM_PHRASE,
@@ -111,6 +112,9 @@ export async function POST(request: Request) {
 
     for (const locale of locales) {
       revalidatePath(`/${locale}/admin`, "layout");
+    }
+    for (const tag of Object.values(OFFICE_REQUESTS_CACHE_TAGS)) {
+      revalidateTag(tag, "max");
     }
     return NextResponse.json({
       deleted,

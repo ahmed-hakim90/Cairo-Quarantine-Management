@@ -1,10 +1,11 @@
 import { notFound, redirect } from "next/navigation";
 import { getCairoTodayYmd } from "@/lib/cairo-today-ymd";
 import { isLocale } from "@/lib/i18n/config";
+import { ADMIN_LIST_PAGE_SIZE } from "@/lib/office-requests/admin-list-page-size";
 import { resolveActivityLogFirestoreBounds } from "@/lib/office-requests/activity-log-filters";
 import { getAdminSession } from "@/lib/office-requests/session";
 import {
-  listActivityLogsForSuperAdmin,
+  listActivityLogsForSuperAdminPage,
   listOffices,
   listUserProfiles,
 } from "@/lib/office-requests/store";
@@ -51,6 +52,7 @@ export default async function AdminActivityPage({
 
   const rawOfficeId = firstSearchParam(sp.officeId);
   const rawActorUid = firstSearchParam(sp.actorUid);
+  const cursor = firstSearchParam(sp.cursor);
 
   const [offices, users] = await Promise.all([
     listOffices({ includeInactive: true }),
@@ -84,18 +86,29 @@ export default async function AdminActivityPage({
   }
 
   const bounds = resolveActivityLogFirestoreBounds(fromYmd, toYmd);
+  const activityHref = `/${locale}/admin/activity`;
 
-  const logs = bounds.ok
-    ? await listActivityLogsForSuperAdmin({
-        limit: 200,
+  const logPage = bounds.ok
+    ? await listActivityLogsForSuperAdminPage({
+        limit: ADMIN_LIST_PAGE_SIZE,
         createdFrom: bounds.createdFrom,
         createdTo: bounds.createdTo,
         officeId: officeFilter,
         actorUid: actorFilter,
+        cursor,
       })
-    : [];
+    : { items: [], nextCursor: null };
+  const logs = logPage.items;
+  const nextParams = new URLSearchParams();
+  nextParams.set("from", fromYmd);
+  nextParams.set("to", toYmd);
+  if (officeFilter) nextParams.set("officeId", officeFilter);
+  if (actorFilter) nextParams.set("actorUid", actorFilter);
+  if (logPage.nextCursor) nextParams.set("cursor", logPage.nextCursor);
+  const nextHref = logPage.nextCursor
+    ? `${activityHref}?${nextParams.toString()}`
+    : null;
 
-  const activityHref = `/${locale}/admin/activity`;
   const sortedUsers = [...users].sort((a, b) =>
     userOptionLabel(a).localeCompare(userOptionLabel(b), "ar"),
   );
@@ -105,8 +118,9 @@ export default async function AdminActivityPage({
       <div className="rounded-lg border border-gov-gray-200 bg-white p-5 shadow-sm md:p-7">
         <h1 className="text-2xl font-extrabold text-gov-navy">سجل النشاط</h1>
         <p className="mt-2 text-sm text-gov-gray-600">
-          الافتراضي: أحداث يوم اليوم بتوقيت القاهرة (حتى 200 حدث ضمن الفترة
-          والفلاتر). يمكنك تغيير الفترة أو تصفية المكتب أو المستخدم.
+          الافتراضي: أحداث يوم اليوم بتوقيت القاهرة (حتى {ADMIN_LIST_PAGE_SIZE}{" "}
+          حدث ضمن الفترة والفلاتر). يمكنك تغيير الفترة أو تصفية المكتب أو
+          المستخدم.
         </p>
 
         <form
@@ -246,6 +260,16 @@ export default async function AdminActivityPage({
           </table>
         )}
       </div>
+      {nextHref ? (
+        <div className="mt-4 text-center">
+          <a
+            href={nextHref}
+            className="inline-flex min-h-10 items-center justify-center rounded-md border border-gov-gray-300 bg-white px-4 py-2 text-sm font-bold text-gov-navy transition hover:border-gov-accent hover:text-gov-accent"
+          >
+            تحميل المزيد
+          </a>
+        </div>
+      ) : null}
     </div>
   );
 }

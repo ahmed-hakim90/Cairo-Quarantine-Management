@@ -4,16 +4,22 @@ import { AdminRequestsTable } from "@/components/admin/AdminRequestsTable";
 import { SuperAdminExportLauncher } from "@/components/admin/SuperAdminExportLauncher";
 import { getCairoTodayYmd, getCairoYesterdayYmd } from "@/lib/cairo-today-ymd";
 import { isLocale } from "@/lib/i18n/config";
+import { adminAllowedOfficeIds } from "@/lib/office-requests/admin-access";
 import { parseExportCreatedBounds } from "@/lib/office-requests/export-date-bounds";
+import {
+  coerceSortForUpdatedWindow,
+  parseAdminRequestsSort,
+  parseAdminRequestsStatus,
+  sortToFirestore,
+} from "@/lib/office-requests/requests-list-params";
 import { getAdminSession } from "@/lib/office-requests/session";
 import {
   listLatestActivityLogByRequestIds,
   listOffices,
-  listRequestsForSession,
+  listRequestsForSessionPage,
   listTravelerStates,
 } from "@/lib/office-requests/store";
 import type { AdminRequestsDateRange } from "@/components/admin/AdminRequestsTable";
-import type { Office } from "@/lib/office-requests/types";
 
 export const dynamic = "force-dynamic";
 
@@ -60,6 +66,34 @@ function resolveUpdatedBounds(
   return null;
 }
 
+function resolveCustomUpdatedBounds(
+  fromRaw: string | undefined,
+  toRaw: string | undefined,
+): {
+  bounds: { updatedFrom: Timestamp; updatedTo: Timestamp };
+  fromYmd: string;
+  toYmd: string;
+} | null {
+  const from = fromRaw?.trim() || undefined;
+  const to = toRaw?.trim() || undefined;
+  if (!from && !to) return null;
+
+  const fromYmd = from ?? to;
+  const toYmd = to ?? from;
+  if (!fromYmd || !toYmd) return null;
+
+  const parsed = parseExportCreatedBounds(fromYmd, toYmd);
+  if ("error" in parsed) return null;
+  if (parsed.createdFrom && parsed.createdTo) {
+    return {
+      bounds: { updatedFrom: parsed.createdFrom, updatedTo: parsed.createdTo },
+      fromYmd,
+      toYmd,
+    };
+  }
+  return null;
+}
+
 export default async function AdminRequestsPage({
   params,
   searchParams,
@@ -74,35 +108,65 @@ export default async function AdminRequestsPage({
   if (!session) redirect(`/${locale}/admin/login`);
 
   const isSuperAdmin = session.profile.role === "super_admin";
+  const isOfficeAdmin = session.profile.role === "office_admin";
 
   const sp = (await searchParams) ?? {};
+  const rawFrom = firstSearchParam(sp.from);
+  const rawTo = firstSearchParam(sp.to);
+  const hasCustomRange = Boolean(rawFrom || rawTo);
+  const customRange = resolveCustomUpdatedBounds(rawFrom, rawTo);
+  if (hasCustomRange && !customRange) {
+    redirect(`/${locale}/admin/requests`);
+  }
+
   const rawRange = firstSearchParam(sp.range);
+  const cursor = firstSearchParam(sp.cursor);
+  const statusFilter = parseAdminRequestsStatus(firstSearchParam(sp.status));
+  const sort = parseAdminRequestsSort(firstSearchParam(sp.sort));
   const dateRange: AdminRequestsDateRange =
-    rawRange && REQUEST_DATE_RANGES.has(rawRange)
+    !hasCustomRange && rawRange && REQUEST_DATE_RANGES.has(rawRange)
       ? (rawRange as AdminRequestsDateRange)
       : "all";
 
-  const updatedBounds = resolveUpdatedBounds(dateRange);
+  const updatedBounds = customRange?.bounds ?? resolveUpdatedBounds(dateRange);
   if (dateRange !== "all" && !updatedBounds) {
     redirect(`/${locale}/admin/requests`);
   }
 
+  const effectiveSort = coerceSortForUpdatedWindow(
+    sort,
+    updatedBounds != null,
+  );
+  const { sortKey, sortDirection } = sortToFirestore(effectiveSort);
+
   const listArgs = {
-    role:
-      session.profile.role === "super_admin"
-        ? ("super_admin" as const)
-        : ("office_user" as const),
+    role: session.profile.role,
     officeId: session.profile.officeId,
+    allowedOfficeIds: session.profile.allowedOfficeIds,
     ...(updatedBounds ?? {}),
   };
 
-  const [offices, requests, travelerStates] = await Promise.all([
-    isSuperAdmin
-      ? listOffices({ includeInactive: true })
-      : Promise.resolve<Office[]>([]),
-    listRequestsForSession(listArgs),
+  const allOffices =
+    isSuperAdmin || isOfficeAdmin
+      ? await listOffices({ includeInactive: isSuperAdmin })
+      : [];
+  const visibleOffices = isOfficeAdmin
+    ? allOffices.filter((office) =>
+        adminAllowedOfficeIds(session.profile).includes(office.id),
+      )
+    : allOffices;
+
+  const [requestPage, travelerStates] = await Promise.all([
+    listRequestsForSessionPage({
+      ...listArgs,
+      status: statusFilter === "all" ? undefined : statusFilter,
+      sortKey,
+      sortDirection,
+      cursor,
+    }),
     listTravelerStates({ includeInactive: true }),
   ]);
+  const requests = requestPage.items;
 
   const latestActivityByRequestId = await listLatestActivityLogByRequestIds(
     requests.map((r) => r.id),
@@ -123,7 +187,14 @@ export default async function AdminRequestsPage({
           {isSuperAdmin ? (
             <div className="shrink-0 sm:pt-1">
               <SuperAdminExportLauncher
-                offices={offices}
+                offices={visibleOffices}
+                travelerStates={travelerStates}
+              />
+            </div>
+          ) : isOfficeAdmin ? (
+            <div className="shrink-0 sm:pt-1">
+              <SuperAdminExportLauncher
+                offices={visibleOffices}
                 travelerStates={travelerStates}
               />
             </div>
@@ -142,8 +213,13 @@ export default async function AdminRequestsPage({
         locale={locale}
         travelerStates={travelerStates}
         requestsListHref={requestsHref}
+        statusFilter={statusFilter}
+        sort={effectiveSort}
         dateRange={dateRange}
+        customDateFrom={customRange?.fromYmd}
+        customDateTo={customRange?.toYmd}
         latestActivityByRequestId={latestActivityByRequestId}
+        nextCursor={requestPage.nextCursor}
       />
     </div>
   );

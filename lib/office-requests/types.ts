@@ -8,7 +8,7 @@ export type OfficeRequestStatus =
   | "completed"
   | "cancelled";
 
-export type AdminRole = "super_admin" | "office_user";
+export type AdminRole = "super_admin" | "office_admin" | "office_user";
 
 export type TravelerState = {
   id: string;
@@ -63,6 +63,8 @@ export type OfficeRequest = {
   notes: string;
   /** Secret segment for the public booking pass URL; absent on legacy documents. */
   passToken?: string;
+  /** Public pass links expire after the configured token TTL. */
+  passTokenExpiresAt?: string;
   lastWhatsappAt?: string;
   createdAt: string;
   updatedAt: string;
@@ -111,6 +113,7 @@ export type AdminUserProfile = {
   displayName: string;
   role: AdminRole;
   officeId: string | null;
+  allowedOfficeIds?: string[];
   active: boolean;
   createdAt?: string;
   updatedAt?: string;
@@ -185,6 +188,20 @@ export type AdminActivityLogEntry = {
   officeId: string | null;
   requestId?: string;
   meta?: Record<string, unknown>;
+};
+
+export type PaginatedResult<T> = {
+  items: T[];
+  nextCursor: string | null;
+};
+
+export type RetentionRunResult = {
+  archivedRequests: number;
+  archivedActivityLogs: number;
+  deletedArchivedRequests: number;
+  deletedArchivedActivityLogs: number;
+  truncated: boolean;
+  maxDocs: number;
 };
 
 export const REQUEST_TYPE_LABELS: Record<OfficeRequestType, string> = {

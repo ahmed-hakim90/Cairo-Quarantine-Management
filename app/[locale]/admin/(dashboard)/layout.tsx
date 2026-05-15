@@ -34,6 +34,8 @@ export default async function AdminDashboardShellLayout({
       locale={locale}
       displayName={session.profile.displayName}
       role={session.profile.role}
+      officeId={session.profile.officeId}
+      allowedOfficeIds={session.profile.allowedOfficeIds ?? []}
       officeNameAr={officeNameAr}
     >
       {children}

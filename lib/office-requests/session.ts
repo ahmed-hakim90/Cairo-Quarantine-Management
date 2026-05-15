@@ -31,11 +31,23 @@ export function shouldShowAdminPendingReview(session: AdminSession): boolean {
   if (session.profile.role === "office_user") {
     return !(session.profile.officeId?.trim());
   }
+  if (session.profile.role === "office_admin") {
+    return (session.profile.allowedOfficeIds ?? []).length === 0;
+  }
   return false;
 }
 
 export function assertSuperAdmin(session: AdminSession) {
   if (session.profile.role !== "super_admin") {
+    throw new Error("غير مصرح بتنفيذ هذا الإجراء.");
+  }
+}
+
+export function assertCanManageAdminUsers(session: AdminSession) {
+  if (
+    session.profile.role !== "super_admin" &&
+    session.profile.role !== "office_admin"
+  ) {
     throw new Error("غير مصرح بتنفيذ هذا الإجراء.");
   }
 }

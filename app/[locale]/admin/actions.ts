@@ -1,11 +1,12 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 import {
   getAdminSession,
   assertSuperAdmin,
+  assertCanManageAdminUsers,
   ADMIN_SESSION_COOKIE,
   shouldShowAdminPendingReview,
 } from "@/lib/office-requests/session";
@@ -14,7 +15,9 @@ import {
   deleteMessageTemplate,
   deleteOfficeRequestBySuperAdmin,
   getOffice,
+  getUserProfile,
   markWhatsappSentForSession,
+  OFFICE_REQUESTS_CACHE_TAGS,
   saveBookingSettings,
   setOfficeActive,
   setTravelerStateActive,
@@ -27,6 +30,12 @@ import {
   upsertVaccine,
 } from "@/lib/office-requests/store";
 import { inferOfficeServiceFromSelectedTravelerStateIds } from "@/lib/office-requests/office-traveler-state";
+import { runRetentionMaintenance } from "@/lib/office-requests/retention";
+import {
+  adminCanManageUser,
+  assertOfficeAdminCanSaveUser,
+  normalizeOfficeIds,
+} from "@/lib/office-requests/admin-access";
 import type {
   AdminActivityActor,
   AdminRole,
@@ -44,6 +53,10 @@ function formValue(formData: FormData, key: string) {
   return String(formData.get(key) ?? "").trim();
 }
 
+function formValues(formData: FormData, key: string) {
+  return normalizeOfficeIds(formData.getAll(key));
+}
+
 function adminActorFromSession(session: AdminSession): AdminActivityActor {
   return {
     uid: session.uid,
@@ -52,6 +65,16 @@ function adminActorFromSession(session: AdminSession): AdminActivityActor {
       session.email ||
       session.uid,
   };
+}
+
+function revalidatePublicBookingData() {
+  revalidateTag(OFFICE_REQUESTS_CACHE_TAGS.publicOffices, "max");
+  revalidateTag(OFFICE_REQUESTS_CACHE_TAGS.publicTravelerStates, "max");
+  revalidateTag(OFFICE_REQUESTS_CACHE_TAGS.publicBookingSettings, "max");
+}
+
+function revalidatePublicVaccineData() {
+  revalidateTag(OFFICE_REQUESTS_CACHE_TAGS.publicVaccines, "max");
 }
 
 async function requireSession() {
@@ -101,6 +124,7 @@ export async function updateRequestAction(formData: FormData) {
     notes,
     role: session.profile.role,
     officeId: session.profile.officeId,
+    allowedOfficeIds: session.profile.allowedOfficeIds,
     actor: adminActorFromSession(session),
   });
 
@@ -118,6 +142,7 @@ export async function markWhatsappSentAction(formData: FormData) {
     id,
     role: session.profile.role,
     officeId: session.profile.officeId,
+    allowedOfficeIds: session.profile.allowedOfficeIds,
     actor: adminActorFromSession(session),
   });
 
@@ -160,10 +185,24 @@ export async function deleteTemplateAction(formData: FormData) {
 
 export async function saveUserProfileAction(formData: FormData) {
   const session = await requireSession();
-  assertSuperAdmin(session);
+  assertCanManageAdminUsers(session);
   const locale = formValue(formData, "locale") || "ar";
-  const role = formValue(formData, "role") as AdminRole;
+  const rawRole = formValue(formData, "role") as AdminRole;
   const uid = formValue(formData, "uid");
+  const role: AdminRole =
+    rawRole === "super_admin" || rawRole === "office_admin"
+      ? rawRole
+      : "office_user";
+  const officeId = formValue(formData, "officeId") || null;
+  const allowedOfficeIds = formValues(formData, "allowedOfficeIds");
+  const existing = uid ? await getUserProfile(uid) : null;
+
+  assertOfficeAdminCanSaveUser({
+    actor: session.profile,
+    targetRole: role,
+    targetOfficeId: officeId,
+    existingTarget: existing,
+  });
 
   await upsertAdminUserAccount({
     actor: adminActorFromSession(session),
@@ -171,8 +210,9 @@ export async function saveUserProfileAction(formData: FormData) {
     email: formValue(formData, "email"),
     password: formValue(formData, "password") || undefined,
     displayName: formValue(formData, "displayName") || "مستخدم",
-    role: role === "super_admin" ? "super_admin" : "office_user",
-    officeId: formValue(formData, "officeId") || null,
+    role,
+    officeId,
+    allowedOfficeIds,
     active: formData.get("active") === "on",
   });
 
@@ -183,10 +223,15 @@ export async function saveUserProfileAction(formData: FormData) {
 
 export async function deleteUserProfileAction(formData: FormData) {
   const session = await requireSession();
-  assertSuperAdmin(session);
+  assertCanManageAdminUsers(session);
   const locale = formValue(formData, "locale") || "ar";
   const uid = formValue(formData, "uid");
   if (!uid) throw new Error("معرّف المستخدم مفقود.");
+  const target = await getUserProfile(uid);
+  if (!target) throw new Error("المستخدم غير موجود.");
+  if (!adminCanManageUser(session.profile, target)) {
+    throw new Error("لا يمكنك حذف هذا المستخدم.");
+  }
 
   await deleteAdminUserAccount({
     uid,
@@ -218,6 +263,7 @@ export async function saveBookingSettingsAction(formData: FormData) {
   for (const l of locales) {
     revalidatePath(`/${l}/booking`);
   }
+  revalidatePublicBookingData();
 }
 
 export async function saveOfficeAction(formData: FormData) {
@@ -271,6 +317,7 @@ export async function saveOfficeAction(formData: FormData) {
   for (const l of locales) {
     revalidatePath(`/${l}/booking`);
   }
+  revalidateTag(OFFICE_REQUESTS_CACHE_TAGS.publicOffices, "max");
 }
 
 export async function setOfficeActiveAction(formData: FormData) {
@@ -289,6 +336,7 @@ export async function setOfficeActiveAction(formData: FormData) {
   for (const l of locales) {
     revalidatePath(`/${l}/booking`);
   }
+  revalidateTag(OFFICE_REQUESTS_CACHE_TAGS.publicOffices, "max");
 }
 
 export async function saveTravelerStateAction(formData: FormData) {
@@ -318,6 +366,7 @@ export async function saveTravelerStateAction(formData: FormData) {
   for (const l of locales) {
     revalidatePath(`/${l}/booking`);
   }
+  revalidateTag(OFFICE_REQUESTS_CACHE_TAGS.publicTravelerStates, "max");
 }
 
 export async function setTravelerStateActiveAction(formData: FormData) {
@@ -340,6 +389,7 @@ export async function setTravelerStateActiveAction(formData: FormData) {
   for (const l of locales) {
     revalidatePath(`/${l}/booking`);
   }
+  revalidateTag(OFFICE_REQUESTS_CACHE_TAGS.publicTravelerStates, "max");
 }
 
 const VACCINE_CATEGORIES: VaccineUserCategory[] = [
@@ -362,6 +412,7 @@ function revalidatePublicVaccinePages() {
     revalidatePath(`/${l}/citizen-services`);
     revalidatePath(`/${l}/hajj-umrah`);
   }
+  revalidatePublicVaccineData();
 }
 
 export async function saveVaccineAction(formData: FormData) {
@@ -420,4 +471,10 @@ export async function setVaccineActiveAction(formData: FormData) {
   revalidatePath(`/${locale}/admin`);
   revalidatePath(`/${locale}/admin/vaccines`);
   revalidatePublicVaccinePages();
+}
+
+export async function runRetentionMaintenanceAction() {
+  const session = await requireSession();
+  assertSuperAdmin(session);
+  return runRetentionMaintenance();
 }

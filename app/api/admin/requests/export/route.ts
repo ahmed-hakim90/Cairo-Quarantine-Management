@@ -2,6 +2,10 @@ import { NextResponse } from "next/server";
 import { parseExportCreatedBounds } from "@/lib/office-requests/export-date-bounds";
 import { officeRequestsToXlsxBuffer } from "@/lib/office-requests/export-xlsx";
 import { SUPER_ADMIN_EXPORT_MAX_ROWS } from "@/lib/office-requests/export-limits";
+import {
+  adminAllowedOfficeIds,
+  adminCanAccessOffice,
+} from "@/lib/office-requests/admin-access";
 import { mergeTravelerStateLabelsWithLegacy } from "@/lib/office-requests/office-traveler-state";
 import {
   listRequestsForSuperAdminExport,
@@ -43,9 +47,21 @@ export async function GET(request: Request) {
   }
 
   const role = session.profile.role;
-  if (role === "office_user" && !session.profile.officeId?.trim()) {
+  if (
+    role === "office_user" &&
+    !session.profile.officeId?.trim()
+  ) {
     return NextResponse.json(
       { error: "حسابك غير مرتبط بمكتب. تواصل مع الإدارة." },
+      { status: 403 },
+    );
+  }
+  if (
+    role === "office_admin" &&
+    adminAllowedOfficeIds(session.profile).length === 0
+  ) {
+    return NextResponse.json(
+      { error: "حسابك غير مرتبط بأي مكاتب. تواصل مع الإدارة." },
       { status: 403 },
     );
   }
@@ -68,10 +84,19 @@ export async function GET(request: Request) {
   const officeIdFromQuery =
     !officeRaw || officeRaw.toLowerCase() === "all" ? null : officeRaw;
 
-  const officeId =
-    role === "office_user"
-      ? session.profile.officeId!.trim()
-      : officeIdFromQuery;
+  let officeId: string | null = officeIdFromQuery;
+  let officeIds: string[] | null = null;
+  if (role === "office_user") {
+    officeId = session.profile.officeId!.trim();
+  } else if (role === "office_admin") {
+    officeIds = adminAllowedOfficeIds(session.profile);
+    if (officeId && !adminCanAccessOffice(session.profile, officeId)) {
+      return NextResponse.json(
+        { error: "المكتب المختار خارج نطاق صلاحياتك." },
+        { status: 403 },
+      );
+    }
+  }
 
   const travelerTokens = [
     ...parseCommaList(searchParams.get("travelerStateIds")),
@@ -102,6 +127,7 @@ export async function GET(request: Request) {
   const { requests, capped } = await listRequestsForSuperAdminExport({
     types,
     officeId,
+    officeIds,
     travelerStateIds,
     travelerCategories,
     includeUncategorizedBookings: includeUncategorized,

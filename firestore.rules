@@ -14,6 +14,7 @@ service cloud.firestore {
       return signedIn() &&
         profile().data.active == true &&
         (profile().data.role == "super_admin" ||
+          profile().data.role == "office_admin" ||
           profile().data.role == "office_user");
     }
 
@@ -25,6 +26,12 @@ service cloud.firestore {
       return activeAdmin() &&
         profile().data.role == "office_user" &&
         profile().data.officeId == officeId;
+    }
+
+    function officeAdminFor(officeId) {
+      return activeAdmin() &&
+        profile().data.role == "office_admin" &&
+        officeId in profile().data.allowedOfficeIds;
     }
 
     match /offices/{officeId} {
@@ -47,12 +54,29 @@ service cloud.firestore {
     }
 
     match /requests/{requestId} {
-      allow read, update: if superAdmin() || officeUserFor(resource.data.officeId);
+      allow read: if superAdmin() ||
+        officeAdminFor(resource.data.officeId) ||
+        officeUserFor(resource.data.officeId);
+      allow update: if superAdmin() || (
+        (officeUserFor(resource.data.officeId) ||
+          officeAdminFor(resource.data.officeId)) &&
+        request.resource.data.officeId == resource.data.officeId &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          "status",
+          "notes",
+          "lastWhatsappAt",
+          "updatedAt"
+        ])
+      );
       allow create: if false;
       allow delete: if superAdmin();
     }
 
     match /activityLogs/{logId} {
+      allow read, write: if false;
+    }
+
+    match /{document=**} {
       allow read, write: if false;
     }
   }

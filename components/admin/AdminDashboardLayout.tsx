@@ -1,14 +1,18 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { logoutAdmin } from "@/app/[locale]/admin/actions";
+import { AdminLogoutButton } from "@/components/admin/AdminLogoutButton";
+import { AdminNewRequestNotifier } from "@/components/admin/AdminNewRequestNotifier";
 import { AdminSidebar } from "@/components/admin/AdminSidebar";
+import { roleLabelAr } from "@/lib/office-requests/admin-access";
 import type { AdminRole } from "@/lib/office-requests/types";
 
 type AdminDashboardLayoutProps = {
   locale: string;
   displayName: string;
   role: AdminRole;
+  officeId: string | null;
+  allowedOfficeIds: string[];
   /** When set for an office user, shown in the header instead of displayName. */
   officeNameAr?: string | null;
   children: React.ReactNode;
@@ -18,6 +22,8 @@ export function AdminDashboardLayout({
   locale,
   displayName,
   role,
+  officeId,
+  allowedOfficeIds,
   officeNameAr = null,
   children,
 }: AdminDashboardLayoutProps) {
@@ -78,19 +84,19 @@ export function AdminDashboardLayout({
                 {headerPrimary}
               </p>
               <p className="text-xs text-gov-gray-600">
-                {role === "super_admin" ? "سوبر أدمن" : "مستخدم مكتب"}
+                {roleLabelAr(role)}
               </p>
             </div>
           </div>
-          <form action={logoutAdmin.bind(null, locale)}>
-            <button
-              type="submit"
-              className="inline-flex min-h-10 items-center justify-center rounded-md border border-gov-gray-200 px-4 py-2 text-sm font-bold text-gov-navy transition hover:bg-gov-gray-50"
-            >
-              تسجيل خروج
-            </button>
-          </form>
+          <AdminLogoutButton locale={locale} />
         </header>
+
+        <AdminNewRequestNotifier
+          locale={locale}
+          role={role}
+          officeId={officeId}
+          allowedOfficeIds={allowedOfficeIds}
+        />
 
         <main id="main-content" className="flex-1 px-4 py-6 md:px-6">
           {children}

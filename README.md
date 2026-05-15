@@ -4,6 +4,10 @@
 
 **Cairo Quarantine Administration** — multilingual informational portal for quarantine and traveler services.
 
+## مستند الإدارة | Management brief
+
+عرض إداري بالعربية يشرح المميزات ومنطق العمل ولوحة التحكم (للإرسال للإدارة): [`docs/ADMIN-BRIEF-AR.md`](docs/ADMIN-BRIEF-AR.md).
+
 ## الميزات | Features
 
 - **لغات**: العربية (افتراضي)، الإنجليزية، الصينية — مع اتجاه النص RTL/LTR حسب اللغة.
@@ -58,6 +62,7 @@ npm run dev
 | `FIREBASE_PROJECT_ID` | Firebase project id للـ Admin SDK. |
 | `FIREBASE_CLIENT_EMAIL` | service account client email. |
 | `FIREBASE_PRIVATE_KEY` | service account private key مع `\n` escaped في `.env.local`. |
+| `MAINTENANCE_CRON_SECRET` | سر لاستدعاء endpoint صيانة الأرشفة `POST /api/admin/maintenance/retention` من Cron خارجي عبر `Authorization: Bearer ...`. |
 
 إعدادات الحجز العامة (ساعة إغلاق حجز «نفس اليوم» بتوقيت القاهرة) تُحفظ في وثيقة Firestore `settings/app` ويُضبطها السوبر أدمن من `/ar/admin/settings` (افتراضي الساعة 14 إن لم تُنشأ الوثيقة).
 

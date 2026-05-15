@@ -1,6 +1,7 @@
 import { logoutAdmin } from "@/app/[locale]/admin/actions";
 import { AdminRequestsTable } from "@/components/admin/AdminRequestsTable";
 import { defaultTravelerStatesFromLegacyLabels } from "@/lib/office-requests/office-traveler-state";
+import { roleLabelAr } from "@/lib/office-requests/admin-access";
 import { SuperAdminExportLauncher } from "@/components/admin/SuperAdminExportLauncher";
 import { SuperAdminUsersSection } from "@/components/admin/SuperAdminUsersSection";
 import {
@@ -55,7 +56,7 @@ export function AdminDashboard({
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
             <p className="inline-flex rounded-md bg-gov-accent-muted px-3 py-1 text-sm font-bold text-gov-navy">
-              {isSuperAdmin ? "سوبر أدمن" : "مستخدم مكتب"}
+              {roleLabelAr(session.profile.role)}
             </p>
             <h1 className="mt-1 text-2xl font-extrabold text-gov-navy">
               لوحة متابعة الحجوزات والطلبات
@@ -93,6 +94,8 @@ export function AdminDashboard({
         locale={locale}
         travelerStates={defaultTravelerStatesFromLegacyLabels()}
         requestsListHref={`/${locale}/admin/requests`}
+        statusFilter="all"
+        sort="created_desc"
       />
 
       {isSuperAdmin ? (

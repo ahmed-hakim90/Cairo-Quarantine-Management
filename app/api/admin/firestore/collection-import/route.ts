@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { SUPER_ADMIN_IMPORT_MAX_DOCS } from "@/lib/office-requests/export-limits";
 import { locales } from "@/lib/i18n/config";
 import { getAdminSession, assertSuperAdmin } from "@/lib/office-requests/session";
+import { OFFICE_REQUESTS_CACHE_TAGS } from "@/lib/office-requests/store";
 import { isSuperAdminDataCollectionKey } from "@/lib/office-requests/super-admin-data-constants";
 import {
   importDocumentsToCollection,
@@ -78,6 +79,9 @@ export async function POST(request: Request) {
     });
     for (const locale of locales) {
       revalidatePath(`/${locale}/admin`, "layout");
+    }
+    for (const tag of Object.values(OFFICE_REQUESTS_CACHE_TAGS)) {
+      revalidateTag(tag, "max");
     }
     return NextResponse.json({
       written,

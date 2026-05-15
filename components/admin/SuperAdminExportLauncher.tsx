@@ -37,16 +37,6 @@ export function SuperAdminExportLauncher({
   );
 
   const [traveler, setTraveler] = useState<Record<string, boolean>>({});
-
-  useEffect(() => {
-    setTraveler((prev) => {
-      const next: Record<string, boolean> = {};
-      for (const s of exportFilterStates) {
-        next[s.id] = prev[s.id] ?? false;
-      }
-      return next;
-    });
-  }, [exportFilterStates]);
   const [uncategorized, setUncategorized] = useState(false);
   const [officeId, setOfficeId] = useState("");
   const [dateFrom, setDateFrom] = useState("");

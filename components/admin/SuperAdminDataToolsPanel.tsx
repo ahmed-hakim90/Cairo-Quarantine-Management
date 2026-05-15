@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useMemo, useState } from "react";
+import { runRetentionMaintenanceAction } from "@/app/[locale]/admin/actions";
 import {
   SUPER_ADMIN_EXPORT_MAX_ROWS,
   SUPER_ADMIN_IMPORT_MAX_DOCS,
@@ -16,6 +17,8 @@ import {
 const DATA_SCOPE_LABELS: Record<SuperAdminDataCollectionKey, string> = {
   requests: "الطلبات (حجوزات وشكاوى ومقترحات)",
   activityLogs: "سجل الإجراءات",
+  requestsArchive: "أرشيف الطلبات",
+  activityLogsArchive: "أرشيف سجل الإجراءات",
   offices: "بيانات المكاتب",
   messageTemplates: "قوالب رسائل واتساب",
 };
@@ -53,6 +56,10 @@ export function SuperAdminDataToolsPanel() {
 
   const [exportBusy, setExportBusy] = useState(false);
   const [exportError, setExportError] = useState<string | null>(null);
+  const [maintenanceBusy, setMaintenanceBusy] = useState(false);
+  const [maintenanceResult, setMaintenanceResult] = useState<string | null>(
+    null,
+  );
 
   const requiredPurgePhrase = useMemo(
     () => SUPER_ADMIN_PURGE_CONFIRM_PHRASE[purgeOperation],
@@ -159,6 +166,31 @@ export function SuperAdminDataToolsPanel() {
       setPurgeBusy(false);
     }
   }, [purgeOperation, purgeConfirm]);
+
+  const runRetentionMaintenance = useCallback(async () => {
+    setMaintenanceResult(null);
+    setMaintenanceBusy(true);
+    try {
+      const result = await runRetentionMaintenanceAction();
+      const more = result.truncated
+        ? " — ما زالت هناك بيانات أخرى؛ كرر التشغيل أو انتظر تشغيل الـ cron التالي."
+        : "";
+      setMaintenanceResult(
+        [
+          `أُرشف ${result.archivedRequests} طلباً.`,
+          `أُرشف ${result.archivedActivityLogs} حدثاً من سجل النشاط.`,
+          `حُذف ${result.deletedArchivedRequests} طلباً مؤرشفاً قديماً.`,
+          `حُذف ${result.deletedArchivedActivityLogs} حدثاً مؤرشفاً قديماً.`,
+        ].join("\n") + more,
+      );
+    } catch (e) {
+      setMaintenanceResult(
+        e instanceof Error ? e.message : "تعذّر تشغيل صيانة البيانات.",
+      );
+    } finally {
+      setMaintenanceBusy(false);
+    }
+  }, []);
 
   return (
     <div className="space-y-10 rounded-lg border border-gov-gray-200 bg-white p-5 shadow-sm">
@@ -294,6 +326,27 @@ export function SuperAdminDataToolsPanel() {
         {importResult ? (
           <pre className="mt-3 max-h-48 overflow-auto whitespace-pre-wrap rounded-md border border-gov-gray-200 bg-gov-gray-50 p-3 text-xs text-gov-navy">
             {importResult}
+          </pre>
+        ) : null}
+      </section>
+
+      <section className="border-t border-gov-gray-100 pt-6">
+        <h3 className="text-base font-bold text-gov-navy">صيانة البيانات القديمة</h3>
+        <p className="mt-2 text-sm text-gov-gray-600">
+          يؤرشف الطلبات المغلقة وسجل النشاط الأقدم من 90 يوماً، ويحذف الأرشيف
+          الأقدم من 6 شهور. نفس العملية يمكن تشغيلها من Cron آمن.
+        </p>
+        <button
+          type="button"
+          onClick={() => void runRetentionMaintenance()}
+          disabled={maintenanceBusy}
+          className="mt-4 inline-flex min-h-10 items-center justify-center rounded-md border border-gov-navy bg-gov-navy px-4 py-2 text-sm font-bold text-white transition hover:bg-gov-accent disabled:opacity-50"
+        >
+          {maintenanceBusy ? "جاري التشغيل…" : "تشغيل صيانة البيانات الآن"}
+        </button>
+        {maintenanceResult ? (
+          <pre className="mt-3 whitespace-pre-wrap rounded-md border border-gov-gray-200 bg-gov-gray-50 p-3 text-xs font-semibold text-gov-navy">
+            {maintenanceResult}
           </pre>
         ) : null}
       </section>

@@ -5,6 +5,7 @@ import { useState } from "react";
 import { deleteUserProfileAction } from "@/app/[locale]/admin/actions";
 import { AdminMessageTemplatesManager } from "@/components/admin/AdminMessageTemplatesManager";
 import { SuperAdminAddModal } from "@/components/admin/SuperAdminAddModal";
+import { roleLabelAr } from "@/lib/office-requests/admin-access";
 import type { AdminUserProfile, MessageTemplate, Office } from "@/lib/office-requests/types";
 
 type SuperAdminUsersSectionProps = {
@@ -62,6 +63,7 @@ export function SuperAdminUsersSection({
             locale={locale}
             offices={offices}
             userToEdit={userToEdit}
+            actorRole="super_admin"
             onClearEdit={() => setUserToEdit(null)}
             onBeforeOpen={() => setUserToEdit(null)}
           />
@@ -75,10 +77,17 @@ export function SuperAdminUsersSection({
             <ul className="mt-3 space-y-3 text-xs text-gov-gray-700">
               {users.map((user) => {
                 const officeLabel =
-                  user.role === "super_admin"
-                    ? "سوبر أدمن"
-                    : offices.find((o) => o.id === user.officeId)?.nameAr ||
-                      "مستخدم مكتب";
+                  user.role === "office_admin"
+                    ? `أدمن مكاتب: ${
+                        (user.allowedOfficeIds ?? [])
+                          .map((id) => offices.find((o) => o.id === id)?.nameAr)
+                          .filter(Boolean)
+                          .join("، ") || "بلا مكاتب"
+                      }`
+                    : user.role === "office_user"
+                      ? offices.find((o) => o.id === user.officeId)?.nameAr ||
+                        "مستخدم مكتب"
+                      : roleLabelAr(user.role);
                 const isSelf = user.uid === sessionUid;
                 return (
                   <li

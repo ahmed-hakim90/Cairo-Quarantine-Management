@@ -12,7 +12,12 @@ type AdminSidebarProps = {
   onClose: () => void;
 };
 
-type NavItem = { href: string; label: string; superOnly?: boolean; exact?: boolean };
+type NavItem = {
+  href: string;
+  label: string;
+  roles?: AdminRole[];
+  exact?: boolean;
+};
 
 function isActive(normalized: string, item: NavItem): boolean {
   if (item.exact) {
@@ -40,16 +45,25 @@ function NavLinks({
   ];
 
   const superItems: NavItem[] = [
-    { href: "/admin/offices", label: "المكاتب", superOnly: true },
-    { href: "/admin/traveler-states", label: "حالات المسافرين", superOnly: true },
-    { href: "/admin/vaccines", label: "التطعيمات", superOnly: true },
-    { href: "/admin/users", label: "المستخدمون", superOnly: true },
-    { href: "/admin/settings", label: "الإعدادات", superOnly: true },
-    { href: "/admin/activity", label: "سجل النشاط", superOnly: true },
+    { href: "/admin/offices", label: "المكاتب", roles: ["super_admin"] },
+    {
+      href: "/admin/traveler-states",
+      label: "حالات المسافرين",
+      roles: ["super_admin"],
+    },
+    { href: "/admin/vaccines", label: "التطعيمات", roles: ["super_admin"] },
+    {
+      href: "/admin/users",
+      label: "المستخدمون",
+      roles: ["super_admin", "office_admin"],
+    },
+    { href: "/admin/settings", label: "الإعدادات", roles: ["super_admin"] },
+    { href: "/admin/activity", label: "سجل النشاط", roles: ["super_admin"] },
   ];
 
-  const items =
-    role === "super_admin" ? [...baseItems, ...superItems] : baseItems;
+  const items = [...baseItems, ...superItems].filter(
+    (item) => !item.roles || item.roles.includes(role),
+  );
 
   const linkClass = (active: boolean) =>
     active
@@ -62,7 +76,6 @@ function NavLinks({
         القائمة
       </p>
       {items.map((item) => {
-        if (item.superOnly && role !== "super_admin") return null;
         const active = isActive(normalized, item);
         const fullHref = `/${locale}${item.href}`;
         return (

@@ -39,7 +39,6 @@ export function useBookingPassQrState({
 
   useEffect(() => {
     if (!passUrl) {
-      setQrDataUrl(null);
       return;
     }
     let cancelled = false;
@@ -60,7 +59,7 @@ export function useBookingPassQrState({
     };
   }, [passUrl]);
 
-  return { passUrl, qrDataUrl };
+  return { passUrl, qrDataUrl: passUrl ? qrDataUrl : null };
 }
 
 export function BookingPassQrPicture({

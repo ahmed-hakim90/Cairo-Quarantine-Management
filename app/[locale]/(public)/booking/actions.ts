@@ -1,9 +1,11 @@
 "use server";
 
+import { headers } from "next/headers";
 import {
   getCairoMinBookingYmd,
   getCairoTodayYmd,
 } from "@/lib/cairo-today-ymd";
+import { checkRateLimit, rateLimitKeyFromHeaders } from "@/lib/rate-limit";
 import { officeAcceptsTravelerState } from "@/lib/office-requests/office-traveler-state";
 import {
   countBookingRequestsForOfficeDay,
@@ -34,6 +36,11 @@ export type BookingFormState = {
 };
 
 const requestTypes: OfficeRequestType[] = ["booking", "complaint", "proposal"];
+const MAX_OFFICE_ID_LENGTH = 120;
+const MAX_TRAVELER_STATE_ID_LENGTH = 80;
+const MAX_NAME_LENGTH = 120;
+const MAX_PHONE_LENGTH = 30;
+const MAX_DETAILS_LENGTH = 1000;
 
 function value(formData: FormData, key: string) {
   return String(formData.get(key) ?? "").trim();
@@ -43,6 +50,19 @@ export async function submitOfficeRequest(
   _state: BookingFormState,
   formData: FormData,
 ): Promise<BookingFormState> {
+  const headerList = await headers();
+  const rateLimit = checkRateLimit({
+    key: rateLimitKeyFromHeaders(headerList, "submit-office-request"),
+    limit: 10,
+    windowMs: 10 * 60_000,
+  });
+  if (!rateLimit.allowed) {
+    return {
+      ok: false,
+      message: "تم إرسال طلبات كثيرة خلال وقت قصير. حاول مرة أخرى بعد قليل.",
+    };
+  }
+
   const officeId = value(formData, "officeId");
   const type = value(formData, "type") as OfficeRequestType;
   const travelerStateId = value(formData, "travelerStateId");
@@ -62,7 +82,13 @@ export async function submitOfficeRequest(
     details,
   };
   if (!officeId) errors.officeId = "اختر المكتب.";
+  if (officeId.length > MAX_OFFICE_ID_LENGTH) {
+    errors.officeId = "اختيار المكتب غير صالح.";
+  }
   if (!requestTypes.includes(type)) errors.type = "اختر نوع الطلب.";
+  if (travelerStateId.length > MAX_TRAVELER_STATE_ID_LENGTH) {
+    errors.travelerStateId = "حالة المسافر غير صالحة.";
+  }
 
   const activeStates = await listTravelerStatesForPublicBooking();
   const allowedIds = new Set(activeStates.map((s) => s.id));
@@ -129,9 +155,14 @@ export async function submitOfficeRequest(
     }
   }
 
-  if (name.length < 2) errors.name = "اكتب الاسم بشكل صحيح.";
-  if (!/^[+\d\s()-]{9,20}$/.test(phone)) {
+  if (name.length < 2 || name.length > MAX_NAME_LENGTH) {
+    errors.name = "اكتب الاسم بشكل صحيح.";
+  }
+  if (phone.length > MAX_PHONE_LENGTH || !/^[+\d\s()-]{9,20}$/.test(phone)) {
     errors.phone = "اكتب رقم هاتف صحيح.";
+  }
+  if (details.length > MAX_DETAILS_LENGTH) {
+    errors.details = "التفاصيل طويلة أكثر من المسموح.";
   }
   if (type !== "booking" && details.length < 5) {
     errors.details = "اكتب تفاصيل الطلب.";

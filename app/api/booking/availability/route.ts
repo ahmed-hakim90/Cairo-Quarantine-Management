@@ -1,18 +1,39 @@
 import { NextResponse } from "next/server";
+import { checkRateLimit, rateLimitKeyFromHeaders } from "@/lib/rate-limit";
 import { isFirebaseAdminConfigured } from "@/lib/firebase/admin";
 import {
   countBookingRequestsForOfficeDay,
-  getOffice,
+  listOffices,
 } from "@/lib/office-requests/store";
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+const MAX_OFFICE_ID_LENGTH = 120;
 
 export async function GET(req: Request) {
+  const rateLimit = checkRateLimit({
+    key: rateLimitKeyFromHeaders(req.headers, "booking-availability"),
+    limit: 60,
+    windowMs: 60_000,
+  });
+  if (!rateLimit.allowed) {
+    return NextResponse.json(
+      { error: "rate_limited" },
+      {
+        status: 429,
+        headers: { "Retry-After": String(rateLimit.retryAfterSeconds) },
+      },
+    );
+  }
+
   const url = new URL(req.url);
   const officeId = url.searchParams.get("officeId")?.trim() ?? "";
   const preferredDate = url.searchParams.get("preferredDate")?.trim() ?? "";
 
-  if (!officeId || !DATE_RE.test(preferredDate)) {
+  if (
+    !officeId ||
+    officeId.length > MAX_OFFICE_ID_LENGTH ||
+    !DATE_RE.test(preferredDate)
+  ) {
     return NextResponse.json({ error: "bad_params" }, { status: 400 });
   }
 
@@ -25,7 +46,7 @@ export async function GET(req: Request) {
   }
 
   try {
-    const office = await getOffice(officeId);
+    const office = (await listOffices()).find((item) => item.id === officeId);
     if (!office) {
       return NextResponse.json({ error: "office_not_found" }, { status: 404 });
     }

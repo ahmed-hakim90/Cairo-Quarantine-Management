@@ -50,9 +50,9 @@ export default async function BookingPassPage({
     return <InvalidPass locale={locale} />;
   }
 
-  const travelerLabels = mergeTravelerStateLabelsWithLegacy(
-    await listTravelerStates({ includeInactive: true }),
-  );
+  const travelerLabels = pass.travelerStateId
+    ? mergeTravelerStateLabelsWithLegacy(await listTravelerStates())
+    : {};
   const traveler = pass.travelerStateId
     ? travelerLabels[pass.travelerStateId] ?? pass.travelerStateId
     : pass.travelerCategory

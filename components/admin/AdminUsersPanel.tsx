@@ -4,13 +4,15 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { deleteUserProfileAction } from "@/app/[locale]/admin/actions";
 import { SuperAdminAddModal } from "@/components/admin/SuperAdminAddModal";
-import type { AdminUserProfile, Office } from "@/lib/office-requests/types";
+import { roleLabelAr } from "@/lib/office-requests/admin-access";
+import type { AdminRole, AdminUserProfile, Office } from "@/lib/office-requests/types";
 
 type AdminUsersPanelProps = {
   locale: string;
   offices: Office[];
   users: AdminUserProfile[];
   sessionUid: string;
+  actorRole: AdminRole;
 };
 
 export function AdminUsersPanel({
@@ -18,6 +20,7 @@ export function AdminUsersPanel({
   offices,
   users,
   sessionUid,
+  actorRole,
 }: AdminUsersPanelProps) {
   const router = useRouter();
   const [userToEdit, setUserToEdit] = useState<AdminUserProfile | null>(null);
@@ -50,14 +53,15 @@ export function AdminUsersPanel({
           </h1>
           <p className="mt-2 text-sm text-gov-gray-600">
             تعديل الاسم المعروض أو البريد أو المكتب أو إيقاف الحساب من نموذج
-            التعديل. للمستخدم الجديد استخدم «إضافة مكتب أو مستخدم» ثم تبويب
-            «مستخدم جديد».
+            التعديل. المستخدمون المعروضون هنا ضمن نطاق صلاحياتك.
           </p>
         </div>
         <SuperAdminAddModal
           locale={locale}
           offices={offices}
           userToEdit={userToEdit}
+          actorRole={actorRole}
+          allowOfficeCreation={false}
           onClearEdit={() => setUserToEdit(null)}
           onBeforeOpen={() => setUserToEdit(null)}
         />
@@ -72,10 +76,17 @@ export function AdminUsersPanel({
             <ul className="mt-3 space-y-3 text-xs text-gov-gray-700">
               {users.map((user) => {
                 const officeLabel =
-                  user.role === "super_admin"
-                    ? "سوبر أدمن"
-                    : offices.find((o) => o.id === user.officeId)?.nameAr ||
-                      "مستخدم مكتب";
+                  user.role === "office_admin"
+                    ? `أدمن مكاتب: ${
+                        (user.allowedOfficeIds ?? [])
+                          .map((id) => offices.find((o) => o.id === id)?.nameAr)
+                          .filter(Boolean)
+                          .join("، ") || "بلا مكاتب"
+                      }`
+                    : user.role === "office_user"
+                      ? offices.find((o) => o.id === user.officeId)?.nameAr ||
+                        "مستخدم مكتب"
+                      : roleLabelAr(user.role);
                 const isSelf = user.uid === sessionUid;
                 return (
                   <li

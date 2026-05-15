@@ -3,6 +3,8 @@
 export const SUPER_ADMIN_DATA_COLLECTION_PATHS = {
   requests: "requests",
   activityLogs: "activityLogs",
+  requestsArchive: "requestsArchive",
+  activityLogsArchive: "activityLogsArchive",
   offices: "offices",
   messageTemplates: "messageTemplates",
 } as const;
@@ -24,6 +26,8 @@ export function isSuperAdminDataCollectionKey(
   return (
     value === "requests" ||
     value === "activityLogs" ||
+    value === "requestsArchive" ||
+    value === "activityLogsArchive" ||
     value === "offices" ||
     value === "messageTemplates"
   );
@@ -65,6 +69,8 @@ export const EXPORT_FILE_STEM_AR: Record<SuperAdminDataCollectionKey, string> =
   {
     requests: "نسخة-طلبات",
     activityLogs: "نسخة-سجل-اجراءات",
+    requestsArchive: "نسخة-أرشيف-طلبات",
+    activityLogsArchive: "نسخة-أرشيف-سجل-اجراءات",
     offices: "نسخة-مكاتب",
     messageTemplates: "نسخة-قوالب-رسائل",
   };

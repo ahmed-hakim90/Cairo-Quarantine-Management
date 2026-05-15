@@ -27,6 +27,7 @@ export default async function AdminRequestPage({
     id,
     role: session.profile.role,
     officeId: session.profile.officeId,
+    allowedOfficeIds: session.profile.allowedOfficeIds,
   });
   if (!request) notFound();
 
@@ -37,6 +38,7 @@ export default async function AdminRequestPage({
       requestId: id,
       role: session.profile.role,
       officeId: session.profile.officeId,
+      allowedOfficeIds: session.profile.allowedOfficeIds,
     }),
     listTravelerStates({ includeInactive: true }),
   ]);

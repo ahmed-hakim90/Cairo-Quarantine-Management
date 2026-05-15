@@ -1,17 +1,26 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useCallback, useMemo, useState } from "react";
+import { ADMIN_LIST_PAGE_SIZE } from "@/lib/office-requests/admin-list-page-size";
 import {
   defaultTravelerStatesFromLegacyLabels,
   effectiveTravelerStateIdOnRequest,
   mergeTravelerStateLabelsWithLegacy,
 } from "@/lib/office-requests/office-traveler-state";
 import {
+  buildAdminRequestsHref,
+  type AdminRequestsHrefParams,
+  type AdminRequestsSort,
+  type AdminRequestsStatusFilter,
+} from "@/lib/office-requests/requests-list-params";
+import {
   REQUEST_STATUS_LABELS,
   REQUEST_TYPE_LABELS,
   type AdminActivityLogEntry,
   type OfficeRequest,
+  type OfficeRequestStatus,
   type TravelerState,
 } from "@/lib/office-requests/types";
 
@@ -21,31 +30,54 @@ export type AdminRequestsDateRange =
   | "yesterday"
   | "today_yesterday";
 
-type RequestTypeFilter = "all" | "complaint" | "proposal";
+type RequestTypeFilter = "all" | "booking" | "complaint";
 
 const TYPE_TABS: { id: RequestTypeFilter; label: string }[] = [
-  { id: "all", label: "الحجوزات" },
-  { id: "complaint", label: "شكاوى فقط" },
-  { id: "proposal", label: "مقترحات فقط" },
+  { id: "all", label: "الكل" },
+  { id: "booking", label: "الحجوزات" },
+  { id: "complaint", label: "الشكاوى" },
+];
+
+const STATUS_OPTIONS: {
+  value: AdminRequestsStatusFilter;
+  label: string;
+}[] = [
+  { value: "all", label: "الكل" },
+  ...(Object.entries(REQUEST_STATUS_LABELS) as [OfficeRequestStatus, string][]).map(
+    ([value, label]) => ({ value, label }),
+  ),
+];
+
+const SORT_OPTIONS: { value: AdminRequestsSort; label: string }[] = [
+  { value: "created_desc", label: "الأحدث إنشاءً" },
+  { value: "created_asc", label: "الأقدم إنشاءً" },
+  { value: "updated_desc", label: "الأحدث تحديثًا" },
+  { value: "updated_asc", label: "الأقدم تحديثًا" },
 ];
 
 const SEGMENT_TRAY =
-  "flex w-full min-w-0 flex-wrap gap-1 rounded-md bg-gov-gray-100 p-1 sm:flex-nowrap";
+  "flex min-w-0 flex-wrap justify-start gap-1 rounded-md bg-gov-gray-100 p-1";
 
 const segmentClass = (active: boolean) =>
   [
-    "inline-flex min-h-11 flex-1 basis-[calc(50%-0.125rem)] items-center justify-center rounded-md px-2 py-2 text-center text-xs font-extrabold transition sm:min-w-0 sm:basis-0",
+    "inline-flex min-h-9 shrink-0 items-center justify-center rounded-md px-3 py-1.5 text-center text-xs font-extrabold transition",
     "focus:outline-none focus-visible:ring-2 focus-visible:ring-gov-accent/40 focus-visible:ring-offset-1 focus-visible:ring-offset-gov-gray-100",
     active
       ? "bg-white text-gov-navy shadow-sm"
       : "text-gov-gray-600 hover:text-gov-navy",
   ].join(" ");
 
+const dateInputClass =
+  "min-h-9 w-full min-w-0 rounded-md border border-gov-gray-200 bg-white px-2 text-xs font-bold text-gov-navy outline-none transition focus:border-gov-accent focus:ring-2 focus:ring-gov-accent/20 sm:w-32 sm:shrink-0";
+
+const filterSelectClass =
+  "min-h-9 w-full min-w-0 rounded-md border border-gov-gray-200 bg-white px-2 text-xs font-bold text-gov-navy outline-none transition focus:border-gov-accent focus:ring-2 focus:ring-gov-accent/20 sm:min-w-[8.5rem]";
+
 function typeTabCountClass(tabId: RequestTypeFilter): string {
   if (tabId === "all") {
     return "tabular-nums font-black text-red-600";
   }
-  if (tabId === "complaint") {
+  if (tabId === "booking") {
     return "tabular-nums font-black text-amber-700";
   }
   return "tabular-nums font-black text-sky-800";
@@ -57,9 +89,13 @@ type AdminRequestsTableProps = {
   travelerStates: TravelerState[];
   /** مسار قائمة الطلبات بدون query (مثل `/${locale}/admin/requests`). */
   requestsListHref: string;
-  /** افتراضي: الكل (آخر 200 حسب تاريخ الإنشاء). */
+  statusFilter: AdminRequestsStatusFilter;
+  sort: AdminRequestsSort;
   dateRange?: AdminRequestsDateRange;
+  customDateFrom?: string;
+  customDateTo?: string;
   latestActivityByRequestId?: Record<string, AdminActivityLogEntry>;
+  nextCursor?: string | null;
 };
 
 const statusClass: Record<OfficeRequest["status"], string> = {
@@ -111,24 +147,29 @@ function formatActivityTime(iso: string): string {
 function emptyMessage(
   typeFilter: RequestTypeFilter,
   activeTravelerStateId: string | null,
+  statusFilter: AdminRequestsStatusFilter,
   dateRange: AdminRequestsDateRange,
+  hasCustomDateRange: boolean,
 ): string {
   const scope =
-    dateRange === "all"
-      ? "ضمن آخر 200 طلباً محمّلة."
-      : "ضمن الطلبات المحدّثة في الفترة المختارة (حتى 200 طلباً).";
+    dateRange === "all" && !hasCustomDateRange
+      ? "ضمن الصفحة الحالية."
+      : "ضمن الطلبات المحدّثة في الفترة المختارة.";
 
-  if (typeFilter === "complaint") {
-    return `لا توجد شكاوى ${scope}`;
-  }
-  if (typeFilter === "proposal") {
-    return `لا توجد مقترحات ${scope}`;
-  }
-  if (typeFilter === "all" && activeTravelerStateId === null) {
-    return `لا توجد حجوزات ${scope}`;
+  if (statusFilter !== "all") {
+    return `لا توجد طلبات بحالة «${REQUEST_STATUS_LABELS[statusFilter]}» ${scope}`;
   }
   if (activeTravelerStateId !== null) {
     return "لا توجد حجوزات مطابقة لهذه الحالة ضمن القائمة.";
+  }
+  if (typeFilter === "booking") {
+    return `لا توجد حجوزات ${scope}`;
+  }
+  if (typeFilter === "complaint") {
+    return `لا توجد شكاوى أو مقترحات ${scope}`;
+  }
+  if (typeFilter === "all") {
+    return `لا توجد طلبات ${scope}`;
   }
   return "لا توجد طلبات مطابقة للتصفية الحالية.";
 }
@@ -138,9 +179,15 @@ export function AdminRequestsTable({
   locale,
   travelerStates,
   requestsListHref,
+  statusFilter,
+  sort,
   dateRange = "all",
+  customDateFrom,
+  customDateTo,
   latestActivityByRequestId = {},
+  nextCursor = null,
 }: AdminRequestsTableProps) {
+  const router = useRouter();
   const [typeFilter, setTypeFilter] = useState<RequestTypeFilter>("all");
   const [activeTravelerStateId, setActiveTravelerStateId] = useState<
     string | null
@@ -160,10 +207,14 @@ export function AdminRequestsTable({
   );
 
   const filteredRequests = useMemo(() => {
-    let list =
-      typeFilter === "all"
-        ? requests.filter((r) => r.type === "booking")
-        : requests.filter((r) => r.type === typeFilter);
+    let list = requests;
+    if (typeFilter === "booking") {
+      list = requests.filter((r) => r.type === "booking");
+    } else if (typeFilter === "complaint") {
+      list = requests.filter(
+        (r) => r.type === "complaint" || r.type === "proposal",
+      );
+    }
     if (activeTravelerStateId !== null) {
       list = list.filter(
         (request) =>
@@ -179,6 +230,7 @@ export function AdminRequestsTable({
     let complaint = 0;
     let proposal = 0;
     for (const r of requests) {
+      if (r.status !== "new") continue;
       if (r.type === "booking") booking++;
       else if (r.type === "complaint") complaint++;
       else if (r.type === "proposal") proposal++;
@@ -192,7 +244,7 @@ export function AdminRequestsTable({
       filterStates.map((s) => [s.id, 0]),
     );
     for (const r of requests) {
-      if (r.type !== "booking") continue;
+      if (r.type !== "booking" || r.status !== "new") continue;
       const tid = effectiveTravelerStateIdOnRequest(r);
       if (tid && ids.has(tid)) counts[tid] = (counts[tid] ?? 0) + 1;
     }
@@ -200,15 +252,62 @@ export function AdminRequestsTable({
   }, [requests, filterStates]);
 
   function typeCountForTab(tabId: RequestTypeFilter): number {
-    if (tabId === "all") return typeCounts.booking;
-    if (tabId === "complaint") return typeCounts.complaint;
-    return typeCounts.proposal;
+    if (tabId === "all") {
+      return typeCounts.booking + typeCounts.complaint + typeCounts.proposal;
+    }
+    if (tabId === "booking") return typeCounts.booking;
+    return typeCounts.complaint + typeCounts.proposal;
   }
 
-  const summaryLine =
-    dateRange === "all"
-      ? "آخر 200 طلباً حسب صلاحيتك؛ الترتيب حسب تاريخ الإنشاء. اختر فترة لتصفية بآخر تحديث (توقيت القاهرة)."
-      : "حتى 200 طلباً حُدِّثت في الفترة المختارة (توقيت القاهرة)؛ الترتيب حسب آخر تحديث.";
+  const hasCustomDateRange = Boolean(customDateFrom || customDateTo);
+  const hasDateFilter = hasCustomDateRange || dateRange !== "all";
+  const summaryLine = hasCustomDateRange
+    ? `حتى ${ADMIN_LIST_PAGE_SIZE} طلب حُدِّثت من ${customDateFrom} إلى ${customDateTo} (توقيت القاهرة).`
+    : dateRange === "all"
+      ? " "
+      : " ";
+
+  const dateHrefParams = useMemo(
+    (): Pick<AdminRequestsHrefParams, "from" | "to" | "range"> =>
+      hasCustomDateRange
+        ? { from: customDateFrom, to: customDateTo }
+        : dateRange !== "all"
+          ? { range: dateRange }
+          : {},
+    [customDateFrom, customDateTo, dateRange, hasCustomDateRange],
+  );
+
+  const listHref = useCallback(
+    (overrides: AdminRequestsHrefParams = {}) => {
+      const hasDateOverride =
+        overrides.range !== undefined ||
+        overrides.from !== undefined ||
+        overrides.to !== undefined;
+      const dateParams = hasDateOverride
+        ? {
+            ...(overrides.range ? { range: overrides.range } : {}),
+            ...(overrides.from ? { from: overrides.from } : {}),
+            ...(overrides.to ? { to: overrides.to } : {}),
+          }
+        : dateHrefParams;
+
+      return buildAdminRequestsHref(requestsListHref, {
+        status: overrides.status ?? statusFilter,
+        sort: overrides.sort ?? sort,
+        ...dateParams,
+        ...(overrides.cursor ? { cursor: overrides.cursor } : {}),
+      });
+    },
+    [dateHrefParams, requestsListHref, sort, statusFilter],
+  );
+
+  const nextHref = useMemo(
+    () =>
+      nextCursor
+        ? listHref({ cursor: nextCursor })
+        : null,
+    [listHref, nextCursor],
+  );
 
   return (
     <div className="rounded-lg border border-gov-gray-200 bg-white shadow-sm">
@@ -227,8 +326,8 @@ export function AdminRequestsTable({
           </summary>
           <div className="mt-2 space-y-1.5 border-s-2 border-gov-gray-200 ps-3 text-xs leading-relaxed text-gov-gray-600">
             <p>
-              تبويب «الحجوزات» يقتصر على طلبات التطعيم ضمن القائمة المحمّلة؛
-              الشكاوى والمقترحات من التبويبين المخصصين.
+              «الكل» يعرض كل الأنواع؛ «الحجوزات» يعرض طلبات التطعيم فقط؛
+              «الشكاوى» يعرض الشكاوى والمقترحات معاً.
             </p>
             <p>
               عمود «الإجراء» يعرض أحدث سجل نشاط مرتبط بالطلب عند توفره، مع
@@ -239,62 +338,17 @@ export function AdminRequestsTable({
       </div>
 
       <div className="border-b border-gov-gray-200 px-4 py-4">
-        <div className="rounded-lg border border-gov-gray-200 bg-gov-gray-50/70 p-3 sm:p-4">
-          <h3 className="mb-3 font-heading text-sm font-extrabold text-gov-navy">
-            تصفية القائمة
-          </h3>
-          <div className="space-y-4">
-            <fieldset className="min-w-0 space-y-2">
-              <legend className="text-sm font-bold text-gov-navy">
-                آخر تحديث للطلب (توقيت القاهرة)
-              </legend>
-              <p className="text-xs leading-relaxed text-gov-gray-600">
-                اختيار فترة يعيد تحميل الطلبات من الخادم؛ الأعداد في التبويبات
-                أدناه تعكس القائمة بعد التحميل.
-              </p>
-              <nav className={SEGMENT_TRAY} aria-label="فترة آخر تحديث">
-                <Link
-                  href={requestsListHref}
-                  className={segmentClass(dateRange === "all")}
-                  aria-current={dateRange === "all" ? "true" : undefined}
-                >
-                  الكل
-                </Link>
-                <Link
-                  href={`${requestsListHref}?range=today`}
-                  className={segmentClass(dateRange === "today")}
-                  aria-current={dateRange === "today" ? "true" : undefined}
-                >
-                  اليوم
-                </Link>
-                <Link
-                  href={`${requestsListHref}?range=yesterday`}
-                  className={segmentClass(dateRange === "yesterday")}
-                  aria-current={dateRange === "yesterday" ? "true" : undefined}
-                >
-                  أمس
-                </Link>
-                <Link
-                  href={`${requestsListHref}?range=today_yesterday`}
-                  className={segmentClass(dateRange === "today_yesterday")}
-                  aria-current={
-                    dateRange === "today_yesterday" ? "true" : undefined
-                  }
-                >
-                  اليوم + أمس
-                </Link>
-              </nav>
-            </fieldset>
-
-            <fieldset className="min-w-0 space-y-2">
-              <legend className="text-sm font-bold text-gov-navy">
+        <div className="overflow-x-auto rounded-lg border border-gov-gray-200 bg-gov-gray-50/70 p-3 [-webkit-overflow-scrolling:touch] lg:overflow-visible">
+          <div
+            dir="rtl"
+            className="grid w-full grid-cols-1 gap-4 text-right md:grid-cols-2 md:items-end lg:flex lg:flex-row lg:flex-nowrap lg:items-end lg:gap-4"
+          >
+            <fieldset className="w-full min-w-0 space-y-1.5 lg:shrink-0">
+              <legend className="whitespace-nowrap text-xs font-extrabold text-gov-navy">
                 نوع الطلب
               </legend>
-              <p className="text-xs leading-relaxed text-gov-gray-600">
-                الأعداد ضمن الطلبات المعروضة في القائمة المحمّلة حالياً فقط.
-              </p>
               <div
-                className={SEGMENT_TRAY}
+                className={`${SEGMENT_TRAY} w-full`}
                 role="tablist"
                 aria-label="تصفية الطلبات حسب النوع"
               >
@@ -307,10 +361,10 @@ export function AdminRequestsTable({
                       type="button"
                       role="tab"
                       aria-selected={selected}
-                      aria-label={`${tab.label}، ${n} في القائمة المحمّلة`}
+                      aria-label={`${tab.label}، ${n} طلب جديد في القائمة المحمّلة`}
                       onClick={() => {
                         setTypeFilter(tab.id);
-                        if (tab.id !== "all") {
+                        if (tab.id !== "booking") {
                           setActiveTravelerStateId(null);
                         }
                       }}
@@ -331,17 +385,185 @@ export function AdminRequestsTable({
               </div>
             </fieldset>
 
-            {typeFilter === "all" ? (
-              <fieldset className="min-w-0 space-y-2">
-                <legend className="text-sm font-bold text-gov-navy">
+            <fieldset className="w-full min-w-0 space-y-1.5 md:col-span-2 lg:min-w-0 lg:flex-1">
+              <legend className="whitespace-nowrap text-xs font-extrabold text-gov-navy">
+                آخر تحديث للطلب (توقيت القاهرة)
+              </legend>
+              <div className="flex w-full flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center lg:flex-nowrap lg:gap-2">
+                <nav
+                  className={`${SEGMENT_TRAY} w-full shrink-0 sm:w-auto`}
+                  aria-label="فترة آخر تحديث"
+                >
+                  <Link
+                    href={listHref()}
+                    className={segmentClass(
+                      dateRange === "all" && !hasCustomDateRange,
+                    )}
+                    aria-current={
+                      dateRange === "all" && !hasCustomDateRange
+                        ? "true"
+                        : undefined
+                    }
+                  >
+                    الكل
+                  </Link>
+                  <Link
+                    href={listHref({ range: "today" })}
+                    className={segmentClass(
+                      dateRange === "today" && !hasCustomDateRange,
+                    )}
+                    aria-current={
+                      dateRange === "today" && !hasCustomDateRange
+                        ? "true"
+                        : undefined
+                    }
+                  >
+                    اليوم
+                  </Link>
+                  <Link
+                    href={listHref({ range: "yesterday" })}
+                    className={segmentClass(
+                      dateRange === "yesterday" && !hasCustomDateRange,
+                    )}
+                    aria-current={
+                      dateRange === "yesterday" && !hasCustomDateRange
+                        ? "true"
+                        : undefined
+                    }
+                  >
+                    أمس
+                  </Link>
+                  <Link
+                    href={listHref({ range: "today_yesterday" })}
+                    className={segmentClass(
+                      dateRange === "today_yesterday" && !hasCustomDateRange,
+                    )}
+                    aria-current={
+                      dateRange === "today_yesterday" && !hasCustomDateRange
+                        ? "true"
+                        : undefined
+                    }
+                  >
+                    اليوم + أمس
+                  </Link>
+                </nav>
+                <form
+                  action={listHref()}
+                  className="grid w-full grid-cols-1 gap-2 min-[400px]:grid-cols-[1fr_1fr_auto_auto] min-[400px]:items-center lg:flex lg:w-auto lg:shrink-0 lg:flex-nowrap lg:gap-1.5"
+                >
+                  {statusFilter !== "all" ? (
+                    <input type="hidden" name="status" value={statusFilter} />
+                  ) : null}
+                  {sort !== "created_desc" ? (
+                    <input type="hidden" name="sort" value={sort} />
+                  ) : null}
+                  <label className="sr-only" htmlFor="requests-from-date">
+                    من
+                  </label>
+                  <input
+                    id="requests-from-date"
+                    name="from"
+                    type="date"
+                    defaultValue={customDateFrom}
+                    className={dateInputClass}
+                    aria-label="من تاريخ"
+                  />
+                  <label className="sr-only" htmlFor="requests-to-date">
+                    إلى
+                  </label>
+                  <input
+                    id="requests-to-date"
+                    name="to"
+                    type="date"
+                    defaultValue={customDateTo}
+                    className={dateInputClass}
+                    aria-label="إلى تاريخ"
+                  />
+                  <button
+                    type="submit"
+                    className="inline-flex min-h-9 items-center justify-center rounded-md bg-gov-navy px-3 py-1.5 text-xs font-extrabold text-white transition hover:bg-gov-navy/90"
+                  >
+                    تطبيق
+                  </button>
+                  {hasCustomDateRange ? (
+                    <Link
+                      href={listHref()}
+                      className="inline-flex min-h-9 items-center justify-center rounded-md border border-gov-gray-200 bg-white px-3 py-1.5 text-xs font-extrabold text-gov-navy transition hover:bg-gov-gray-50"
+                    >
+                      مسح
+                    </Link>
+                  ) : null}
+                </form>
+              </div>
+            </fieldset>
+
+            <div className="grid w-full min-w-0 grid-cols-1 gap-3 sm:grid-cols-2 lg:flex lg:shrink-0 lg:flex-row lg:items-end lg:gap-3">
+            <fieldset className="min-w-0 w-full space-y-1.5">
+              <legend className="whitespace-nowrap text-xs font-extrabold text-gov-navy">
+                حالة الطلب
+              </legend>
+              <select
+                id="requests-status"
+                value={statusFilter}
+                className={filterSelectClass}
+                aria-label="تصفية حسب حالة الطلب"
+                onChange={(e) => {
+                  router.push(
+                    listHref({
+                      status: e.target.value as AdminRequestsStatusFilter,
+                    }),
+                  );
+                }}
+              >
+                {STATUS_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+            </fieldset>
+
+            <fieldset className="min-w-0 w-full space-y-1.5">
+              <legend className="whitespace-nowrap text-xs font-extrabold text-gov-navy">
+                الترتيب
+              </legend>
+              <select
+                id="requests-sort"
+                value={sort}
+                className={filterSelectClass}
+                aria-label="ترتيب الطلبات"
+                onChange={(e) => {
+                  router.push(
+                    listHref({
+                      sort: e.target.value as AdminRequestsSort,
+                    }),
+                  );
+                }}
+              >
+                {SORT_OPTIONS.map((opt) => (
+                  <option
+                    key={opt.value}
+                    value={opt.value}
+                    disabled={
+                      hasDateFilter &&
+                      (opt.value === "created_desc" ||
+                        opt.value === "created_asc")
+                    }
+                  >
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+            </fieldset>
+            </div>
+
+            {typeFilter === "booking" ? (
+              <fieldset className="w-full min-w-0 basis-full space-y-1.5 md:col-span-2 lg:basis-full">
+                <legend className="text-xs font-extrabold text-gov-navy">
                   حالة المسافر (اختياري)
                 </legend>
-                <p className="text-xs leading-relaxed text-gov-gray-600">
-                  يصفّي الحجوزات المعروضة فقط؛ الرقم بجانب كل حالة = عدد الحجوزات
-                  من ذلك النوع في القائمة الحالية.
-                </p>
                 <div
-                  className={SEGMENT_TRAY}
+                  className={`${SEGMENT_TRAY} w-full`}
                   role="group"
                   aria-label="تصفية حجوزات المسافرين حسب الحالة"
                 >
@@ -353,7 +575,7 @@ export function AdminRequestsTable({
                         key={s.id}
                         type="button"
                         aria-pressed={pressed}
-                        aria-label={`${s.labelAr}، ${n} حجزاً في القائمة المحمّلة`}
+                        aria-label={`${s.labelAr}، ${n} حجز جديد في القائمة المحمّلة`}
                         onClick={() =>
                           setActiveTravelerStateId((prev) =>
                             prev === s.id ? null : s.id,
@@ -361,7 +583,7 @@ export function AdminRequestsTable({
                         }
                         className={segmentClass(pressed)}
                       >
-                        <span className="flex flex-col items-center gap-0.5 sm:flex-row sm:items-center sm:gap-1.5">
+                        <span className="flex items-center gap-1.5">
                           <span>{s.labelAr}</span>
                           <span
                             className="tabular-nums text-[11px] font-black text-gov-gray-600 sm:text-xs"
@@ -408,7 +630,13 @@ export function AdminRequestsTable({
                   colSpan={6}
                   className="px-4 py-8 text-center text-gov-gray-600"
                 >
-                  {emptyMessage(typeFilter, activeTravelerStateId, dateRange)}
+                  {emptyMessage(
+                    typeFilter,
+                    activeTravelerStateId,
+                    statusFilter,
+                    dateRange,
+                    hasCustomDateRange,
+                  )}
                 </td>
               </tr>
             ) : (
@@ -465,6 +693,16 @@ export function AdminRequestsTable({
           </tbody>
         </table>
       </div>
+      {nextHref ? (
+        <div className="border-t border-gov-gray-200 px-4 py-4 text-center">
+          <Link
+            href={nextHref}
+            className="inline-flex min-h-10 items-center justify-center rounded-md border border-gov-gray-300 bg-white px-4 py-2 text-sm font-extrabold text-gov-navy transition hover:border-gov-accent hover:text-gov-accent"
+          >
+            تحميل المزيد
+          </Link>
+        </div>
+      ) : null}
     </div>
   );
 }
