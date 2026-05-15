@@ -337,18 +337,60 @@ export function AdminRequestsTable({
       </div>
 
       <div className="border-b border-gov-gray-200 px-4 py-4">
-        <div className="overflow-x-auto rounded-lg border border-gov-gray-200 bg-gov-gray-50/70 p-3 lg:overflow-visible">
+        <div className="overflow-x-auto rounded-lg border border-gov-gray-200 bg-gov-gray-50/70 p-3 [-webkit-overflow-scrolling:touch] lg:overflow-visible">
           <div
             dir="rtl"
-            className="flex flex-col items-end gap-3 text-right lg:flex-row lg:flex-nowrap lg:items-end lg:justify-start lg:gap-4"
+            className="flex w-full flex-col gap-4 text-right sm:gap-3 lg:flex-row lg:flex-wrap lg:items-end lg:justify-start lg:gap-x-4 lg:gap-y-3"
           >
-            <fieldset className="order-2 min-w-0 space-y-1.5 lg:min-w-0 lg:flex-1">
+            <fieldset className="w-full min-w-0 shrink-0 space-y-1.5 lg:w-auto">
+              <legend className="whitespace-nowrap text-xs font-extrabold text-gov-navy">
+                نوع الطلب
+              </legend>
+              <div
+                className={`${SEGMENT_TRAY} w-full`}
+                role="tablist"
+                aria-label="تصفية الطلبات حسب النوع"
+              >
+                {TYPE_TABS.map((tab) => {
+                  const selected = typeFilter === tab.id;
+                  const n = typeCountForTab(tab.id);
+                  return (
+                    <button
+                      key={tab.id}
+                      type="button"
+                      role="tab"
+                      aria-selected={selected}
+                      aria-label={`${tab.label}، ${n} طلب جديد في القائمة المحمّلة`}
+                      onClick={() => {
+                        setTypeFilter(tab.id);
+                        if (tab.id !== "booking") {
+                          setActiveTravelerStateId(null);
+                        }
+                      }}
+                      className={segmentClass(selected)}
+                    >
+                      <span className="flex flex-col items-center gap-0.5 sm:flex-row sm:items-center sm:gap-1.5">
+                        <span>{tab.label}</span>
+                        <span
+                          className={typeTabCountClass(tab.id)}
+                          aria-hidden
+                        >
+                          ({n})
+                        </span>
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </fieldset>
+
+            <fieldset className="w-full min-w-0 space-y-1.5 lg:w-auto">
               <legend className="whitespace-nowrap text-xs font-extrabold text-gov-navy">
                 آخر تحديث للطلب (توقيت القاهرة)
               </legend>
-              <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center lg:flex-nowrap lg:gap-2">
+              <div className="flex w-full flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center lg:flex-nowrap lg:gap-2">
                 <nav
-                  className={`${SEGMENT_TRAY} shrink-0 lg:flex-nowrap`}
+                  className={`${SEGMENT_TRAY} w-full shrink-0 sm:w-auto`}
                   aria-label="فترة آخر تحديث"
                 >
                   <Link
@@ -406,7 +448,7 @@ export function AdminRequestsTable({
                 </nav>
                 <form
                   action={listHref()}
-                  className="flex shrink-0 flex-wrap items-center justify-start gap-1.5 lg:flex-nowrap"
+                  className="grid w-full grid-cols-1 gap-2 min-[400px]:grid-cols-[1fr_1fr_auto_auto] sm:gap-1.5 lg:flex lg:w-auto lg:flex-nowrap lg:items-center"
                 >
                   {statusFilter !== "all" ? (
                     <input type="hidden" name="status" value={statusFilter} />
@@ -454,110 +496,68 @@ export function AdminRequestsTable({
               </div>
             </fieldset>
 
-            <div className="order-3 flex shrink-0 flex-row items-end gap-3">
-            <fieldset className="min-w-0 space-y-1.5">
-              <legend className="whitespace-nowrap text-xs font-extrabold text-gov-navy">
-                حالة الطلب
-              </legend>
-              <select
-                id="requests-status"
-                value={statusFilter}
-                className={filterSelectClass}
-                aria-label="تصفية حسب حالة الطلب"
-                onChange={(e) => {
-                  router.push(
-                    listHref({
-                      status: e.target.value as AdminRequestsStatusFilter,
-                    }),
-                  );
-                }}
-              >
-                {STATUS_OPTIONS.map((opt) => (
-                  <option key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </option>
-                ))}
-              </select>
-            </fieldset>
+            <div className="grid w-full grid-cols-1 gap-3 sm:grid-cols-2 sm:items-end lg:flex lg:w-auto lg:shrink-0 lg:gap-3">
+              <fieldset className="min-w-0 space-y-1.5">
+                <legend className="whitespace-nowrap text-xs font-extrabold text-gov-navy">
+                  حالة الطلب
+                </legend>
+                <select
+                  id="requests-status"
+                  value={statusFilter}
+                  className={filterSelectClass}
+                  aria-label="تصفية حسب حالة الطلب"
+                  onChange={(e) => {
+                    router.push(
+                      listHref({
+                        status: e.target.value as AdminRequestsStatusFilter,
+                      }),
+                    );
+                  }}
+                >
+                  {STATUS_OPTIONS.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
+              </fieldset>
 
-            <fieldset className="min-w-0 space-y-1.5">
-              <legend className="whitespace-nowrap text-xs font-extrabold text-gov-navy">
-                الترتيب
-              </legend>
-              <select
-                id="requests-sort"
-                value={sort}
-                className={filterSelectClass}
-                aria-label="ترتيب الطلبات"
-                onChange={(e) => {
-                  router.push(
-                    listHref({
-                      sort: e.target.value as AdminRequestsSort,
-                    }),
-                  );
-                }}
-              >
-                {SORT_OPTIONS.map((opt) => (
-                  <option
-                    key={opt.value}
-                    value={opt.value}
-                    disabled={
-                      hasDateFilter &&
-                      (opt.value === "created_desc" ||
-                        opt.value === "created_asc")
-                    }
-                  >
-                    {opt.label}
-                  </option>
-                ))}
-              </select>
-            </fieldset>
+              <fieldset className="min-w-0 space-y-1.5">
+                <legend className="whitespace-nowrap text-xs font-extrabold text-gov-navy">
+                  الترتيب
+                </legend>
+                <select
+                  id="requests-sort"
+                  value={sort}
+                  className={filterSelectClass}
+                  aria-label="ترتيب الطلبات"
+                  onChange={(e) => {
+                    router.push(
+                      listHref({
+                        sort: e.target.value as AdminRequestsSort,
+                      }),
+                    );
+                  }}
+                >
+                  {SORT_OPTIONS.map((opt) => (
+                    <option
+                      key={opt.value}
+                      value={opt.value}
+                      disabled={
+                        hasDateFilter &&
+                        (opt.value === "created_desc" ||
+                          opt.value === "created_asc")
+                      }
+                    >
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
+              </fieldset>
             </div>
 
-            <fieldset className="order-1 min-w-0 shrink-0 space-y-1.5">
-              <legend className="whitespace-nowrap text-xs font-extrabold text-gov-navy">
-                نوع الطلب
-              </legend>
-              <div
-                className={SEGMENT_TRAY}
-                role="tablist"
-                aria-label="تصفية الطلبات حسب النوع"
-              >
-                {TYPE_TABS.map((tab) => {
-                  const selected = typeFilter === tab.id;
-                  const n = typeCountForTab(tab.id);
-                  return (
-                    <button
-                      key={tab.id}
-                      type="button"
-                      role="tab"
-                      aria-selected={selected}
-                      aria-label={`${tab.label}، ${n} طلب جديد في القائمة المحمّلة`}
-                      onClick={() => {
-                        setTypeFilter(tab.id);
-                        if (tab.id !== "booking") {
-                          setActiveTravelerStateId(null);
-                        }
-                      }}
-                      className={segmentClass(selected)}
-                    >
-                      <span className="flex flex-col items-center gap-0.5 sm:flex-row sm:items-center sm:gap-1.5">
-                        <span>{tab.label}</span>
-                        <span
-                          className={typeTabCountClass(tab.id)}
-                          aria-hidden
-                        >
-                          ({n})
-                        </span>
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            </fieldset>
-
             {typeFilter === "booking" ? (
-              <fieldset className="order-5 min-w-0 w-full basis-full space-y-1.5">
+              <fieldset className="w-full min-w-0 basis-full space-y-1.5 lg:basis-full">
                 <legend className="text-xs font-extrabold text-gov-navy">
                   حالة المسافر (اختياري)
                 </legend>
