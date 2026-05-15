@@ -16,6 +16,9 @@ export async function GET(request: Request) {
   if (!session) {
     return NextResponse.json({ error: "غير مصرح." }, { status: 401 });
   }
+  if (!session.profile.active) {
+    return NextResponse.json({ error: "الحساب موقوف." }, { status: 403 });
+  }
   try {
     assertSuperAdmin(session);
   } catch {

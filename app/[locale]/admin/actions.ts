@@ -3,7 +3,12 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
-import { getAdminSession, assertSuperAdmin, ADMIN_SESSION_COOKIE } from "@/lib/office-requests/session";
+import {
+  getAdminSession,
+  assertSuperAdmin,
+  ADMIN_SESSION_COOKIE,
+  shouldShowAdminPendingReview,
+} from "@/lib/office-requests/session";
 import {
   deleteAdminUserAccount,
   deleteMessageTemplate,
@@ -52,6 +57,9 @@ function adminActorFromSession(session: AdminSession): AdminActivityActor {
 async function requireSession() {
   const session = await getAdminSession();
   if (!session) throw new Error("غير مصرح.");
+  if (shouldShowAdminPendingReview(session)) {
+    throw new Error("غير مصرح.");
+  }
   return session;
 }
 

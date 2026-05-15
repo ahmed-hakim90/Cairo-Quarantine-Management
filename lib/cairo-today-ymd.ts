@@ -29,6 +29,13 @@ export function getCairoTodayYmd(date = new Date()): string {
   }).format(date);
 }
 
+/** Calendar day before `getCairoTodayYmd(ref)` in Cairo (YYYY-MM-DD). */
+export function getCairoYesterdayYmd(ref = new Date()): string {
+  const today = getCairoTodayYmd(ref);
+  const noonCairo = new Date(`${today}T12:00:00+02:00`);
+  return getCairoTodayYmd(new Date(noonCairo.getTime() - 24 * 60 * 60 * 1000));
+}
+
 function getCairoHour24(date: Date): number {
   const parts = new Intl.DateTimeFormat("en-GB", {
     timeZone: CAIRO_TZ,

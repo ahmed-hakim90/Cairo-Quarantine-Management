@@ -110,11 +110,11 @@ export async function POST(request: Request) {
   try {
     const decoded = await getAdminAuth().verifyIdToken(idToken);
     const profile = await getUserProfile(decoded.uid);
-    if (!profile?.active) {
+    if (!profile) {
       return NextResponse.json(
         {
-          error: "هذا المستخدم غير مفعل في لوحة الإدارة.",
-          code: "forbidden_inactive",
+          error: "لا يوجد حساب مسؤول مرتبط بهذا المستخدم.",
+          code: "forbidden_no_profile",
         },
         { status: 403 },
       );

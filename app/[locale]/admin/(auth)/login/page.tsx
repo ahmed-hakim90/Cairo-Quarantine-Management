@@ -2,7 +2,10 @@ import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { AdminLoginForm } from "@/components/admin/AdminLoginForm";
 import { isLocale } from "@/lib/i18n/config";
-import { getAdminSession } from "@/lib/office-requests/session";
+import {
+  getAdminSession,
+  shouldShowAdminPendingReview,
+} from "@/lib/office-requests/session";
 
 export const metadata: Metadata = {
   title: "تسجيل دخول الإدارة",
@@ -17,7 +20,12 @@ export default async function AdminLoginPage({
   if (!isLocale(locale)) notFound();
 
   const session = await getAdminSession();
-  if (session) redirect(`/${locale}/admin`);
+  if (session) {
+    if (shouldShowAdminPendingReview(session)) {
+      redirect(`/${locale}/admin/pending-review`);
+    }
+    redirect(`/${locale}/admin`);
+  }
 
   return (
     <section className="bg-gov-gray-50">

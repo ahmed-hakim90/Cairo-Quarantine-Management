@@ -13,7 +13,7 @@ export async function getAdminSession(): Promise<AdminSession | null> {
   try {
     const decoded = await getAdminAuth().verifySessionCookie(token, true);
     const profile = await getUserProfile(decoded.uid);
-    if (!profile?.active) return null;
+    if (!profile) return null;
 
     return {
       uid: decoded.uid,
@@ -23,6 +23,15 @@ export async function getAdminSession(): Promise<AdminSession | null> {
   } catch {
     return null;
   }
+}
+
+/** لوحة التحكم غير متاحة: حساب موقوف أو مستخدم مكتب بلا مكتب معيّن. */
+export function shouldShowAdminPendingReview(session: AdminSession): boolean {
+  if (!session.profile.active) return true;
+  if (session.profile.role === "office_user") {
+    return !(session.profile.officeId?.trim());
+  }
+  return false;
 }
 
 export function assertSuperAdmin(session: AdminSession) {

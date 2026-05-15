@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { Office } from "@/lib/office-requests/types";
 import {
   deriveTravelerStateIdsFromService,
+  effectiveOfficeService,
   filterOfficesForTravelerState,
   getOfficeTravelerStateIds,
   inferOfficeServiceFromSelectedTravelerStateIds,
@@ -74,6 +75,21 @@ describe("getOfficeTravelerStateIds", () => {
     expect(getOfficeTravelerStateIds(travelersOffice)).toEqual(
       deriveTravelerStateIdsFromService("hajj_umrah_travelers"),
     );
+  });
+});
+
+describe("effectiveOfficeService", () => {
+  it("follows persisted travelerStateIds when they disagree with service", () => {
+    const drift: Office = {
+      ...umrahOnlyOffice,
+      travelerStateIds: ["international", "hajj_umrah", "citizen"],
+    };
+    expect(effectiveOfficeService(drift)).toBe("hajj_umrah_travelers");
+  });
+
+  it("matches service when travelerStateIds are absent", () => {
+    expect(effectiveOfficeService(umrahOnlyOffice)).toBe("hajj_umrah_only");
+    expect(effectiveOfficeService(travelersOffice)).toBe("hajj_umrah_travelers");
   });
 });
 

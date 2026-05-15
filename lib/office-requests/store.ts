@@ -1,5 +1,9 @@
 import { randomBytes } from "node:crypto";
-import { FieldValue, Timestamp } from "firebase-admin/firestore";
+import {
+  FieldValue,
+  Timestamp,
+  type Query as FirestoreQuery,
+} from "firebase-admin/firestore";
 import {
   getAdminAuth,
   isFirebaseAdminConfigured,
@@ -798,8 +802,18 @@ export async function listRequestsForSession(args: {
   status?: OfficeRequestStatus | "all";
   type?: OfficeRequestType | "all";
   officeFilter?: string;
+  /** When set with `updatedTo`, filters by last update (Cairo day bounds from caller). */
+  updatedFrom?: Timestamp | null;
+  updatedTo?: Timestamp | null;
 }): Promise<OfficeRequest[]> {
   if (!isFirebaseAdminConfigured()) return [];
+
+  const updatedFrom = args.updatedFrom ?? null;
+  const updatedTo = args.updatedTo ?? null;
+  const useUpdatedWindow =
+    updatedFrom != null &&
+    updatedTo != null &&
+    updatedFrom.toMillis() <= updatedTo.toMillis();
 
   let query: FirebaseFirestore.Query = getAdminDb().collection(REQUESTS);
   if (args.role === "office_user") {
@@ -815,7 +829,17 @@ export async function listRequestsForSession(args: {
     query = query.where("type", "==", args.type);
   }
 
-  const snap = await query.orderBy("createdAt", "desc").limit(200).get();
+  if (useUpdatedWindow) {
+    query = query
+      .where("updatedAt", ">=", updatedFrom!)
+      .where("updatedAt", "<=", updatedTo!)
+      .orderBy("updatedAt", "desc")
+      .limit(200);
+  } else {
+    query = query.orderBy("createdAt", "desc").limit(200);
+  }
+
+  const snap = await query.get();
   return snap.docs.map((doc) => requestFromDoc(doc.id, doc.data()));
 }
 
@@ -1377,15 +1401,37 @@ const ACTIVITY_LOG_MAX_REQUEST = 200;
 
 export async function listActivityLogsForSuperAdmin(args?: {
   limit?: number;
+  /** inclusive; when set with createdTo, bounds activity by time */
+  createdFrom?: Timestamp | null;
+  /** inclusive */
+  createdTo?: Timestamp | null;
+  officeId?: string | null;
+  actorUid?: string | null;
 }): Promise<AdminActivityLogEntry[]> {
   if (!isFirebaseAdminConfigured()) return [];
   const requested = args?.limit ?? ACTIVITY_LOG_DEFAULT_SUPER;
   const limit = Math.min(Math.max(1, requested), ACTIVITY_LOG_MAX_SUPER);
-  const snap = await getAdminDb()
-    .collection(ACTIVITY_LOGS)
-    .orderBy("createdAt", "desc")
-    .limit(limit)
-    .get();
+
+  const officeId =
+    args?.officeId != null && String(args.officeId).trim() !== ""
+      ? String(args.officeId).trim()
+      : null;
+  const actorUid =
+    args?.actorUid != null && String(args.actorUid).trim() !== ""
+      ? String(args.actorUid).trim()
+      : null;
+
+  const createdFrom = args?.createdFrom ?? null;
+  const createdTo = args?.createdTo ?? null;
+
+  let q: FirestoreQuery = getAdminDb().collection(ACTIVITY_LOGS);
+  if (officeId) q = q.where("officeId", "==", officeId);
+  if (actorUid) q = q.where("actorUid", "==", actorUid);
+  if (createdFrom) q = q.where("createdAt", ">=", createdFrom);
+  if (createdTo) q = q.where("createdAt", "<=", createdTo);
+  q = q.orderBy("createdAt", "desc").limit(limit);
+
+  const snap = await q.get();
   return snap.docs.map((d) => activityLogFromDoc(d.id, d.data() ?? {}));
 }
 
@@ -1411,4 +1457,42 @@ export async function listActivityLogsForRequest(args: {
     .limit(limit)
     .get();
   return snap.docs.map((d) => activityLogFromDoc(d.id, d.data() ?? {}));
+}
+
+const FIRESTORE_IN_QUERY_MAX = 30;
+const LATEST_ACTIVITY_PER_BATCH_LIMIT = 400;
+
+/**
+ * أحدث سجل نشاط لكل طلب (حسب createdAt تنازليًا) لمجموعة معرفات دفعة واحدة.
+ */
+export async function listLatestActivityLogByRequestIds(
+  requestIds: string[],
+): Promise<Record<string, AdminActivityLogEntry>> {
+  if (!isFirebaseAdminConfigured()) return {};
+  const unique = [...new Set(requestIds.map((id) => id.trim()).filter(Boolean))];
+  if (unique.length === 0) return {};
+
+  const latestById: Record<string, AdminActivityLogEntry> = {};
+
+  for (let i = 0; i < unique.length; i += FIRESTORE_IN_QUERY_MAX) {
+    const batch = unique.slice(i, i + FIRESTORE_IN_QUERY_MAX);
+    const snap = await getAdminDb()
+      .collection(ACTIVITY_LOGS)
+      .where("requestId", "in", batch)
+      .orderBy("createdAt", "desc")
+      .limit(LATEST_ACTIVITY_PER_BATCH_LIMIT)
+      .get();
+
+    for (const d of snap.docs) {
+      const data = d.data() ?? {};
+      const rid =
+        data.requestId != null && String(data.requestId).trim() !== ""
+          ? String(data.requestId).trim()
+          : null;
+      if (!rid || latestById[rid]) continue;
+      latestById[rid] = activityLogFromDoc(d.id, data);
+    }
+  }
+
+  return latestById;
 }

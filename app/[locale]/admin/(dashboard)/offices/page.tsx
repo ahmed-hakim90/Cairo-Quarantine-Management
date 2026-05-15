@@ -3,6 +3,7 @@ import { OfficeFormDialog } from "@/components/admin/OfficeFormDialog";
 import { SetOfficeActiveForm } from "@/components/admin/SetOfficeActiveForm";
 import { isLocale } from "@/lib/i18n/config";
 import { getAdminSession } from "@/lib/office-requests/session";
+import { effectiveOfficeService } from "@/lib/office-requests/office-traveler-state";
 import { listOffices, listTravelerStates } from "@/lib/office-requests/store";
 import type { Office } from "@/lib/office-requests/types";
 
@@ -85,7 +86,7 @@ export default async function AdminOfficesPage({
                     {office.phone ?? "—"}
                   </td>
                   <td className="px-4 py-3 text-xs font-semibold text-gov-gray-700">
-                    {SERVICE_LABELS[office.service]}
+                    {SERVICE_LABELS[effectiveOfficeService(office)]}
                   </td>
                   <td className="px-4 py-3">
                     {office.active ? (

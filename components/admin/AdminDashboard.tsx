@@ -92,6 +92,7 @@ export function AdminDashboard({
         requests={requests}
         locale={locale}
         travelerStates={defaultTravelerStatesFromLegacyLabels()}
+        requestsListHref={`/${locale}/admin/requests`}
       />
 
       {isSuperAdmin ? (

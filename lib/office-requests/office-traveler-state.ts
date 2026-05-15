@@ -30,6 +30,16 @@ export function getOfficeTravelerStateIds(office: Office): string[] {
   return deriveTravelerStateIdsFromService(office.service);
 }
 
+/**
+ * نوع الخدمة الظاهر من حالات المسافرين الفعّالة (نفس منطق نموذج التعديل).
+ * يُصلح عرض القوائم عندما يختلف `service` المخزّن عن `travelerStateIds`.
+ */
+export function effectiveOfficeService(office: Office): Office["service"] {
+  return inferOfficeServiceFromSelectedTravelerStateIds(
+    getOfficeTravelerStateIds(office),
+  );
+}
+
 export function officeAcceptsTravelerState(
   office: Office,
   stateId: string,
