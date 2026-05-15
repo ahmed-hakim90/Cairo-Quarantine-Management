@@ -25,8 +25,8 @@ export default async function ComplaintPage({
 
   return (
     <section className="bg-gov-gray-50">
-      <div className="mx-auto grid max-w-6xl gap-8 px-4 py-8 lg:grid-cols-[0.78fr_1.22fr] lg:py-12">
-        <aside className="self-start">
+      <div className="mx-auto grid max-w-6xl grid-cols-1 gap-8 px-4 py-8 lg:grid-cols-[0.78fr_1.22fr] lg:py-12">
+        <aside className="order-2 self-start lg:order-none">
           <p className="text-sm font-bold text-gov-accent">
             إدارة الحجر الصحي بالقاهرة
           </p>
@@ -51,7 +51,7 @@ export default async function ComplaintPage({
             </div>
           </dl>
         </aside>
-        <div className="space-y-4">
+        <div className="order-1 space-y-4 lg:order-none">
           <RequestModeSwitcher locale={locale} activeMode="complaint" />
           <div className="rounded-lg border border-gov-gray-200 bg-white shadow-sm">
             <BookingRequestForm
