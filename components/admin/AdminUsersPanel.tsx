@@ -5,6 +5,7 @@ import { useState } from "react";
 import { deleteUserProfileAction } from "@/app/[locale]/admin/actions";
 import { SuperAdminAddModal } from "@/components/admin/SuperAdminAddModal";
 import { roleLabelAr } from "@/lib/office-requests/admin-access";
+import { runWithFeedback } from "@/lib/ui/run-with-feedback";
 import type { AdminRole, AdminUserProfile, Office } from "@/lib/office-requests/types";
 
 type AdminUsersPanelProps = {
@@ -36,12 +37,11 @@ export function AdminUsersPanel({
     const fd = new FormData();
     fd.set("uid", uid);
     fd.set("locale", locale);
-    try {
-      await deleteUserProfileAction(fd);
-      router.refresh();
-    } catch (err) {
-      window.alert(err instanceof Error ? err.message : "تعذر حذف المستخدم.");
-    }
+    await runWithFeedback(() => deleteUserProfileAction(fd), {
+      successMessage: "تم حذف المستخدم.",
+      errorMessage: "تعذر حذف المستخدم.",
+      onSuccess: () => router.refresh(),
+    });
   }
 
   return (

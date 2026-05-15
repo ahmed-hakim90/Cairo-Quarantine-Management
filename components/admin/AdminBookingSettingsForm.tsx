@@ -1,4 +1,7 @@
+"use client";
+
 import { saveBookingSettingsAction } from "@/app/[locale]/admin/actions";
+import { runWithFeedback } from "@/lib/ui/run-with-feedback";
 
 const fieldClass =
   "mt-2 w-full max-w-xs rounded-md border border-gov-gray-200 bg-white px-3 py-2.5 text-sm focus:border-gov-accent focus:outline-none focus:ring-2 focus:ring-gov-accent/20";
@@ -13,7 +16,15 @@ export function AdminBookingSettingsForm({
   initialHour,
 }: AdminBookingSettingsFormProps) {
   return (
-    <form action={saveBookingSettingsAction} className="mt-4 space-y-4">
+    <form
+      className="mt-4 space-y-4"
+      action={async (formData) => {
+        await runWithFeedback(() => saveBookingSettingsAction(formData), {
+          successMessage: "تم حفظ إعدادات الحجز.",
+          errorMessage: "تعذر حفظ إعدادات الحجز.",
+        });
+      }}
+    >
       <input type="hidden" name="locale" value={locale} />
       <label className="block text-sm font-bold text-gov-navy">
         ساعة إغلاق حجز «نفس اليوم» (توقيت القاهرة، 0–23)

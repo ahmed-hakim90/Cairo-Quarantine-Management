@@ -7,6 +7,7 @@ import {
   locales,
   type Locale,
 } from "@/lib/i18n/config";
+import { FeedbackProvider } from "@/components/ui/FeedbackProvider";
 import { getMessages } from "@/lib/i18n/messages";
 
 const almarai = Almarai({
@@ -96,7 +97,7 @@ export default async function LocaleLayout({
   return (
     <html lang={lang} dir={dir} className={htmlClass}>
       <body className="flex min-h-full flex-col bg-background text-foreground antialiased">
-        {children}
+        <FeedbackProvider>{children}</FeedbackProvider>
       </body>
     </html>
   );

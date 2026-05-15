@@ -15,6 +15,7 @@ import {
   TRAVELER_CATEGORY_LABELS,
   type PublicOfficeRequestStatus,
 } from "@/lib/office-requests/types";
+import { feedbackToast } from "@/lib/ui/feedback-toast";
 
 const TRAVELER_LABEL_BY_ID = mergeTravelerStateLabelsWithLegacy(
   defaultTravelerStatesFromLegacyLabels(),
@@ -177,12 +178,20 @@ export function MyRequestsPanel({ locale }: MyRequestsPanelProps) {
       );
       writeStoredRequests(next);
       setRequests(next);
+      feedbackToast.success(
+        locale === "ar"
+          ? "تم تحديث الحالات."
+          : locale === "zh"
+            ? "状态已更新。"
+            : "Statuses updated.",
+      );
     } catch {
       setError(t.loadError);
+      feedbackToast.error(t.loadError);
     } finally {
       setLoading(false);
     }
-  }, [t.loadError]);
+  }, [locale, t.loadError]);
 
   const sortedRequests = useMemo(
     () =>

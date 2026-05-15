@@ -11,6 +11,7 @@ import {
   officeFieldClass,
 } from "@/components/admin/OfficeFormFields";
 import { defaultTravelerStatesFromLegacyLabels } from "@/lib/office-requests/office-traveler-state";
+import { runWithFeedback } from "@/lib/ui/run-with-feedback";
 import type { AdminRole, AdminUserProfile, Office } from "@/lib/office-requests/types";
 
 type SuperAdminAddModalProps = {
@@ -213,15 +214,14 @@ export function SuperAdminAddModal({
           {panel === "office" ? (
             <form
               action={async (formData) => {
-                try {
-                  await saveOfficeAction(formData);
-                  dialogRef.current?.close();
-                  router.refresh();
-                } catch (err) {
-                  window.alert(
-                    err instanceof Error ? err.message : "تعذر حفظ المكتب.",
-                  );
-                }
+                await runWithFeedback(() => saveOfficeAction(formData), {
+                  successMessage: "تم حفظ المكتب.",
+                  errorMessage: "تعذر حفظ المكتب.",
+                  onSuccess: () => {
+                    dialogRef.current?.close();
+                    router.refresh();
+                  },
+                });
               }}
               className="space-y-1"
             >
@@ -241,15 +241,14 @@ export function SuperAdminAddModal({
             <form
               key={userFormKey}
               action={async (formData) => {
-                try {
-                  await saveUserProfileAction(formData);
-                  dialogRef.current?.close();
-                  router.refresh();
-                } catch (err) {
-                  window.alert(
-                    err instanceof Error ? err.message : "تعذر حفظ المستخدم.",
-                  );
-                }
+                await runWithFeedback(() => saveUserProfileAction(formData), {
+                  successMessage: "تم حفظ المستخدم.",
+                  errorMessage: "تعذر حفظ المستخدم.",
+                  onSuccess: () => {
+                    dialogRef.current?.close();
+                    router.refresh();
+                  },
+                });
               }}
               className="space-y-1"
             >

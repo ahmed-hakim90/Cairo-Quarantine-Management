@@ -6,6 +6,7 @@ import { deleteUserProfileAction } from "@/app/[locale]/admin/actions";
 import { AdminMessageTemplatesManager } from "@/components/admin/AdminMessageTemplatesManager";
 import { SuperAdminAddModal } from "@/components/admin/SuperAdminAddModal";
 import { roleLabelAr } from "@/lib/office-requests/admin-access";
+import { runWithFeedback } from "@/lib/ui/run-with-feedback";
 import type { AdminUserProfile, MessageTemplate, Office } from "@/lib/office-requests/types";
 
 type SuperAdminUsersSectionProps = {
@@ -37,12 +38,11 @@ export function SuperAdminUsersSection({
     const fd = new FormData();
     fd.set("uid", uid);
     fd.set("locale", locale);
-    try {
-      await deleteUserProfileAction(fd);
-      router.refresh();
-    } catch (err) {
-      window.alert(err instanceof Error ? err.message : "تعذر حذف المستخدم.");
-    }
+    await runWithFeedback(() => deleteUserProfileAction(fd), {
+      successMessage: "تم حذف المستخدم.",
+      errorMessage: "تعذر حذف المستخدم.",
+      onSuccess: () => router.refresh(),
+    });
   }
 
   return (

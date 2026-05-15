@@ -3,6 +3,7 @@
 import { useRef } from "react";
 import { saveVaccineAction } from "@/app/[locale]/admin/actions";
 import { VaccineFormFields } from "@/components/admin/VaccineFormFields";
+import { runWithFeedback } from "@/lib/ui/run-with-feedback";
 import type { VaccineCatalogEntry } from "@/lib/office-requests/types";
 
 type VaccineFormDialogProps = {
@@ -56,14 +57,11 @@ export function VaccineFormDialog({
         <form
           className="space-y-1 px-4 py-4"
           action={async (formData) => {
-            try {
-              await saveVaccineAction(formData);
-              dialogRef.current?.close();
-            } catch (err) {
-              window.alert(
-                err instanceof Error ? err.message : "تعذر حفظ اللقاح.",
-              );
-            }
+            await runWithFeedback(() => saveVaccineAction(formData), {
+              successMessage: "تم حفظ اللقاح.",
+              errorMessage: "تعذر حفظ اللقاح.",
+              onSuccess: () => dialogRef.current?.close(),
+            });
           }}
         >
           <input type="hidden" name="locale" value={locale} />

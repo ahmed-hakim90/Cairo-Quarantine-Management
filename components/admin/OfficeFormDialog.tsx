@@ -3,6 +3,7 @@
 import { useRef } from "react";
 import { saveOfficeAction } from "@/app/[locale]/admin/actions";
 import { OfficeFormFields } from "@/components/admin/OfficeFormFields";
+import { runWithFeedback } from "@/lib/ui/run-with-feedback";
 import type { Office, TravelerState } from "@/lib/office-requests/types";
 
 type OfficeFormDialogProps = {
@@ -54,14 +55,11 @@ export function OfficeFormDialog({
         <form
           className="space-y-1 px-4 py-4"
           action={async (formData) => {
-            try {
-              await saveOfficeAction(formData);
-              dialogRef.current?.close();
-            } catch (err) {
-              window.alert(
-                err instanceof Error ? err.message : "تعذر حفظ المكتب.",
-              );
-            }
+            await runWithFeedback(() => saveOfficeAction(formData), {
+              successMessage: "تم حفظ المكتب.",
+              errorMessage: "تعذر حفظ المكتب.",
+              onSuccess: () => dialogRef.current?.close(),
+            });
           }}
         >
           <input type="hidden" name="locale" value={locale} />

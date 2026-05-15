@@ -11,6 +11,7 @@ import {
   whatsappTemplatePlaceholder,
 } from "@/lib/office-requests/template-variables";
 import type { MessageTemplate } from "@/lib/office-requests/types";
+import { runWithFeedback } from "@/lib/ui/run-with-feedback";
 
 const fieldClass =
   "mt-1 w-full rounded-md border border-gov-gray-200 bg-white px-3 py-2.5 text-sm focus:border-gov-accent focus:outline-none focus:ring-2 focus:ring-gov-accent/20";
@@ -166,8 +167,14 @@ export function AdminMessageTemplatesManager({
                           ) {
                             return;
                           }
-                          await deleteTemplateAction(formData);
-                          router.refresh();
+                          await runWithFeedback(
+                            () => deleteTemplateAction(formData),
+                            {
+                              successMessage: "تم حذف القالب.",
+                              errorMessage: "تعذر حذف القالب.",
+                              onSuccess: () => router.refresh(),
+                            },
+                          );
                         }}
                       >
                         <input type="hidden" name="locale" value={locale} />
@@ -223,9 +230,14 @@ export function AdminMessageTemplatesManager({
             key={mode ? `${mode}-${editing?.id ?? "new"}` : "idle"}
             className="space-y-3"
             action={async (formData) => {
-              await saveTemplateAction(formData);
-              router.refresh();
-              closeDialog();
+              await runWithFeedback(() => saveTemplateAction(formData), {
+                successMessage: "تم حفظ القالب.",
+                errorMessage: "تعذر حفظ القالب.",
+                onSuccess: () => {
+                  router.refresh();
+                  closeDialog();
+                },
+              });
             }}
           >
             <input type="hidden" name="locale" value={locale} />

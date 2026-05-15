@@ -6,6 +6,7 @@ import {
   getFirebaseAuth,
   isFirebaseClientConfigured,
 } from "@/lib/firebase/client";
+import { feedbackToast } from "@/lib/ui/feedback-toast";
 
 type AdminLoginFormProps = {
   redirectTo: string;
@@ -39,11 +40,12 @@ export function AdminLoginForm({ redirectTo }: AdminLoginFormProps) {
       if (!response.ok) throw new Error(data.error);
       window.location.assign(redirectTo);
     } catch (error) {
-      setMessage(
+      const text =
         error instanceof Error
           ? error.message
-          : "تعذر تسجيل الدخول، حاول مرة أخرى.",
-      );
+          : "تعذر تسجيل الدخول، حاول مرة أخرى.";
+      setMessage(text);
+      feedbackToast.error(text);
       setPending(false);
     }
   }

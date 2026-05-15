@@ -1,6 +1,7 @@
 "use client";
 
 import { setTravelerStateActiveAction } from "@/app/[locale]/admin/actions";
+import { runWithFeedback } from "@/lib/ui/run-with-feedback";
 
 type SetTravelerStateActiveFormProps = {
   locale: string;
@@ -21,15 +22,23 @@ export function SetTravelerStateActiveForm({
 }: SetTravelerStateActiveFormProps) {
   return (
     <form
-      action={setTravelerStateActiveAction}
       className="inline"
       onSubmit={(e) => {
         if (!active) {
           const ok = window.confirm(
             `سيتم تعطيل حالة «${labelAr}» ولن تظهر في نموذج الحجز. يمكنك إعادة تفعيلها لاحقاً. متابعة؟`,
           );
-          if (!ok) e.preventDefault();
+          if (!ok) {
+            e.preventDefault();
+            return;
+          }
         }
+      }}
+      action={async (formData) => {
+        await runWithFeedback(() => setTravelerStateActiveAction(formData), {
+          successMessage: active ? "تم تفعيل الحالة." : "تم تعطيل الحالة.",
+          errorMessage: "تعذر تحديث حالة المسافر.",
+        });
       }}
     >
       <input type="hidden" name="locale" value={locale} />

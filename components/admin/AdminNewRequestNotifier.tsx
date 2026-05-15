@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   collection,
+  FirestoreError,
   onSnapshot,
   query,
   where,
@@ -13,7 +14,9 @@ import {
 import {
   isNewRequestSoundMuted,
   playNewRequestSound,
+  playNewRequestSoundTest,
   setNewRequestSoundMuted,
+  unlockNewRequestSound,
 } from "@/lib/admin/new-request-sound";
 import { ensureAdminFirebaseAuth } from "@/lib/firebase/admin-client-auth";
 import {
@@ -37,6 +40,8 @@ type ToastItem = {
   id: string;
   request: NotifyRequestPayload;
 };
+
+type ListenerStatus = "idle" | "connecting" | "live" | "error";
 
 type AdminNewRequestNotifierProps = {
   locale: string;
@@ -79,7 +84,7 @@ function RequestToast({
 
   return (
     <div
-      role="status"
+      role="alert"
       className="w-[min(100vw-2rem,22rem)] rounded-lg border border-gov-accent/30 bg-white p-4 shadow-lg"
     >
       <div className="flex justify-end">
@@ -134,14 +139,33 @@ export function AdminNewRequestNotifier({
   );
 
   const scopeRef = useRef(scope);
-  scopeRef.current = scope;
+  useEffect(() => {
+    scopeRef.current = scope;
+  }, [scope]);
 
+  const baselineIdsRef = useRef(new Set<string>());
+  const baselineSeededRef = useRef(false);
+  const listenersReadyRef = useRef(0);
+  const listenersCountRef = useRef(0);
   const notifiedIdsRef = useRef(new Set<string>());
   const unsubscribesRef = useRef<Unsubscribe[]>([]);
 
   const [toasts, setToasts] = useState<ToastItem[]>([]);
-  const [muted, setMuted] = useState(false);
+  const [muted, setMuted] = useState(() =>
+    typeof window === "undefined" ? false : isNewRequestSoundMuted(),
+  );
   const [authFailed, setAuthFailed] = useState(false);
+  const [listenerStatus, setListenerStatus] =
+    useState<ListenerStatus>("idle");
+  const [listenerError, setListenerError] = useState<string | null>(null);
+
+  const resetBaseline = useCallback(() => {
+    baselineIdsRef.current = new Set();
+    baselineSeededRef.current = false;
+    listenersReadyRef.current = 0;
+    listenersCountRef.current = 0;
+    notifiedIdsRef.current = new Set();
+  }, []);
 
   const pushToast = useCallback((request: NotifyRequestPayload) => {
     setToasts((prev) => {
@@ -151,20 +175,17 @@ export function AdminNewRequestNotifier({
       ];
       return next.slice(0, MAX_TOASTS);
     });
-    playNewRequestSound();
+    void playNewRequestSound();
   }, []);
 
   const processAddedDoc = useCallback(
-    (docId: string, data: Record<string, unknown>, isInitial: boolean) => {
+    (docId: string, data: Record<string, unknown>) => {
       const request = requestFromFirestoreSnapshot(docId, data);
       if (!shouldNotifyRequest(request, scopeRef.current)) return;
 
-      if (isInitial) {
-        notifiedIdsRef.current.add(docId);
-        return;
-      }
-
+      if (baselineIdsRef.current.has(docId)) return;
       if (notifiedIdsRef.current.has(docId)) return;
+
       notifiedIdsRef.current.add(docId);
       pushToast(request);
     },
@@ -190,6 +211,8 @@ export function AdminNewRequestNotifier({
     const user = await ensureAdminFirebaseAuth();
     if (!user) {
       setAuthFailed(true);
+      setListenerStatus("error");
+      setListenerError("تعذّر تسجيل الدخول إلى Firebase");
       return;
     }
     setAuthFailed(false);
@@ -197,20 +220,45 @@ export function AdminNewRequestNotifier({
     const db = getFirebaseFirestore();
     const queries = buildNewRequestQueries(db, scope);
 
-    for (const firestoreQuery of queries) {
-      let isInitial = true;
+    if (!baselineSeededRef.current) {
+      listenersReadyRef.current = 0;
+      listenersCountRef.current = queries.length;
+    }
 
+    for (const firestoreQuery of queries) {
       const unsub = onSnapshot(
         firestoreQuery,
         (snapshot) => {
+          setListenerStatus("live");
+          setListenerError(null);
+
+          if (!baselineSeededRef.current) {
+            snapshot.docs.forEach((doc) => {
+              baselineIdsRef.current.add(doc.id);
+              notifiedIdsRef.current.add(doc.id);
+            });
+            listenersReadyRef.current += 1;
+            if (listenersReadyRef.current >= listenersCountRef.current) {
+              baselineSeededRef.current = true;
+            }
+            return;
+          }
+
           snapshot.docChanges().forEach((change) => {
             if (change.type !== "added") return;
-            processAddedDoc(change.doc.id, change.doc.data(), isInitial);
+            processAddedDoc(change.doc.id, change.doc.data());
           });
-          isInitial = false;
         },
-        () => {
-          setAuthFailed(true);
+        (error) => {
+          setListenerStatus("error");
+          if (error instanceof FirestoreError) {
+            setListenerError(`${error.code}: ${error.message}`);
+            if (error.code === "permission-denied") {
+              setAuthFailed(true);
+            }
+          } else {
+            setListenerError("تعذّر الاتصال بقاعدة البيانات");
+          }
         },
       );
       unsubscribesRef.current.push(unsub);
@@ -218,10 +266,12 @@ export function AdminNewRequestNotifier({
   }, [processAddedDoc, scope, teardownListeners]);
 
   useEffect(() => {
-    setMuted(isNewRequestSoundMuted());
-  }, []);
+    resetBaseline();
+  }, [scope, resetBaseline]);
 
   useEffect(() => {
+    // Firestore listener setup runs after auth; snapshot callbacks drive UI state.
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- subscription bootstrap
     void setupListeners();
     return () => teardownListeners();
   }, [setupListeners, teardownListeners]);
@@ -230,6 +280,7 @@ export function AdminNewRequestNotifier({
     function onVisibilityChange() {
       if (document.hidden) {
         teardownListeners();
+        setListenerStatus("idle");
       } else {
         void setupListeners();
       }
@@ -243,10 +294,14 @@ export function AdminNewRequestNotifier({
     setToasts((prev) => prev.filter((t) => t.id !== id));
   }
 
-  function toggleMute() {
+  async function toggleMute() {
     const next = !muted;
     setMuted(next);
     setNewRequestSoundMuted(next);
+    if (!next) {
+      await unlockNewRequestSound();
+      await playNewRequestSoundTest();
+    }
   }
 
   const hasScope =
@@ -255,31 +310,46 @@ export function AdminNewRequestNotifier({
 
   if (!hasScope) return null;
 
+  const showListenerWarning =
+    listenerStatus === "error" && listenerError && !authFailed;
+
   return (
-    <div className="fixed bottom-4 end-4 z-[90] flex flex-col items-end gap-2">
-      <button
-        type="button"
-        onClick={toggleMute}
-        className="rounded-md border border-gov-gray-200 bg-white px-3 py-1.5 text-xs font-bold text-gov-navy shadow-sm hover:bg-gov-gray-50"
-        aria-pressed={muted}
-      >
-        {muted ? "تفعيل صوت الإشعار" : "كتم صوت الإشعار"}
-      </button>
+    <>
+      <div className="fixed bottom-4 end-4 z-[90] flex flex-col items-end gap-2">
+        <button
+          type="button"
+          onClick={() => void toggleMute()}
+          className="rounded-md border border-gov-gray-200 bg-white px-3 py-1.5 text-xs font-bold text-gov-navy shadow-sm hover:bg-gov-gray-50"
+          aria-pressed={muted}
+        >
+          {muted ? "تفعيل الأصوات" : "كتم الأصوات"}
+        </button>
 
-      {authFailed ? (
-        <p className="max-w-xs rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-900 shadow-sm">
-          تعذّر تفعيل الإشعار الفوري. أعد تحميل الصفحة أو سجّل الدخول من جديد.
-        </p>
-      ) : null}
+        {authFailed ? (
+          <p className="max-w-xs rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-900 shadow-sm">
+            تعذّر تفعيل الإشعار الفوري. أعد تحميل الصفحة أو سجّل الدخول من
+            جديد.
+          </p>
+        ) : null}
 
-      {toasts.map((toast) => (
-        <RequestToast
-          key={toast.id}
-          toast={toast}
-          locale={locale}
-          onDismiss={() => dismissToast(toast.id)}
-        />
-      ))}
-    </div>
+        {showListenerWarning ? (
+          <p className="max-w-xs rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-900 shadow-sm">
+            {listenerError}
+          </p>
+        ) : null}
+      </div>
+
+      <div className="pointer-events-none fixed inset-x-0 top-4 z-[100] flex flex-col items-center gap-2 px-4">
+        {toasts.map((toast) => (
+          <div key={toast.id} className="pointer-events-auto">
+            <RequestToast
+              toast={toast}
+              locale={locale}
+              onDismiss={() => dismissToast(toast.id)}
+            />
+          </div>
+        ))}
+      </div>
+    </>
   );
 }

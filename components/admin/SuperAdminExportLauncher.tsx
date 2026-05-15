@@ -9,6 +9,7 @@ import {
   type TravelerState,
 } from "@/lib/office-requests/types";
 import { SUPER_ADMIN_EXPORT_MAX_ROWS } from "@/lib/office-requests/export-limits";
+import { feedbackToast } from "@/lib/ui/feedback-toast";
 
 type SuperAdminExportLauncherProps = {
   /** لمستخدم السوبر أدمن: قائمة المكاتب في القائمة المنسدلة */
@@ -78,12 +79,16 @@ export function SuperAdminExportLauncher({
     if (typeProposal) types.push("proposal");
 
     if (types.length === 0) {
-      setError("اختر نوعاً واحداً على الأقل من أنواع الطلبات.");
+      const msg = "اختر نوعاً واحداً على الأقل من أنواع الطلبات.";
+      setError(msg);
+      feedbackToast.error(msg);
       return;
     }
 
     if (dateFrom && dateTo && dateFrom > dateTo) {
-      setError("تاريخ «من» يجب أن يكون قبل أو يساوي تاريخ «إلى».");
+      const msg = "تاريخ «من» يجب أن يكون قبل أو يساوي تاريخ «إلى».";
+      setError(msg);
+      feedbackToast.error(msg);
       return;
     }
 
@@ -118,23 +123,31 @@ export function SuperAdminExportLauncher({
     try {
       const res = await fetch(url, { credentials: "include" });
       if (res.status === 401) {
-        setError("انتهت الجلسة أو غير مصرح. سجّل الدخول من جديد.");
+        const msg = "انتهت الجلسة أو غير مصرح. سجّل الدخول من جديد.";
+        setError(msg);
+        feedbackToast.error(msg);
         return;
       }
       if (res.status === 403) {
         const body = (await res.json().catch(() => null)) as {
           error?: string;
         } | null;
-        setError(body?.error ?? "غير مصرح بتنفيذ هذا التصدير.");
+        const msg = body?.error ?? "غير مصرح بتنفيذ هذا التصدير.";
+        setError(msg);
+        feedbackToast.error(msg);
         return;
       }
       if (res.status === 400) {
         const body = (await res.json().catch(() => null)) as { error?: string } | null;
-        setError(body?.error ?? "طلب غير صالح.");
+        const msg = body?.error ?? "طلب غير صالح.";
+        setError(msg);
+        feedbackToast.error(msg);
         return;
       }
       if (!res.ok) {
-        setError("تعذر إنشاء الملف. حاول مرة أخرى.");
+        const msg = "تعذر إنشاء الملف. حاول مرة أخرى.";
+        setError(msg);
+        feedbackToast.error(msg);
         return;
       }
 
@@ -163,18 +176,20 @@ export function SuperAdminExportLauncher({
       URL.revokeObjectURL(objectUrl);
 
       if (capped) {
-        setError(
-          `تم تصدير ${rowCountLabel} صفًا (الحد الأقصى ${maxRowsLabel} صفًا لكل ملف). قد توجد طلبات إضافية في قاعدة البيانات لم تُدرج في هذا الملف.`,
-        );
+        const msg = `تم تصدير ${rowCountLabel} صفًا (الحد الأقصى ${maxRowsLabel} صفًا لكل ملف). قد توجد طلبات إضافية في قاعدة البيانات لم تُدرج في هذا الملف.`;
+        setError(msg);
+        feedbackToast.error(msg);
       } else {
-        setExportSuccessNote(
-          Number.isFinite(rowCount)
-            ? `تم تنزيل الملف بنجاح (${rowCountLabel} صفًا).`
-            : "تم تنزيل الملف بنجاح.",
-        );
+        const msg = Number.isFinite(rowCount)
+          ? `تم تنزيل الملف بنجاح (${rowCountLabel} صفًا).`
+          : "تم تنزيل الملف بنجاح.";
+        setExportSuccessNote(msg);
+        feedbackToast.success(msg);
       }
     } catch {
-      setError("تعذر تنزيل الملف. تحقق من الاتصال وحاول مرة أخرى.");
+      const msg = "تعذر تنزيل الملف. تحقق من الاتصال وحاول مرة أخرى.";
+      setError(msg);
+      feedbackToast.error(msg);
     } finally {
       setLoading(false);
     }

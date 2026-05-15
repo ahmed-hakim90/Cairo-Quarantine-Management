@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AdminLogoutButton } from "@/components/admin/AdminLogoutButton";
+import { unlockFeedbackSound } from "@/lib/ui/feedback-sound";
 import { AdminNewRequestNotifier } from "@/components/admin/AdminNewRequestNotifier";
 import { AdminSidebar } from "@/components/admin/AdminSidebar";
 import { roleLabelAr } from "@/lib/office-requests/admin-access";
@@ -28,6 +29,8 @@ export function AdminDashboardLayout({
   children,
 }: AdminDashboardLayoutProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const soundUnlockedRef = useRef(false);
+
   const headerPrimary =
     role !== "super_admin" && officeNameAr?.trim()
       ? officeNameAr.trim()
@@ -42,8 +45,17 @@ export function AdminDashboardLayout({
     return () => window.removeEventListener("keydown", onKey);
   }, [mobileOpen]);
 
+  function handleDashboardPointerDown() {
+    if (soundUnlockedRef.current) return;
+    soundUnlockedRef.current = true;
+    void unlockFeedbackSound();
+  }
+
   return (
-    <div className="flex min-h-screen flex-col bg-gov-gray-50 md:flex-row">
+    <div
+      className="flex min-h-screen flex-col bg-gov-gray-50 md:flex-row"
+      onPointerDown={handleDashboardPointerDown}
+    >
       <a
         href="#main-content"
         className="absolute start-4 top-0 z-[100] -translate-y-full rounded-md bg-gov-accent px-4 py-3 text-sm font-semibold text-white shadow-md transition-transform focus:translate-y-4"

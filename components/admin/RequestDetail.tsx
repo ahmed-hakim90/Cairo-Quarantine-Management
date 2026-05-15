@@ -1,9 +1,9 @@
 import Link from "next/link";
 import { headers } from "next/headers";
 import {
-  markWhatsappSentAction,
-  updateRequestAction,
-} from "@/app/[locale]/admin/actions";
+  RequestOfficeActionForm,
+  RequestWhatsappSentForm,
+} from "@/components/admin/RequestDetailActions";
 import { RequestSuperAdminDeleteForm } from "@/components/admin/RequestSuperAdminDeleteForm";
 import { RequestWhatsAppPanel } from "@/components/admin/RequestWhatsAppPanel";
 import { RequestActivityTimeline } from "@/components/admin/RequestActivityTimeline";
@@ -28,9 +28,6 @@ type RequestDetailProps = {
   travelerStateLabels: Record<string, string>;
   isSuperAdmin?: boolean;
 };
-
-const fieldClass =
-  "mt-2 w-full rounded-md border border-gov-gray-200 bg-white px-3 py-3 text-sm focus:border-gov-accent focus:outline-none focus:ring-2 focus:ring-gov-accent/20";
 
 const statusClass: Record<OfficeRequest["status"], string> = {
   new: "bg-blue-50 text-blue-800 ring-blue-100",
@@ -130,51 +127,10 @@ export async function RequestDetail({
               siteOrigin={siteOrigin}
               travelerStateLabelById={travelerStateLabels}
             />
-            <form action={markWhatsappSentAction} className="mt-4">
-              <input type="hidden" name="id" value={request.id} />
-              <input type="hidden" name="locale" value={locale} />
-              <button className="inline-flex min-h-11 items-center justify-center rounded-md border border-gov-gray-200 bg-white px-5 py-3 text-sm font-bold text-gov-navy hover:bg-gov-gray-50">
-                تسجيل أنه تم التواصل
-              </button>
-            </form>
+            <RequestWhatsappSentForm locale={locale} request={request} />
           </div>
 
-          <form
-            action={updateRequestAction}
-            className="self-start rounded-md border border-gov-gray-200 bg-gov-gray-50 p-4"
-          >
-            <input type="hidden" name="id" value={request.id} />
-            <input type="hidden" name="locale" value={locale} />
-            <h2 className="font-heading text-lg font-bold text-gov-navy">
-              إجراء المكتب
-            </h2>
-            <label className="mt-4 block text-sm font-bold text-gov-navy">
-              الحالة
-              <select
-                name="status"
-                defaultValue={request.status}
-                className={fieldClass}
-              >
-                {Object.entries(REQUEST_STATUS_LABELS).map(([value, label]) => (
-                  <option key={value} value={value}>
-                    {label}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="mt-4 block text-sm font-bold text-gov-navy">
-              ملاحظات المتابعة
-              <textarea
-                name="notes"
-                rows={8}
-                defaultValue={request.notes}
-                className={fieldClass}
-              />
-            </label>
-            <button className="mt-4 w-full rounded-md bg-gov-accent px-4 py-3 text-sm font-bold text-white transition hover:bg-gov-navy">
-              حفظ الإجراء
-            </button>
-          </form>
+          <RequestOfficeActionForm locale={locale} request={request} />
         </div>
 
         <dl className="grid gap-4 border-t border-gov-gray-200 bg-gov-gray-50 p-5 text-sm md:grid-cols-3 md:p-7">

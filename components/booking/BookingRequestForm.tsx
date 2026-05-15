@@ -19,6 +19,7 @@ import {
   type PublicOfficeRequestStatus,
   type TravelerState,
 } from "@/lib/office-requests/types";
+import { feedbackToast } from "@/lib/ui/feedback-toast";
 
 type BookingRequestFormProps = {
   offices: Office[];
@@ -90,6 +91,7 @@ export function BookingRequestForm({
     initialState,
   );
   const savedRequestId = useRef<string | null>(null);
+  const lastToastKeyRef = useRef("");
   const officeRef = useRef<HTMLSelectElement>(null);
   const travelerStateRef = useRef<HTMLSelectElement>(null);
   const typeRef = useRef<HTMLSelectElement>(null);
@@ -146,6 +148,18 @@ export function BookingRequestForm({
       return () => cancelAnimationFrame(id);
     }
   }, [mode, travelerChosen, filteredOffices, officeId]);
+
+  useEffect(() => {
+    if (!state.message) return;
+    const key = `${state.ok}:${state.message}`;
+    if (lastToastKeyRef.current === key) return;
+    lastToastKeyRef.current = key;
+    if (state.ok) {
+      feedbackToast.success(state.message);
+    } else {
+      feedbackToast.error(state.message);
+    }
+  }, [state.ok, state.message]);
 
   useEffect(() => {
     if (state.ok || !state.values) return;

@@ -3,6 +3,7 @@
 import { useRef } from "react";
 import { saveTravelerStateAction } from "@/app/[locale]/admin/actions";
 import { TravelerStateFormFields } from "@/components/admin/TravelerStateFormFields";
+import { runWithFeedback } from "@/lib/ui/run-with-feedback";
 import type { TravelerState } from "@/lib/office-requests/types";
 
 type TravelerStateFormDialogProps = {
@@ -56,14 +57,11 @@ export function TravelerStateFormDialog({
         <form
           className="space-y-1 px-4 py-4"
           action={async (formData) => {
-            try {
-              await saveTravelerStateAction(formData);
-              dialogRef.current?.close();
-            } catch (err) {
-              window.alert(
-                err instanceof Error ? err.message : "تعذر حفظ الحالة.",
-              );
-            }
+            await runWithFeedback(() => saveTravelerStateAction(formData), {
+              successMessage: "تم حفظ الحالة.",
+              errorMessage: "تعذر حفظ الحالة.",
+              onSuccess: () => dialogRef.current?.close(),
+            });
           }}
         >
           <input type="hidden" name="locale" value={locale} />

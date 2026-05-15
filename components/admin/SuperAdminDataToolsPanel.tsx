@@ -13,6 +13,7 @@ import {
   type SuperAdminDataCollectionKey,
   type SuperAdminPurgeOperationId,
 } from "@/lib/office-requests/super-admin-data-constants";
+import { feedbackToast } from "@/lib/ui/feedback-toast";
 
 const DATA_SCOPE_LABELS: Record<SuperAdminDataCollectionKey, string> = {
   requests: "الطلبات (حجوزات وشكاوى ومقترحات)",
@@ -90,8 +91,11 @@ export function SuperAdminDataToolsPanel() {
       a.download = `${EXPORT_FILE_STEM_AR[exportCollection]}-${dateStamp}.txt`;
       a.click();
       URL.revokeObjectURL(url);
+      feedbackToast.success("تم تنزيل النسخة الاحتياطية.");
     } catch (e) {
-      setExportError(e instanceof Error ? e.message : "تعذّر إتمام التصدير.");
+      const msg = e instanceof Error ? e.message : "تعذّر إتمام التصدير.";
+      setExportError(msg);
+      feedbackToast.error(msg);
     } finally {
       setExportBusy(false);
     }
@@ -122,9 +126,13 @@ export function SuperAdminDataToolsPanel() {
       const errs = data.errors?.length
         ? `\nملاحظات:\n${data.errors.slice(0, 15).join("\n")}${data.errors.length > 15 ? "\n…" : ""}`
         : "";
-      setImportResult(`تم حفظ ${data.written ?? 0} وثيقة.${errs}`);
+      const successMsg = `تم حفظ ${data.written ?? 0} وثيقة.${errs}`;
+      setImportResult(successMsg);
+      feedbackToast.success(`تم حفظ ${data.written ?? 0} وثيقة.`);
     } catch (e) {
-      setImportResult(e instanceof Error ? e.message : "تعذّر إتمام الاستيراد.");
+      const msg = e instanceof Error ? e.message : "تعذّر إتمام الاستيراد.";
+      setImportResult(msg);
+      feedbackToast.error(msg);
     } finally {
       setImportBusy(false);
     }
@@ -156,12 +164,15 @@ export function SuperAdminDataToolsPanel() {
         data.truncated === true
           ? ` — ما زالت هناك بيانات؛ أعد العملية حتى يصبح العدد صفراً (حد أقصى ${data.maxPerCall ?? SUPER_ADMIN_PURGE_MAX_DOCS_PER_CALL} في كل مرة).`
           : "";
-      setPurgeResult(`تم حذف ${data.deleted ?? 0} سجلاً.${more}`);
+      const successMsg = `تم حذف ${data.deleted ?? 0} سجلاً.${more}`;
+      setPurgeResult(successMsg);
+      feedbackToast.success(`تم حذف ${data.deleted ?? 0} سجلاً.`);
       setPurgeConfirm("");
     } catch (e) {
-      setPurgeResult(
-        e instanceof Error ? e.message : "تعذّر إتمام الحذف الجماعي.",
-      );
+      const msg =
+        e instanceof Error ? e.message : "تعذّر إتمام الحذف الجماعي.";
+      setPurgeResult(msg);
+      feedbackToast.error(msg);
     } finally {
       setPurgeBusy(false);
     }
@@ -175,18 +186,19 @@ export function SuperAdminDataToolsPanel() {
       const more = result.truncated
         ? " — ما زالت هناك بيانات أخرى؛ كرر التشغيل أو انتظر تشغيل الـ cron التالي."
         : "";
-      setMaintenanceResult(
-        [
-          `أُرشف ${result.archivedRequests} طلباً.`,
-          `أُرشف ${result.archivedActivityLogs} حدثاً من سجل النشاط.`,
-          `حُذف ${result.deletedArchivedRequests} طلباً مؤرشفاً قديماً.`,
-          `حُذف ${result.deletedArchivedActivityLogs} حدثاً مؤرشفاً قديماً.`,
-        ].join("\n") + more,
-      );
+      const detail = [
+        `أُرشف ${result.archivedRequests} طلباً.`,
+        `أُرشف ${result.archivedActivityLogs} حدثاً من سجل النشاط.`,
+        `حُذف ${result.deletedArchivedRequests} طلباً مؤرشفاً قديماً.`,
+        `حُذف ${result.deletedArchivedActivityLogs} حدثاً مؤرشفاً قديماً.`,
+      ].join("\n");
+      setMaintenanceResult(detail + more);
+      feedbackToast.success("تمت صيانة البيانات.");
     } catch (e) {
-      setMaintenanceResult(
-        e instanceof Error ? e.message : "تعذّر تشغيل صيانة البيانات.",
-      );
+      const msg =
+        e instanceof Error ? e.message : "تعذّر تشغيل صيانة البيانات.";
+      setMaintenanceResult(msg);
+      feedbackToast.error(msg);
     } finally {
       setMaintenanceBusy(false);
     }

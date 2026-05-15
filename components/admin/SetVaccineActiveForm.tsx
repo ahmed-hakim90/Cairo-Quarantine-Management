@@ -1,6 +1,7 @@
 "use client";
 
 import { setVaccineActiveAction } from "@/app/[locale]/admin/actions";
+import { runWithFeedback } from "@/lib/ui/run-with-feedback";
 
 type SetVaccineActiveFormProps = {
   locale: string;
@@ -21,15 +22,23 @@ export function SetVaccineActiveForm({
 }: SetVaccineActiveFormProps) {
   return (
     <form
-      action={setVaccineActiveAction}
       className="inline"
       onSubmit={(e) => {
         if (!active) {
           const ok = window.confirm(
             `سيتم تعطيل اللقاح «${vaccineLabelAr}» ولن يظهر في دليل الأسعار للمسافرين. يمكنك إعادة تفعيله لاحقاً. متابعة؟`,
           );
-          if (!ok) e.preventDefault();
+          if (!ok) {
+            e.preventDefault();
+            return;
+          }
         }
+      }}
+      action={async (formData) => {
+        await runWithFeedback(() => setVaccineActiveAction(formData), {
+          successMessage: active ? "تم تفعيل اللقاح." : "تم تعطيل اللقاح.",
+          errorMessage: "تعذر تحديث حالة اللقاح.",
+        });
       }}
     >
       <input type="hidden" name="locale" value={locale} />

@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { deleteRequestSuperAdminAction } from "@/app/[locale]/admin/actions";
+import { runWithFeedback } from "@/lib/ui/run-with-feedback";
 
 type RequestSuperAdminDeleteFormProps = {
   locale: string;
@@ -15,7 +16,6 @@ export function RequestSuperAdminDeleteForm({
   requestName,
 }: RequestSuperAdminDeleteFormProps) {
   const [confirm, setConfirm] = useState("");
-  const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
   return (
@@ -37,11 +37,11 @@ export function RequestSuperAdminDeleteForm({
         className="mt-4 space-y-3"
         onSubmit={(e) => {
           e.preventDefault();
-          setError(null);
           const fd = new FormData(e.currentTarget);
           startTransition(() => {
-            deleteRequestSuperAdminAction(fd).catch((err: unknown) => {
-              setError(err instanceof Error ? err.message : "تعذّر الحذف.");
+            void runWithFeedback(() => deleteRequestSuperAdminAction(fd), {
+              successMessage: "تم حذف الطلب.",
+              errorMessage: "تعذّر الحذف.",
             });
           });
         }}
@@ -59,11 +59,6 @@ export function RequestSuperAdminDeleteForm({
             placeholder=""
           />
         </label>
-        {error ? (
-          <p className="text-sm font-semibold text-red-800" role="alert">
-            {error}
-          </p>
-        ) : null}
         <button
           type="submit"
           disabled={pending || confirm.trim() !== requestId}
