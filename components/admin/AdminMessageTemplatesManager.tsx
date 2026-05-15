@@ -97,13 +97,13 @@ export function AdminMessageTemplatesManager({
           عند إنشاء أو تعديل قالب، استخدم الأزرار فوق حقل الرسالة لإدراج المتغير عند
           المؤشر.
         </span>
-        <span className="mt-1 block text-gov-gray-500">
+        {/* <span className="mt-1 block text-gov-gray-500">
           لظهور {whatsappTemplatePlaceholder("bookingPassUrl")} عيّن{" "}
           <code className="rounded bg-gov-gray-100 px-1">NEXT_PUBLIC_SITE_URL</code>{" "}
           في بيئة التشغيل (مثال: https://example.com). الرابط يتيح للعميل رؤية حالة
           الطلب وملاحظات المتابعة من المتصفح حتى لو لم يُحفظ رقم واتساب كجهة اتصال؛
           يكفي فتح الرابط من الرسالة أو حفظه.
-        </span>
+        </span> */}
       </p>
 
       {templates.length === 0 ? (

@@ -159,24 +159,15 @@ export function SuperAdminAddModal({
               }}
               className="space-y-1"
             >
-              <p className="mb-3 text-xs leading-relaxed text-gov-gray-600">
-                {userToEdit
-                  ? "عدّل الحقول ثم احفظ. اترك كلمة المرور فارغة إن لم ترد تغييرها."
-                  : "اترك حقل UID فارغاً لإنشاء مستخدم جديد، أو أدخل UID مستخدم موجود للتعديل اليدوي."}
-              </p>
+              {userToEdit ? (
+                <p className="mb-3 text-xs leading-relaxed text-gov-gray-600">
+                  عدّل الحقول ثم احفظ. اترك كلمة المرور فارغة إن لم ترد تغييرها.
+                </p>
+              ) : null}
               <input type="hidden" name="locale" value={locale} />
               {userToEdit ? (
                 <input type="hidden" name="uid" value={userToEdit.uid} />
-              ) : (
-                <label className="mt-0 block text-sm font-bold text-gov-navy">
-                  Firebase UID للتعديل (اختياري)
-                  <input
-                    name="uid"
-                    className={officeFieldClass}
-                    placeholder="فارغ = مستخدم جديد"
-                  />
-                </label>
-              )}
+              ) : null}
               <label className="mt-3 block text-sm font-bold text-gov-navy">
                 الاسم المعروض
                 <input
