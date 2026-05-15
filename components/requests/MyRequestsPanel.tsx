@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { BookingPassQrImage } from "@/components/booking/BookingPassQrImage";
 import { bookingPassFormCopy } from "@/lib/i18n/booking-pass-copy";
 import type { Locale } from "@/lib/i18n/config";
@@ -20,7 +20,6 @@ const TRAVELER_LABEL_BY_ID = mergeTravelerStateLabelsWithLegacy(
   defaultTravelerStatesFromLegacyLabels(),
 );
 const STORAGE_KEY = "cairo-office-requests:v1";
-const POLL_INTERVAL_MS = 30_000;
 
 type StoredRequest = PublicOfficeRequestStatus & {
   phone: string;
@@ -35,7 +34,7 @@ const copy = {
   ar: {
     title: "طلباتي",
     intro:
-      "الطلبات المحفوظة على هذا الجهاز تظهر هنا ويتم تحديث حالتها تلقائياً.",
+      "الطلبات المحفوظة على هذا الجهاز تظهر هنا. اضغط «تحديث» لمزامنة أحدث الحالة من الخادم.",
     empty: "لا توجد طلبات محفوظة على هذا الجهاز بعد.",
     refresh: "تحديث",
     refreshing: "جاري التحديث...",
@@ -55,7 +54,7 @@ const copy = {
   en: {
     title: "My requests",
     intro:
-      "Requests saved on this device appear here and refresh automatically.",
+      "Requests saved on this device appear here. Press Refresh to sync the latest status from the server.",
     empty: "No requests are saved on this device yet.",
     refresh: "Refresh",
     refreshing: "Refreshing...",
@@ -74,7 +73,8 @@ const copy = {
   },
   zh: {
     title: "我的申请",
-    intro: "保存在此设备上的申请会显示在这里，并自动刷新状态。",
+    intro:
+      "保存在此设备上的申请会显示在这里。点击「刷新」可从服务器同步最新状态。",
     empty: "此设备尚未保存任何申请。",
     refresh: "刷新",
     refreshing: "正在刷新...",
@@ -183,23 +183,6 @@ export function MyRequestsPanel({ locale }: MyRequestsPanelProps) {
       setLoading(false);
     }
   }, [t.loadError]);
-
-  useEffect(() => {
-    const timeout = window.setTimeout(() => {
-      void refreshRequests(readStoredRequests());
-    }, 0);
-
-    return () => window.clearTimeout(timeout);
-  }, [refreshRequests]);
-
-  useEffect(() => {
-    const interval = window.setInterval(() => {
-      const current = readStoredRequests();
-      void refreshRequests(current);
-    }, POLL_INTERVAL_MS);
-
-    return () => window.clearInterval(interval);
-  }, [refreshRequests]);
 
   const sortedRequests = useMemo(
     () =>

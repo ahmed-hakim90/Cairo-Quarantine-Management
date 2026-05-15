@@ -4,6 +4,7 @@ import {
   markWhatsappSentAction,
   updateRequestAction,
 } from "@/app/[locale]/admin/actions";
+import { RequestSuperAdminDeleteForm } from "@/components/admin/RequestSuperAdminDeleteForm";
 import { RequestWhatsAppPanel } from "@/components/admin/RequestWhatsAppPanel";
 import { RequestActivityTimeline } from "@/components/admin/RequestActivityTimeline";
 import { inferredSiteOriginFromHeaders } from "@/lib/booking-pass-url";
@@ -25,6 +26,7 @@ type RequestDetailProps = {
   whatsappTemplates: MessageTemplate[];
   activityLogs: AdminActivityLogEntry[];
   travelerStateLabels: Record<string, string>;
+  isSuperAdmin?: boolean;
 };
 
 const fieldClass =
@@ -45,6 +47,7 @@ export async function RequestDetail({
   whatsappTemplates,
   activityLogs,
   travelerStateLabels,
+  isSuperAdmin = false,
 }: RequestDetailProps) {
   const headerList = await headers();
   const siteOrigin = inferredSiteOriginFromHeaders(headerList);
@@ -208,6 +211,15 @@ export async function RequestDetail({
         </dl>
 
         <div className="border-t border-gov-gray-200 p-5 md:p-7">
+          {isSuperAdmin ? (
+            <div className="mb-8">
+              <RequestSuperAdminDeleteForm
+                locale={locale}
+                requestId={request.id}
+                requestName={request.name}
+              />
+            </div>
+          ) : null}
           <h2 className="font-heading text-lg font-bold text-gov-navy">
             سجل النشاط
           </h2>

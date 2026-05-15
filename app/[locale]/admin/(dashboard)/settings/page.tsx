@@ -1,6 +1,8 @@
 import { notFound, redirect } from "next/navigation";
 import { AdminBookingSettingsForm } from "@/components/admin/AdminBookingSettingsForm";
 import { AdminMessageTemplatesManager } from "@/components/admin/AdminMessageTemplatesManager";
+import { SuperAdminAdvancedSettingsGate } from "@/components/admin/SuperAdminAdvancedSettingsGate";
+import { SuperAdminDataToolsPanel } from "@/components/admin/SuperAdminDataToolsPanel";
 import { isLocale } from "@/lib/i18n/config";
 import { getAdminSession } from "@/lib/office-requests/session";
 import { getBookingSettings, listMessageTemplates } from "@/lib/office-requests/store";
@@ -34,7 +36,7 @@ export default async function AdminSettingsPage({
       <div className="rounded-lg border border-gov-gray-200 bg-white p-5 shadow-sm">
         <h2 className="text-lg font-extrabold text-gov-navy">إعدادات الحجز العامة</h2>
         <p className="mt-2 text-sm text-gov-gray-600">
-          تُحفظ في وثيقة Firestore <code className="text-xs">settings/app</code>.
+          تُحفظ مع إعدادات النظام وتُطبَّق على صفحات الحجز العامة.
         </p>
         <AdminBookingSettingsForm
           locale={locale}
@@ -43,6 +45,10 @@ export default async function AdminSettingsPage({
       </div>
 
       <AdminMessageTemplatesManager locale={locale} templates={templates} />
+
+      <SuperAdminAdvancedSettingsGate>
+        <SuperAdminDataToolsPanel />
+      </SuperAdminAdvancedSettingsGate>
     </div>
   );
 }

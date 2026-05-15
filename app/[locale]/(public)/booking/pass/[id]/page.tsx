@@ -20,7 +20,7 @@ function formatIsoDate(iso: string, locale: Locale): string {
     if (Number.isNaN(d.getTime())) return iso;
     return new Intl.DateTimeFormat(
       locale === "ar" ? "ar-EG" : locale === "zh" ? "zh-CN" : "en-GB",
-      { dateStyle: "medium", timeStyle: "short" },
+      { dateStyle: "medium" },
     ).format(d);
   } catch {
     return iso;

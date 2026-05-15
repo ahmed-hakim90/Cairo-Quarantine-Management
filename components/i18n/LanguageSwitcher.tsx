@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { useEffect, useId, useRef, useState } from "react";
 import { locales, type Locale } from "@/lib/i18n/config";
 import type { Messages } from "@/lib/i18n/messages";
@@ -35,8 +35,30 @@ function navLabel(nav: Messages["nav"], target: Locale): string {
   return nav.switchToZh;
 }
 
+/** يبني لاحقة الرابط مع الحفاظ على معلمات الاستعلام والتجزئة حيثما أمكن. */
+function usePathQueryHashSuffix(): string {
+  const searchParams = useSearchParams();
+  const query = searchParams.toString();
+  const querySuffix = query ? `?${query}` : "";
+
+  const [hashSuffix, setHashSuffix] = useState("");
+  useEffect(() => {
+    const sync = () => {
+      setHashSuffix(
+        typeof window !== "undefined" ? window.location.hash : "",
+      );
+    };
+    sync();
+    window.addEventListener("hashchange", sync);
+    return () => window.removeEventListener("hashchange", sync);
+  }, []);
+
+  return querySuffix + hashSuffix;
+}
+
 export function LanguageSwitcher({ locale, nav }: LanguageSwitcherProps) {
   const pathname = usePathname();
+  const pathSuffix = usePathQueryHashSuffix();
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const buttonRef = useRef<HTMLButtonElement | null>(null);
@@ -118,8 +140,9 @@ export function LanguageSwitcher({ locale, nav }: LanguageSwitcherProps) {
           className="absolute end-0 top-full z-50 mt-1 min-w-[10rem] overflow-hidden rounded-md border border-gov-gray-200 bg-white py-1 text-sm text-gov-gray-900 shadow-lg ring-1 ring-black/5"
         >
           {alternatives.map((target) => {
-            const href =
+            const base =
               normalized === "/" ? `/${target}` : `/${target}${normalized}`;
+            const href = `${base}${pathSuffix}`;
             const hl = hrefLangForLocale[target];
             return (
               <li key={target} role="none">

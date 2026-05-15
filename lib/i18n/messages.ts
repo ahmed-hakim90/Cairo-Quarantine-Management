@@ -212,9 +212,9 @@ const ar: Messages = {
     switchToEn: "English",
     switchToZh: "中文",
     switchLangAria: "تغيير اللغة",
-    bookVaccination: "حجز موعد تطعيم",
+    bookVaccination: "حجز موعد تطعيم / شكوى",
     bookVaccinationAria:
-      "فتح شاشة حجز موعد تطعيم بإدارة الحجر الصحي بالقاهرة",
+      "فتح شاشة حجز موعد تطعيم أو تقديم شكوى بإدارة الحجر الصحي بالقاهرة",
     mainMenuHeading: "القائمة",
     openMenuAria: "فتح قائمة التنقل الرئيسية",
     closeMenuAria: "إغلاق قائمة التنقل",
@@ -361,7 +361,7 @@ const ar: Messages = {
         "تنظم هذه الصفحة المعلومات التوجيهية الخاصة بالتطعيمات المعتمدة للحج والعمرة. يجب الالتزام بالقرارات الرسمية الصادرة عن وزارة الصحة والجهات  المختصة.",
       beforeTravel: "قبل السفر",
       documentBullets: [
-        "أحضر جواز سفر ساريًا — للمسافر الدولي",
+        "جواز سفر ساري — لرحلة الحج أو العمرة",
         "بطاقة الرقم القومي سارية",
         "صورة شخصية حديثة",
       ],
@@ -400,8 +400,8 @@ const ar: Messages = {
         "للمواطنين: ",
       docsTitle: "الوثائق المطلوبة",
       docsBullets: [
-        "أحضر جواز سفر ساريًا — للمسافر الدولي",
         "بطاقة الرقم القومي سارية",
+        "جواز سفر ساري — عند طلب خدمات مرتبطة بالسفر الدولي فقط",
         "صورة شخصية حديثة",
       ],
       notesTitle: "ملاحظات عامة",
@@ -610,9 +610,9 @@ const en: Messages = {
         "This page summarises guidance on approved vaccinations for Hajj and Umrah. Follow official decisions from Egypt’s Ministry of Health and other authorities.",
       beforeTravel: "Before you travel",
       documentBullets: [
-        "Valid passport — international travellers",
+        "Valid passport for your Hajj or Umrah journey",
         "Valid national ID card",
-        "Recent passport-style photo",
+        "Recent passport-style photograph",
       ],
       basicsTitle: "Core vaccinations",
       basicsBody:
@@ -649,9 +649,9 @@ const en: Messages = {
         "For citizens: bivalent meningococcal vaccine 200 EGP; seasonal influenza 260 EGP; hepatitis vaccines by type — Egyptian 100 EGP, foreign 200 EGP, Egyptian travelling abroad 150 EGP, foreign traveller 300 EGP (indicative prices; use the home-page lookup for details).",
       docsTitle: "Documents to bring",
       docsBullets: [
-        "Valid passport — international travellers",
         "Valid national ID card",
-        "Recent passport-style photo",
+        "Valid passport — only if the vaccination or service is linked to international travel",
+        "Recent passport-style photograph",
       ],
       notesTitle: "General notes",
       notesBody:
@@ -848,7 +848,7 @@ const zh: Messages = {
         "本页汇总朝觐与副朝获批疫苗的参考信息。请遵循埃及卫生部与沙特主管部门的正式决定。",
       beforeTravel: "出行前",
       documentBullets: [
-        "有效护照 — 国际旅客",
+        "有效护照（朝觐或副朝行程）",
         "有效国民身份证",
         "近照证件照",
       ],
@@ -887,8 +887,8 @@ const zh: Messages = {
         "公民：双价脑膜炎疫苗 200 埃及镑；季节性流感 260 埃及镑；乙肝疫苗按类型 — 埃及产 100、进口 200、埃及产且出境 150、进口且出境 300（均为参考价；详情可用首页查询工具）。",
       docsTitle: "所需材料",
       docsBullets: [
-        "有效护照 — 国际旅客",
         "有效国民身份证",
+        "有效护照 — 仅当接种或服务与国际旅行相关时请携带",
         "近照证件照",
       ],
       notesTitle: "一般提示",

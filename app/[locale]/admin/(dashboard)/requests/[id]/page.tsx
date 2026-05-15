@@ -65,6 +65,7 @@ export default async function AdminRequestPage({
       whatsappTemplates={whatsappTemplates}
       activityLogs={activityLogs}
       travelerStateLabels={travelerStateLabels}
+      isSuperAdmin={session.profile.role === "super_admin"}
     />
   );
 }

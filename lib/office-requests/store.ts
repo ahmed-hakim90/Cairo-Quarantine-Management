@@ -941,6 +941,23 @@ export async function getRequestForSession(args: {
   return request;
 }
 
+/** حذف نهائي للطلب — سوبر أدمن فقط من الطبقة التي تستدعي؛ بدون سجل نشاط جديد. */
+export async function deleteOfficeRequestBySuperAdmin(
+  requestId: string,
+): Promise<void> {
+  if (!isFirebaseAdminConfigured()) {
+    throw new Error("خدمة التخزين غير مهيأة حالياً، لا يمكن الحذف.");
+  }
+  const id = requestId.trim();
+  if (!id) throw new Error("رمز الطلب مطلوب.");
+
+  const ref = getAdminDb().collection(REQUESTS).doc(id);
+  const snap = await ref.get();
+  if (!snap.exists) throw new Error("الطلب غير موجود.");
+
+  await ref.delete();
+}
+
 export async function updateRequestForSession(args: {
   id: string;
   role: "super_admin" | "office_user";

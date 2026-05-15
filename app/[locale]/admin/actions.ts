@@ -7,6 +7,7 @@ import { getAdminSession, assertSuperAdmin, ADMIN_SESSION_COOKIE } from "@/lib/o
 import {
   deleteAdminUserAccount,
   deleteMessageTemplate,
+  deleteOfficeRequestBySuperAdmin,
   getOffice,
   markWhatsappSentForSession,
   saveBookingSettings,
@@ -58,6 +59,25 @@ export async function logoutAdmin(locale: string) {
   const cookieStore = await cookies();
   cookieStore.delete(ADMIN_SESSION_COOKIE);
   redirect(`/${locale}/admin/login`);
+}
+
+export async function deleteRequestSuperAdminAction(formData: FormData) {
+  const session = await requireSession();
+  assertSuperAdmin(session);
+  const id = formValue(formData, "id");
+  const locale = formValue(formData, "locale") || "ar";
+  const confirm = formValue(formData, "confirm");
+  if (!id) throw new Error("رمز الطلب مفقود.");
+  if (confirm !== id) {
+    throw new Error("اكتب رمز الطلب مطابقاً للحقل أعلاه.");
+  }
+
+  await deleteOfficeRequestBySuperAdmin(id);
+
+  revalidatePath(`/${locale}/admin`);
+  revalidatePath(`/${locale}/admin/requests`);
+  revalidatePath(`/${locale}/admin/requests/${id}`);
+  redirect(`/${locale}/admin/requests`);
 }
 
 export async function updateRequestAction(formData: FormData) {

@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { LanguageSwitcher } from "@/components/i18n/LanguageSwitcher";
 import { LocaleLink } from "@/components/i18n/LocaleLink";
 import { SiteHeaderMobileNav } from "@/components/layout/SiteHeaderMobileNav";
@@ -53,7 +54,16 @@ export function SiteHeader({ locale, messages }: SiteHeaderProps) {
 
         <div className="hidden min-w-0 flex-nowrap items-center justify-end gap-2 md:flex md:min-w-0 md:flex-1 lg:gap-3">
           <SiteNavLinks locale={locale} ariaLabel={n.aria} items={navItems} />
-          <LanguageSwitcher locale={locale} nav={n} />
+          <Suspense
+            fallback={
+              <span
+                className="inline-flex min-h-10 min-w-[2.75rem] shrink-0 items-center justify-center rounded-md border border-white/15 bg-white/5 opacity-60"
+                aria-hidden
+              />
+            }
+          >
+            <LanguageSwitcher locale={locale} nav={n} />
+          </Suspense>
         </div>
       </div>
     </header>

@@ -15,8 +15,14 @@ export function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
-  const segment = pathname.split("/")[1];
+  const segments = pathname.split("/").filter(Boolean);
+  const segment = segments[0];
   if (segment && isLocale(segment)) {
+    if (segment !== defaultLocale && segments[1] === "admin") {
+      const url = request.nextUrl.clone();
+      url.pathname = `/${defaultLocale}/${segments.slice(1).join("/")}`;
+      return NextResponse.redirect(url);
+    }
     return NextResponse.next();
   }
 

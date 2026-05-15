@@ -8,7 +8,7 @@ import { isLocale } from "@/lib/i18n/config";
 import { getBookingSettings, listOffices, listTravelerStatesForPublicBooking } from "@/lib/office-requests/store";
 
 export const metadata: Metadata = {
-  title: "حجز موعد تطعيم",
+  title: "حجز موعد تطعيم / شكوى",
 };
 
 export default async function BookingPage({
@@ -35,7 +35,7 @@ export default async function BookingPage({
             إدارة الحجر الصحي بالقاهرة
           </p>
           <h1 className="mt-3 font-heading text-3xl font-extrabold leading-tight text-gov-navy md:text-4xl">
-            حجز موعد تطعيم بالمكتب المختص
+            حجز موعد تطعيم أو شكوى بالمكتب المختص
           </h1>
           <p className="mt-4 leading-relaxed text-gov-gray-700">
             اختار المكتب ونوع المسافر والتاريخ الذي ترغب في الذهاب فيه، وسيظهر الحجز فوراً في لوحة المكتب لمتابعته واتساب.

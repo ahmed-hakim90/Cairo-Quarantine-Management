@@ -87,30 +87,34 @@ export default async function AdminOverviewPage({
               {session.profile.displayName}.
             </p>
           </div>
-          <div className="flex shrink-0 flex-col gap-4 sm:items-end">
+          <div className="flex min-w-0 w-full shrink-0 flex-col gap-4 sm:max-w-xl sm:items-end">
             {isSuperAdmin ? (
-              <>
-                <Suspense
-                  fallback={
-                    <div
-                      className="h-[4.25rem] w-full max-w-xs animate-pulse rounded-md bg-gov-gray-100 sm:max-w-xs"
-                      aria-hidden
+              <Suspense
+                fallback={
+                  <div
+                    className="flex min-w-0 w-full max-w-full flex-col gap-1"
+                    aria-hidden
+                  >
+                    <div className="h-3 w-28 max-w-full rounded bg-gov-gray-100 animate-pulse" />
+                    <div className="flex min-w-0 flex-wrap items-center gap-3">
+                      <div className="h-10 min-w-0 flex-1 rounded-md bg-gov-gray-100 animate-pulse" />
+                      <div className="h-10 w-[7.5rem] shrink-0 rounded-md bg-gov-gray-100 animate-pulse" />
+                    </div>
+                  </div>
+                }
+              >
+                <SuperAdminDashboardOfficeFilter
+                  locale={locale}
+                  offices={offices}
+                  selectedOfficeId={selectedOfficeId}
+                  trailingActions={
+                    <SuperAdminExportLauncher
+                      offices={offices}
+                      travelerStates={travelerStates}
                     />
                   }
-                >
-                  <SuperAdminDashboardOfficeFilter
-                    locale={locale}
-                    offices={offices}
-                    selectedOfficeId={selectedOfficeId}
-                  />
-                </Suspense>
-                <div className="sm:pt-0">
-                  <SuperAdminExportLauncher
-                    offices={offices}
-                    travelerStates={travelerStates}
-                  />
-                </div>
-              </>
+                />
+              </Suspense>
             ) : session.profile.officeId ? (
               <div className="sm:pt-1">
                 <SuperAdminExportLauncher
