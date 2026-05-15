@@ -134,19 +134,14 @@ export function AdminNewRequestNotifier({
   );
 
   const scopeRef = useRef(scope);
+  scopeRef.current = scope;
 
   const notifiedIdsRef = useRef(new Set<string>());
   const unsubscribesRef = useRef<Unsubscribe[]>([]);
 
   const [toasts, setToasts] = useState<ToastItem[]>([]);
-  const [muted, setMuted] = useState(
-    () => typeof window !== "undefined" && isNewRequestSoundMuted(),
-  );
+  const [muted, setMuted] = useState(false);
   const [authFailed, setAuthFailed] = useState(false);
-
-  useEffect(() => {
-    scopeRef.current = scope;
-  }, [scope]);
 
   const pushToast = useCallback((request: NotifyRequestPayload) => {
     setToasts((prev) => {
@@ -181,20 +176,23 @@ export function AdminNewRequestNotifier({
     unsubscribesRef.current = [];
   }, []);
 
-  /** `true` = auth failed, `false` = connected, `null` = notifications not applicable. */
-  const setupListeners = useCallback(async (): Promise<boolean | null> => {
+  const setupListeners = useCallback(async () => {
     teardownListeners();
 
-    if (!isFirebaseClientConfigured()) return null;
+    if (!isFirebaseClientConfigured()) return;
     if (
       scope.role !== "super_admin" &&
       buildNotifyOfficeIdBatches(scope).length === 0
     ) {
-      return null;
+      return;
     }
 
     const user = await ensureAdminFirebaseAuth();
-    if (!user) return true;
+    if (!user) {
+      setAuthFailed(true);
+      return;
+    }
+    setAuthFailed(false);
 
     const db = getFirebaseFirestore();
     const queries = buildNewRequestQueries(db, scope);
@@ -217,38 +215,29 @@ export function AdminNewRequestNotifier({
       );
       unsubscribesRef.current.push(unsub);
     }
-
-    return false;
   }, [processAddedDoc, scope, teardownListeners]);
 
-  const applyListenerResult = useCallback((failed: boolean | null) => {
-    if (failed === null) return;
-    setAuthFailed(failed);
+  useEffect(() => {
+    setMuted(isNewRequestSoundMuted());
   }, []);
 
   useEffect(() => {
-    let active = true;
-    void setupListeners().then((failed) => {
-      if (active) applyListenerResult(failed);
-    });
-    return () => {
-      active = false;
-      teardownListeners();
-    };
-  }, [applyListenerResult, setupListeners, teardownListeners]);
+    void setupListeners();
+    return () => teardownListeners();
+  }, [setupListeners, teardownListeners]);
 
   useEffect(() => {
     function onVisibilityChange() {
       if (document.hidden) {
         teardownListeners();
-        return;
+      } else {
+        void setupListeners();
       }
-      void setupListeners().then(applyListenerResult);
     }
     document.addEventListener("visibilitychange", onVisibilityChange);
     return () =>
       document.removeEventListener("visibilitychange", onVisibilityChange);
-  }, [applyListenerResult, setupListeners, teardownListeners]);
+  }, [setupListeners, teardownListeners]);
 
   function dismissToast(id: string) {
     setToasts((prev) => prev.filter((t) => t.id !== id));

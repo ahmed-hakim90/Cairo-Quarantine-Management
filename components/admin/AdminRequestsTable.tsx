@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useMemo, useState } from "react";
-import { ADMIN_LIST_PAGE_SIZE } from "@/lib/office-requests/admin-list-page-size";
 import {
   defaultTravelerStatesFromLegacyLabels,
   effectiveTravelerStateIdOnRequest,
@@ -71,7 +70,7 @@ const dateInputClass =
   "min-h-9 w-full min-w-0 rounded-md border border-gov-gray-200 bg-white px-2 text-xs font-bold text-gov-navy outline-none transition focus:border-gov-accent focus:ring-2 focus:ring-gov-accent/20 sm:w-32 sm:shrink-0";
 
 const filterSelectClass =
-  "min-h-9 w-full min-w-0 rounded-md border border-gov-gray-200 bg-white px-2 text-xs font-bold text-gov-navy outline-none transition focus:border-gov-accent focus:ring-2 focus:ring-gov-accent/20 sm:min-w-[8.5rem]";
+  "min-h-9 w-full min-w-0 rounded-md border border-gov-gray-200 bg-white px-2 text-xs font-bold text-gov-navy outline-none transition focus:border-gov-accent focus:ring-2 focus:ring-gov-accent/20 sm:min-w-[8.5rem] sm:shrink-0";
 
 function typeTabCountClass(tabId: RequestTypeFilter): string {
   if (tabId === "all") {
@@ -262,7 +261,7 @@ export function AdminRequestsTable({
   const hasCustomDateRange = Boolean(customDateFrom || customDateTo);
   const hasDateFilter = hasCustomDateRange || dateRange !== "all";
   const summaryLine = hasCustomDateRange
-    ? `حتى ${ADMIN_LIST_PAGE_SIZE} طلب حُدِّثت من ${customDateFrom} إلى ${customDateTo} (توقيت القاهرة).`
+    ? `حتى 100 طلب حُدِّثت من ${customDateFrom} إلى ${customDateTo} (توقيت القاهرة).`
     : dateRange === "all"
       ? " "
       : " ";
@@ -338,60 +337,18 @@ export function AdminRequestsTable({
       </div>
 
       <div className="border-b border-gov-gray-200 px-4 py-4">
-        <div className="overflow-x-auto rounded-lg border border-gov-gray-200 bg-gov-gray-50/70 p-3 [-webkit-overflow-scrolling:touch] lg:overflow-visible">
+        <div className="overflow-x-auto rounded-lg border border-gov-gray-200 bg-gov-gray-50/70 p-3 lg:overflow-visible">
           <div
             dir="rtl"
-            className="grid w-full grid-cols-1 gap-4 text-right md:grid-cols-2 md:items-end lg:flex lg:flex-row lg:flex-nowrap lg:items-end lg:gap-4"
+            className="flex flex-col items-end gap-3 text-right lg:flex-row lg:flex-nowrap lg:items-end lg:justify-start lg:gap-4"
           >
-            <fieldset className="w-full min-w-0 space-y-1.5 lg:shrink-0">
-              <legend className="whitespace-nowrap text-xs font-extrabold text-gov-navy">
-                نوع الطلب
-              </legend>
-              <div
-                className={`${SEGMENT_TRAY} w-full`}
-                role="tablist"
-                aria-label="تصفية الطلبات حسب النوع"
-              >
-                {TYPE_TABS.map((tab) => {
-                  const selected = typeFilter === tab.id;
-                  const n = typeCountForTab(tab.id);
-                  return (
-                    <button
-                      key={tab.id}
-                      type="button"
-                      role="tab"
-                      aria-selected={selected}
-                      aria-label={`${tab.label}، ${n} طلب جديد في القائمة المحمّلة`}
-                      onClick={() => {
-                        setTypeFilter(tab.id);
-                        if (tab.id !== "booking") {
-                          setActiveTravelerStateId(null);
-                        }
-                      }}
-                      className={segmentClass(selected)}
-                    >
-                      <span className="flex flex-col items-center gap-0.5 sm:flex-row sm:items-center sm:gap-1.5">
-                        <span>{tab.label}</span>
-                        <span
-                          className={typeTabCountClass(tab.id)}
-                          aria-hidden
-                        >
-                          ({n})
-                        </span>
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            </fieldset>
-
-            <fieldset className="w-full min-w-0 space-y-1.5 md:col-span-2 lg:min-w-0 lg:flex-1">
+            <fieldset className="order-2 min-w-0 space-y-1.5 lg:min-w-0 lg:flex-1">
               <legend className="whitespace-nowrap text-xs font-extrabold text-gov-navy">
                 آخر تحديث للطلب (توقيت القاهرة)
               </legend>
-              <div className="flex w-full flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center lg:flex-nowrap lg:gap-2">
+              <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center lg:flex-nowrap lg:gap-2">
                 <nav
-                  className={`${SEGMENT_TRAY} w-full shrink-0 sm:w-auto`}
+                  className={`${SEGMENT_TRAY} shrink-0 lg:flex-nowrap`}
                   aria-label="فترة آخر تحديث"
                 >
                   <Link
@@ -449,7 +406,7 @@ export function AdminRequestsTable({
                 </nav>
                 <form
                   action={listHref()}
-                  className="grid w-full grid-cols-1 gap-2 min-[400px]:grid-cols-[1fr_1fr_auto_auto] min-[400px]:items-center lg:flex lg:w-auto lg:shrink-0 lg:flex-nowrap lg:gap-1.5"
+                  className="flex shrink-0 flex-wrap items-center justify-start gap-1.5 lg:flex-nowrap"
                 >
                   {statusFilter !== "all" ? (
                     <input type="hidden" name="status" value={statusFilter} />
@@ -497,8 +454,8 @@ export function AdminRequestsTable({
               </div>
             </fieldset>
 
-            <div className="grid w-full min-w-0 grid-cols-1 gap-3 sm:grid-cols-2 lg:flex lg:shrink-0 lg:flex-row lg:items-end lg:gap-3">
-            <fieldset className="min-w-0 w-full space-y-1.5">
+            <div className="order-3 flex shrink-0 flex-row items-end gap-3">
+            <fieldset className="min-w-0 space-y-1.5">
               <legend className="whitespace-nowrap text-xs font-extrabold text-gov-navy">
                 حالة الطلب
               </legend>
@@ -523,7 +480,7 @@ export function AdminRequestsTable({
               </select>
             </fieldset>
 
-            <fieldset className="min-w-0 w-full space-y-1.5">
+            <fieldset className="min-w-0 space-y-1.5">
               <legend className="whitespace-nowrap text-xs font-extrabold text-gov-navy">
                 الترتيب
               </legend>
@@ -557,13 +514,55 @@ export function AdminRequestsTable({
             </fieldset>
             </div>
 
+            <fieldset className="order-1 min-w-0 shrink-0 space-y-1.5">
+              <legend className="whitespace-nowrap text-xs font-extrabold text-gov-navy">
+                نوع الطلب
+              </legend>
+              <div
+                className={SEGMENT_TRAY}
+                role="tablist"
+                aria-label="تصفية الطلبات حسب النوع"
+              >
+                {TYPE_TABS.map((tab) => {
+                  const selected = typeFilter === tab.id;
+                  const n = typeCountForTab(tab.id);
+                  return (
+                    <button
+                      key={tab.id}
+                      type="button"
+                      role="tab"
+                      aria-selected={selected}
+                      aria-label={`${tab.label}، ${n} طلب جديد في القائمة المحمّلة`}
+                      onClick={() => {
+                        setTypeFilter(tab.id);
+                        if (tab.id !== "booking") {
+                          setActiveTravelerStateId(null);
+                        }
+                      }}
+                      className={segmentClass(selected)}
+                    >
+                      <span className="flex flex-col items-center gap-0.5 sm:flex-row sm:items-center sm:gap-1.5">
+                        <span>{tab.label}</span>
+                        <span
+                          className={typeTabCountClass(tab.id)}
+                          aria-hidden
+                        >
+                          ({n})
+                        </span>
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </fieldset>
+
             {typeFilter === "booking" ? (
-              <fieldset className="w-full min-w-0 basis-full space-y-1.5 md:col-span-2 lg:basis-full">
+              <fieldset className="order-5 min-w-0 w-full basis-full space-y-1.5">
                 <legend className="text-xs font-extrabold text-gov-navy">
                   حالة المسافر (اختياري)
                 </legend>
                 <div
-                  className={`${SEGMENT_TRAY} w-full`}
+                  className={SEGMENT_TRAY}
                   role="group"
                   aria-label="تصفية حجوزات المسافرين حسب الحالة"
                 >

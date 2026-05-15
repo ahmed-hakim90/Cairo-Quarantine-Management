@@ -50,7 +50,6 @@ import {
   adminCanAccessOffice,
   normalizeOfficeIds,
 } from "@/lib/office-requests/admin-access";
-import { ADMIN_LIST_PAGE_SIZE } from "@/lib/office-requests/admin-list-page-size";
 import {
   VACCINES_BY_CATEGORY,
   type UserCategory,
@@ -1057,7 +1056,7 @@ export async function listRequestsForSessionPage(args: {
     sortKey = "updatedAt";
   }
   const sortDirection = args.sortDirection ?? "desc";
-  const pageSize = Math.min(Math.max(1, args.pageSize ?? ADMIN_LIST_PAGE_SIZE), 200);
+  const pageSize = Math.min(Math.max(1, args.pageSize ?? ADMIN_REQUESTS_PAGE_SIZE), 200);
   const cursor = cursorDate(args.cursor);
 
   const baseProfile = {
@@ -1814,7 +1813,7 @@ export async function listActivityLogsForSuperAdminPage(args?: {
   cursor?: string | null;
 }): Promise<PaginatedResult<AdminActivityLogEntry>> {
   if (!isFirebaseAdminConfigured()) return { items: [], nextCursor: null };
-  const requested = args?.limit ?? ADMIN_LIST_PAGE_SIZE;
+  const requested = args?.limit ?? ACTIVITY_LOG_PAGE_SIZE;
   const limit = Math.min(Math.max(1, requested), ACTIVITY_LOG_MAX_SUPER);
 
   const officeId =
@@ -1872,6 +1871,9 @@ export async function listActivityLogsForRequest(args: {
 
 const FIRESTORE_IN_QUERY_MAX = 30;
 const LATEST_ACTIVITY_PER_BATCH_LIMIT = 400;
+const ADMIN_REQUESTS_PAGE_SIZE = 100;
+const ACTIVITY_LOG_PAGE_SIZE = 100;
+
 function encodeCursor(value: string): string {
   return Buffer.from(value, "utf8").toString("base64url");
 }
