@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { getCairoTodayYmd } from "@/lib/cairo-today-ymd";
 import { parseExportCreatedBounds } from "@/lib/office-requests/export-date-bounds";
 import { officeRequestsToXlsxBuffer } from "@/lib/office-requests/export-xlsx";
 import { SUPER_ADMIN_EXPORT_MAX_ROWS } from "@/lib/office-requests/export-limits";
@@ -133,6 +134,7 @@ export async function GET(request: Request) {
     includeUncategorizedBookings: includeUncategorized,
     createdFrom: bounds.createdFrom,
     createdTo: bounds.createdTo,
+    adminBookingTodayYmd: getCairoTodayYmd(),
   });
 
   const stateLabels = mergeTravelerStateLabelsWithLegacy(

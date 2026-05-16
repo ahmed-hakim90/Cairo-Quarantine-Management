@@ -1,5 +1,4 @@
 import { notFound, redirect } from "next/navigation";
-import type { Timestamp } from "firebase-admin/firestore";
 import { AdminRequestsTable } from "@/components/admin/AdminRequestsTable";
 import { SuperAdminExportLauncher } from "@/components/admin/SuperAdminExportLauncher";
 import { getCairoTodayYmd, getCairoYesterdayYmd } from "@/lib/cairo-today-ymd";
@@ -7,7 +6,6 @@ import { isLocale } from "@/lib/i18n/config";
 import { adminAllowedOfficeIds } from "@/lib/office-requests/admin-access";
 import { parseExportCreatedBounds } from "@/lib/office-requests/export-date-bounds";
 import {
-  coerceSortForUpdatedWindow,
   parseAdminRequestsSort,
   parseAdminRequestsStatus,
   sortToFirestore,
@@ -38,9 +36,9 @@ function firstSearchParam(
   return typeof first === "string" ? first.trim() || undefined : undefined;
 }
 
-function resolveUpdatedBounds(
+function resolveBookingDateRange(
   dateRange: AdminRequestsDateRange,
-): { updatedFrom: Timestamp; updatedTo: Timestamp } | null {
+): { fromYmd: string; toYmd: string } | null {
   if (dateRange === "all") return null;
 
   const todayYmd = getCairoTodayYmd();
@@ -58,19 +56,13 @@ function resolveUpdatedBounds(
     toYmd = todayYmd;
   }
 
-  const parsed = parseExportCreatedBounds(fromYmd, toYmd);
-  if ("error" in parsed) return null;
-  if (parsed.createdFrom && parsed.createdTo) {
-    return { updatedFrom: parsed.createdFrom, updatedTo: parsed.createdTo };
-  }
-  return null;
+  return { fromYmd, toYmd };
 }
 
-function resolveCustomUpdatedBounds(
+function resolveCustomBookingDateRange(
   fromRaw: string | undefined,
   toRaw: string | undefined,
 ): {
-  bounds: { updatedFrom: Timestamp; updatedTo: Timestamp };
   fromYmd: string;
   toYmd: string;
 } | null {
@@ -84,14 +76,7 @@ function resolveCustomUpdatedBounds(
 
   const parsed = parseExportCreatedBounds(fromYmd, toYmd);
   if ("error" in parsed) return null;
-  if (parsed.createdFrom && parsed.createdTo) {
-    return {
-      bounds: { updatedFrom: parsed.createdFrom, updatedTo: parsed.createdTo },
-      fromYmd,
-      toYmd,
-    };
-  }
-  return null;
+  return { fromYmd, toYmd };
 }
 
 export default async function AdminRequestsPage({
@@ -114,7 +99,7 @@ export default async function AdminRequestsPage({
   const rawFrom = firstSearchParam(sp.from);
   const rawTo = firstSearchParam(sp.to);
   const hasCustomRange = Boolean(rawFrom || rawTo);
-  const customRange = resolveCustomUpdatedBounds(rawFrom, rawTo);
+  const customRange = resolveCustomBookingDateRange(rawFrom, rawTo);
   if (hasCustomRange && !customRange) {
     redirect(`/${locale}/admin/requests`);
   }
@@ -128,22 +113,22 @@ export default async function AdminRequestsPage({
       ? (rawRange as AdminRequestsDateRange)
       : "all";
 
-  const updatedBounds = customRange?.bounds ?? resolveUpdatedBounds(dateRange);
-  if (dateRange !== "all" && !updatedBounds) {
+  const quickRange = resolveBookingDateRange(dateRange);
+  const bookingDateRange = customRange ?? quickRange;
+  if (dateRange !== "all" && !bookingDateRange) {
     redirect(`/${locale}/admin/requests`);
   }
 
-  const effectiveSort = coerceSortForUpdatedWindow(
-    sort,
-    updatedBounds != null,
-  );
-  const { sortKey, sortDirection } = sortToFirestore(effectiveSort);
+  const { sortKey, sortDirection } = sortToFirestore(sort);
+  const todayYmd = getCairoTodayYmd();
 
   const listArgs = {
     role: session.profile.role,
     officeId: session.profile.officeId,
     allowedOfficeIds: session.profile.allowedOfficeIds,
-    ...(updatedBounds ?? {}),
+    adminBookingTodayYmd: todayYmd,
+    bookingDateFrom: bookingDateRange?.fromYmd,
+    bookingDateTo: bookingDateRange?.toYmd,
   };
 
   const allOffices =
@@ -214,7 +199,7 @@ export default async function AdminRequestsPage({
         travelerStates={travelerStates}
         requestsListHref={requestsHref}
         statusFilter={statusFilter}
-        sort={effectiveSort}
+        sort={sort}
         dateRange={dateRange}
         customDateFrom={customRange?.fromYmd}
         customDateTo={customRange?.toYmd}

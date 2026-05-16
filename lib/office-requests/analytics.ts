@@ -15,11 +15,8 @@ export type AdminRequestAnalytics = {
 export type OfficePerformanceRating = {
   officeId: string;
   officeNameAr: string;
-  total: number;
-  open: number;
-  completed: number;
-  cancelled: number;
-  score: number | null;
+  bookings: number;
+  complaints: number;
 };
 
 const STATUSES: OfficeRequestStatus[] = [
@@ -92,11 +89,8 @@ export function buildOfficePerformanceRatings(
     byOffice.set(office.id, {
       officeId: office.id,
       officeNameAr: office.nameAr,
-      total: 0,
-      open: 0,
-      completed: 0,
-      cancelled: 0,
-      score: null,
+      bookings: 0,
+      complaints: 0,
     });
   }
 
@@ -107,39 +101,25 @@ export function buildOfficePerformanceRatings(
       {
         officeId: request.officeId,
         officeNameAr: request.officeNameAr || request.officeId,
-        total: 0,
-        open: 0,
-        completed: 0,
-        cancelled: 0,
-        score: null,
+        bookings: 0,
+        complaints: 0,
       };
 
-    rating.total += 1;
-    if (request.status === "completed") {
-      rating.completed += 1;
-    } else if (request.status === "cancelled") {
-      rating.cancelled += 1;
+    if (request.type === "booking") {
+      rating.bookings += 1;
     } else {
-      rating.open += 1;
+      rating.complaints += 1;
     }
     byOffice.set(rating.officeId, rating);
   }
 
-  const ratings = [...byOffice.values()].map((rating) => {
-    const closed = rating.completed + rating.cancelled;
-    return {
-      ...rating,
-      score: closed > 0 ? Math.round((rating.completed / closed) * 100) : null,
-    };
-  });
+  const ratings = [...byOffice.values()];
 
   ratings.sort((a, b) => {
-    if (a.score == null && b.score != null) return 1;
-    if (a.score != null && b.score == null) return -1;
-    if (a.score != null && b.score != null && a.score !== b.score) {
-      return b.score - a.score;
-    }
-    if (a.total !== b.total) return b.total - a.total;
+    const aTotal = a.bookings + a.complaints;
+    const bTotal = b.bookings + b.complaints;
+    if (aTotal !== bTotal) return bTotal - aTotal;
+    if (a.bookings !== b.bookings) return b.bookings - a.bookings;
     return a.officeNameAr.localeCompare(b.officeNameAr, "ar");
   });
 

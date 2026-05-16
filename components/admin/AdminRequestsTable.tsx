@@ -153,7 +153,7 @@ function emptyMessage(
   const scope =
     dateRange === "all" && !hasCustomDateRange
       ? "ضمن الصفحة الحالية."
-      : "ضمن الطلبات المحدّثة في الفترة المختارة.";
+      : "ضمن حجوزات الفترة المختارة.";
 
   if (statusFilter !== "all") {
     return `لا توجد طلبات بحالة «${REQUEST_STATUS_LABELS[statusFilter]}» ${scope}`;
@@ -259,12 +259,11 @@ export function AdminRequestsTable({
   }
 
   const hasCustomDateRange = Boolean(customDateFrom || customDateTo);
-  const hasDateFilter = hasCustomDateRange || dateRange !== "all";
   const summaryLine = hasCustomDateRange
-    ? `حتى 100 طلب حُدِّثت من ${customDateFrom} إلى ${customDateTo} (توقيت القاهرة).`
+    ? `الطلبات المحمّلة، مع عرض الحجوزات بتاريخ من ${customDateFrom} إلى ${customDateTo} (توقيت القاهرة).`
     : dateRange === "all"
-      ? " "
-      : " ";
+      ? "الحجوزات المعروضة هي الحجوزات القادمة فقط؛ الشكاوى والمقترحات كما هي."
+      : "الحجوزات المعروضة حسب تاريخ الحجز المختار؛ الشكاوى والمقترحات كما هي.";
 
   const dateHrefParams = useMemo(
     (): Pick<AdminRequestsHrefParams, "from" | "to" | "range"> =>
@@ -329,8 +328,8 @@ export function AdminRequestsTable({
               «الشكاوى» يعرض الشكاوى والمقترحات معاً.
             </p>
             <p>
-              عمود «الإجراء» يعرض أحدث سجل نشاط مرتبط بالطلب عند توفره، مع
-              وقت قصير وربط للتفاصيل.
+              عمود «الإجراء» يخص الشكاوى والمقترحات فقط؛ الحجوزات لا تحتاج
+              إجراء أو تفاصيل متابعة من المكتب.
             </p>
           </div>
         </details>
@@ -386,12 +385,12 @@ export function AdminRequestsTable({
 
             <fieldset className="w-full min-w-0 space-y-1.5 lg:w-auto">
               <legend className="whitespace-nowrap text-xs font-extrabold text-gov-navy">
-                آخر تحديث للطلب (توقيت القاهرة)
+                تاريخ الحجز (توقيت القاهرة)
               </legend>
               <div className="flex w-full flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center lg:flex-nowrap lg:gap-2">
                 <nav
                   className={`${SEGMENT_TRAY} w-full shrink-0 sm:w-auto`}
-                  aria-label="فترة آخر تحديث"
+                  aria-label="فترة تاريخ الحجز"
                 >
                   <Link
                     href={listHref()}
@@ -543,11 +542,6 @@ export function AdminRequestsTable({
                     <option
                       key={opt.value}
                       value={opt.value}
-                      disabled={
-                        hasDateFilter &&
-                        (opt.value === "created_desc" ||
-                          opt.value === "created_asc")
-                      }
                     >
                       {opt.label}
                     </option>
@@ -656,7 +650,11 @@ export function AdminRequestsTable({
                       <StatusBadge status={request.status} />
                     </td>
                     <td className="max-w-[min(18rem,40vw)] px-4 py-3 align-top">
-                      {latest ? (
+                      {request.type === "booking" ? (
+                        <p className="text-xs font-semibold text-gov-gray-500">
+                          الحجز ظاهر للمتابعة اليومية فقط؛ لا يوجد إجراء مطلوب.
+                        </p>
+                      ) : latest ? (
                         <div className="space-y-1.5">
                           <p className="text-xs leading-relaxed text-gov-gray-800">
                             {latest.summaryAr}

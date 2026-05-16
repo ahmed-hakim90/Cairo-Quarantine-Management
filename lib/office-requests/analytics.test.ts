@@ -19,12 +19,13 @@ function request(
   id: string,
   officeId: string,
   status: OfficeRequest["status"],
+  type: OfficeRequest["type"] = "booking",
 ): OfficeRequest {
   return {
     id,
     officeId,
     officeNameAr: officeId,
-    type: "booking",
+    type,
     status,
     name: "",
     phone: "",
@@ -36,81 +37,57 @@ function request(
 }
 
 describe("buildOfficePerformanceRatings", () => {
-  it("calculates score from completed and cancelled requests", () => {
+  it("counts bookings and complaints per office", () => {
     const ratings = buildOfficePerformanceRatings(
       [
         request("1", "office-a", "completed"),
-        request("2", "office-a", "completed"),
-        request("3", "office-a", "cancelled"),
+        request("2", "office-a", "new"),
+        request("3", "office-a", "cancelled", "complaint"),
+        request("4", "office-a", "new", "proposal"),
       ],
       [office("office-a", "مكتب أ")],
     );
 
     expect(ratings[0]).toMatchObject({
       officeId: "office-a",
-      total: 3,
-      open: 0,
-      completed: 2,
-      cancelled: 1,
-      score: 67,
+      bookings: 2,
+      complaints: 2,
     });
   });
 
-  it("leaves score empty when an office has only open requests", () => {
-    const ratings = buildOfficePerformanceRatings(
-      [
-        request("1", "office-a", "new"),
-        request("2", "office-a", "in_progress"),
-        request("3", "office-a", "contacted"),
-      ],
-      [office("office-a")],
-    );
-
-    expect(ratings[0]).toMatchObject({
-      total: 3,
-      open: 3,
-      completed: 0,
-      cancelled: 0,
-      score: null,
-    });
-  });
-
-  it("includes offices with no requests", () => {
+  it("keeps offices with no requests at zero", () => {
     const ratings = buildOfficePerformanceRatings([], [office("office-a")]);
 
     expect(ratings[0]).toMatchObject({
       officeId: "office-a",
-      total: 0,
-      open: 0,
-      completed: 0,
-      cancelled: 0,
-      score: null,
+      bookings: 0,
+      complaints: 0,
     });
   });
 
-  it("sorts by score, then total, and sends unrated offices last", () => {
+  it("sorts by total activity, then bookings, then name", () => {
     const ratings = buildOfficePerformanceRatings(
       [
         request("1", "office-low", "completed"),
-        request("2", "office-low", "cancelled"),
-        request("3", "office-high-small", "completed"),
-        request("4", "office-high-large", "completed"),
-        request("5", "office-high-large", "completed"),
-        request("6", "office-open", "new"),
+        request("2", "office-low", "cancelled", "complaint"),
+        request("3", "office-high-bookings", "completed"),
+        request("4", "office-high-bookings", "new"),
+        request("5", "office-high-complaints", "new", "complaint"),
+        request("6", "office-high-complaints", "new", "proposal"),
       ],
       [
-        office("office-open"),
+        office("office-empty"),
         office("office-low"),
-        office("office-high-small"),
-        office("office-high-large"),
+        office("office-high-bookings"),
+        office("office-high-complaints"),
       ],
     );
 
     expect(ratings.map((rating) => rating.officeId)).toEqual([
-      "office-high-large",
-      "office-high-small",
+      "office-high-bookings",
       "office-low",
-      "office-open",
+      "office-high-complaints",
+      "office-empty",
     ]);
   });
 });

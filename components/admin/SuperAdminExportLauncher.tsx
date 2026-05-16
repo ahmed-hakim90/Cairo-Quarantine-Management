@@ -55,6 +55,19 @@ export function SuperAdminExportLauncher({
     [offices],
   );
 
+  function filenameFromContentDisposition(value: string | null): string | null {
+    if (!value) return null;
+    const utf8 = value.match(/filename\*=UTF-8''([^;]+)/i)?.[1];
+    if (utf8) {
+      try {
+        return decodeURIComponent(utf8);
+      } catch {
+        return utf8;
+      }
+    }
+    return value.match(/filename="([^"]+)"/i)?.[1] ?? null;
+  }
+
   const close = useCallback(() => {
     setOpen(false);
     setError(null);
@@ -152,6 +165,12 @@ export function SuperAdminExportLauncher({
       }
 
       const blob = await res.blob();
+      if (blob.size === 0) {
+        const msg = "تم إنشاء ملف فارغ. غيّر التصفية وحاول مرة أخرى.";
+        setError(msg);
+        feedbackToast.error(msg);
+        return;
+      }
       const capped = res.headers.get("X-Export-Capped") === "true";
       const rowCountRaw = res.headers.get("X-Export-Row-Count");
       const maxRowsRaw = res.headers.get("X-Export-Max-Rows");
@@ -168,12 +187,14 @@ export function SuperAdminExportLauncher({
       const objectUrl = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = objectUrl;
-      a.download = `requests-${new Date().toISOString().slice(0, 10)}.xlsx`;
+      a.download =
+        filenameFromContentDisposition(res.headers.get("Content-Disposition")) ??
+        `requests-${new Date().toISOString().slice(0, 10)}.xlsx`;
       a.rel = "noopener";
       document.body.appendChild(a);
       a.click();
       a.remove();
-      URL.revokeObjectURL(objectUrl);
+      window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
 
       if (capped) {
         const msg = `تم تصدير ${rowCountLabel} صفًا (الحد الأقصى ${maxRowsLabel} صفًا لكل ملف). قد توجد طلبات إضافية في قاعدة البيانات لم تُدرج في هذا الملف.`;

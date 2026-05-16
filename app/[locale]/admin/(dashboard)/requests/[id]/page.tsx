@@ -30,6 +30,7 @@ export default async function AdminRequestPage({
     allowedOfficeIds: session.profile.allowedOfficeIds,
   });
   if (!request) notFound();
+  if (request.type === "booking") notFound();
 
   const [office, templates, activityLogs, travelerStates] = await Promise.all([
     getOffice(request.officeId),

@@ -171,7 +171,8 @@ export default async function AdminOverviewPage({
               تقييم أداء المكاتب
             </h2>
             <p className="mt-1 text-xs text-gov-gray-600">
-              التقييم يحسب نسبة الطلبات المكتملة من الطلبات المغلقة لكل مكتب.
+              عدد الحجوزات والشكاوى المسجلة لكل مكتب، ويشمل الحجوزات السابقة
+              والقادمة.
             </p>
           </div>
         </div>
@@ -180,11 +181,8 @@ export default async function AdminOverviewPage({
             <thead className="bg-gov-gray-50 text-xs font-bold uppercase text-gov-gray-600">
               <tr>
                 <th className="px-4 py-3">المكتب</th>
-                <th className="px-4 py-3">إجمالي الطلبات</th>
-                <th className="px-4 py-3">قيد التنفيذ</th>
-                <th className="px-4 py-3">مكتمل</th>
-                <th className="px-4 py-3">ملغي</th>
-                <th className="px-4 py-3">تقييم الأداء</th>
+                <th className="px-4 py-3">حجوزات</th>
+                <th className="px-4 py-3">شكاوى</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gov-gray-100">
@@ -194,21 +192,10 @@ export default async function AdminOverviewPage({
                     {rating.officeNameAr}
                   </td>
                   <td className="px-4 py-3 font-semibold text-gov-gray-800">
-                    {rating.total}
+                    {rating.bookings}
                   </td>
-                  <td className="px-4 py-3 text-gov-gray-700">
-                    {rating.open}
-                  </td>
-                  <td className="px-4 py-3 text-gov-gray-700">
-                    {rating.completed}
-                  </td>
-                  <td className="px-4 py-3 text-gov-gray-700">
-                    {rating.cancelled}
-                  </td>
-                  <td className="px-4 py-3">
-                    <span className="inline-flex min-w-16 items-center justify-center rounded-md bg-gov-gray-50 px-3 py-1 font-extrabold text-gov-navy ring-1 ring-gov-gray-200">
-                      {rating.score == null ? "—" : `${rating.score}%`}
-                    </span>
+                  <td className="px-4 py-3 font-semibold text-gov-gray-800">
+                    {rating.complaints}
                   </td>
                 </tr>
               ))}

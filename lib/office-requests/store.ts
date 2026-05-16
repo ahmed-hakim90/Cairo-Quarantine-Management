@@ -50,6 +50,7 @@ import {
   adminCanAccessOffice,
   normalizeOfficeIds,
 } from "@/lib/office-requests/admin-access";
+import { isAdminVisibleBookingRequest } from "@/lib/office-requests/booking-visibility";
 import {
   VACCINES_BY_CATEGORY,
   type UserCategory,
@@ -923,6 +924,9 @@ export async function listRequestsForSession(args: {
   /** When set with `updatedTo`, filters by last update (Cairo day bounds from caller). */
   updatedFrom?: Timestamp | null;
   updatedTo?: Timestamp | null;
+  adminBookingTodayYmd?: string | null;
+  bookingDateFrom?: string | null;
+  bookingDateTo?: string | null;
 }): Promise<OfficeRequest[]> {
   if (!isFirebaseAdminConfigured()) return [];
 
@@ -961,6 +965,9 @@ export async function listRequestsForSession(args: {
         updatedFrom,
         updatedTo,
         useUpdatedWindow,
+        adminBookingTodayYmd: args.adminBookingTodayYmd,
+        bookingDateFrom: args.bookingDateFrom,
+        bookingDateTo: args.bookingDateTo,
       });
     }
   } else if (args.officeFilter) {
@@ -984,7 +991,15 @@ export async function listRequestsForSession(args: {
   }
 
   const snap = await query.get();
-  return snap.docs.map((doc) => requestFromDoc(doc.id, doc.data()));
+  const requests = snap.docs.map((doc) => requestFromDoc(doc.id, doc.data()));
+  if (!args.adminBookingTodayYmd) return requests;
+  return requests.filter((request) =>
+    isAdminVisibleBookingRequest(request, {
+      todayYmd: args.adminBookingTodayYmd!,
+      bookingDateFrom: args.bookingDateFrom,
+      bookingDateTo: args.bookingDateTo,
+    }),
+  );
 }
 
 async function listRequestsForAllowedOffices(args: {
@@ -994,6 +1009,9 @@ async function listRequestsForAllowedOffices(args: {
   updatedFrom: Timestamp | null;
   updatedTo: Timestamp | null;
   useUpdatedWindow: boolean;
+  adminBookingTodayYmd?: string | null;
+  bookingDateFrom?: string | null;
+  bookingDateTo?: string | null;
 }): Promise<OfficeRequest[]> {
   const officeIds = normalizeOfficeIds(args.officeIds);
   const collected: OfficeRequest[] = [];
@@ -1021,7 +1039,17 @@ async function listRequestsForAllowedOffices(args: {
     collected.push(...snap.docs.map((doc) => requestFromDoc(doc.id, doc.data())));
   }
   const sortKey = args.useUpdatedWindow ? "updatedAt" : "createdAt";
-  return collected
+  const visible = args.adminBookingTodayYmd
+    ? collected.filter((request) =>
+        isAdminVisibleBookingRequest(request, {
+          todayYmd: args.adminBookingTodayYmd!,
+          bookingDateFrom: args.bookingDateFrom,
+          bookingDateTo: args.bookingDateTo,
+        }),
+      )
+    : collected;
+
+  return visible
     .sort(
       (a, b) =>
         new Date(b[sortKey]).getTime() - new Date(a[sortKey]).getTime(),
@@ -1042,6 +1070,9 @@ export async function listRequestsForSessionPage(args: {
   sortDirection?: "asc" | "desc";
   cursor?: string | null;
   pageSize?: number;
+  adminBookingTodayYmd?: string | null;
+  bookingDateFrom?: string | null;
+  bookingDateTo?: string | null;
 }): Promise<PaginatedResult<OfficeRequest>> {
   if (!isFirebaseAdminConfigured()) return { items: [], nextCursor: null };
 
@@ -1109,7 +1140,10 @@ export async function listRequestsForSessionPage(args: {
             ? query.where(sortKey, "<", cursorTs)
             : query.where(sortKey, ">", cursorTs);
       }
-      query = query.orderBy(sortKey, sortDirection).limit(pageSize + 1);
+      const queryLimit = args.adminBookingTodayYmd
+        ? Math.min(200, Math.max(pageSize + 1, pageSize * 4))
+        : pageSize + 1;
+      query = query.orderBy(sortKey, sortDirection).limit(queryLimit);
       const snap = await query.get();
       collected.push(
         ...snap.docs.map((doc) => requestFromDoc(doc.id, doc.data())),
@@ -1141,7 +1175,15 @@ export async function listRequestsForSessionPage(args: {
     officeIds = [args.officeFilter];
   }
 
-  const collected = await runQuery(officeIds);
+  const collected = (await runQuery(officeIds)).filter((request) =>
+    args.adminBookingTodayYmd
+      ? isAdminVisibleBookingRequest(request, {
+          todayYmd: args.adminBookingTodayYmd!,
+          bookingDateFrom: args.bookingDateFrom,
+          bookingDateTo: args.bookingDateTo,
+        })
+      : true,
+  );
   const items = collected.slice(0, pageSize);
   return {
     items,
@@ -1173,6 +1215,8 @@ export type SuperAdminExportFilters = {
   /** تصفية على createdAt (شامل)؛ null = بدون حد */
   createdFrom: Timestamp | null;
   createdTo: Timestamp | null;
+  /** عند ضبطه تُستبعد الحجوزات التي فات تاريخها من التصدير التشغيلي. */
+  adminBookingTodayYmd?: string | null;
 };
 
 function requestMatchesSuperAdminExport(
@@ -1183,6 +1227,14 @@ function requestMatchesSuperAdminExport(
     filters.types.length > 0 ? filters.types : ALL_REQUEST_TYPES,
   );
   if (!typesSet.has(request.type)) return false;
+  if (
+    filters.adminBookingTodayYmd &&
+    !isAdminVisibleBookingRequest(request, {
+      todayYmd: filters.adminBookingTodayYmd,
+    })
+  ) {
+    return false;
+  }
 
   const mergedStateKeys = new Set([
     ...filters.travelerStateIds,
