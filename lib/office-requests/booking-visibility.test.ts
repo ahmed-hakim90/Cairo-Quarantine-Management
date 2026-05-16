@@ -5,43 +5,47 @@ import type { OfficeRequest } from "@/lib/office-requests/types";
 function request(
   id: string,
   type: OfficeRequest["type"],
-  preferredDate?: string,
+  opts?: { preferredDate?: string; createdAt?: string },
 ): OfficeRequest {
+  const createdAt = opts?.createdAt ?? "2026-05-15T12:00:00.000Z";
   return {
     id,
     officeId: "office-a",
     officeNameAr: "مكتب أ",
     type,
-    ...(preferredDate ? { preferredDate } : {}),
+    ...(opts?.preferredDate ? { preferredDate: opts.preferredDate } : {}),
     status: "new",
     name: "",
     phone: "",
     details: "",
     notes: "",
-    createdAt: "2026-05-15T00:00:00.000Z",
-    updatedAt: "2026-05-15T00:00:00.000Z",
+    createdAt,
+    updatedAt: createdAt,
   };
 }
 
 describe("isAdminVisibleBookingRequest", () => {
   it("hides bookings before today", () => {
     expect(
-      isAdminVisibleBookingRequest(request("old", "booking", "2026-05-15"), {
-        todayYmd: "2026-05-16",
-      }),
+      isAdminVisibleBookingRequest(
+        request("old", "booking", { preferredDate: "2026-05-15" }),
+        { todayYmd: "2026-05-16" },
+      ),
     ).toBe(false);
   });
 
   it("shows bookings for today or later", () => {
     expect(
-      isAdminVisibleBookingRequest(request("today", "booking", "2026-05-16"), {
-        todayYmd: "2026-05-16",
-      }),
+      isAdminVisibleBookingRequest(
+        request("today", "booking", { preferredDate: "2026-05-16" }),
+        { todayYmd: "2026-05-16" },
+      ),
     ).toBe(true);
     expect(
-      isAdminVisibleBookingRequest(request("future", "booking", "2026-05-17"), {
-        todayYmd: "2026-05-16",
-      }),
+      isAdminVisibleBookingRequest(
+        request("future", "booking", { preferredDate: "2026-05-17" }),
+        { todayYmd: "2026-05-16" },
+      ),
     ).toBe(true);
   });
 
@@ -53,13 +57,22 @@ describe("isAdminVisibleBookingRequest", () => {
     };
 
     expect(
-      isAdminVisibleBookingRequest(request("before", "booking", "2026-05-19"), options),
+      isAdminVisibleBookingRequest(
+        request("before", "booking", { preferredDate: "2026-05-19" }),
+        options,
+      ),
     ).toBe(false);
     expect(
-      isAdminVisibleBookingRequest(request("inside", "booking", "2026-05-21"), options),
+      isAdminVisibleBookingRequest(
+        request("inside", "booking", { preferredDate: "2026-05-21" }),
+        options,
+      ),
     ).toBe(true);
     expect(
-      isAdminVisibleBookingRequest(request("after", "booking", "2026-05-23"), options),
+      isAdminVisibleBookingRequest(
+        request("after", "booking", { preferredDate: "2026-05-23" }),
+        options,
+      ),
     ).toBe(false);
   });
 
@@ -71,25 +84,57 @@ describe("isAdminVisibleBookingRequest", () => {
     };
 
     expect(
-      isAdminVisibleBookingRequest(request("past", "booking", "2026-05-15"), options),
+      isAdminVisibleBookingRequest(
+        request("past", "booking", { preferredDate: "2026-05-15" }),
+        options,
+      ),
     ).toBe(false);
     expect(
-      isAdminVisibleBookingRequest(request("today", "booking", "2026-05-16"), options),
+      isAdminVisibleBookingRequest(
+        request("today", "booking", { preferredDate: "2026-05-16" }),
+        options,
+      ),
     ).toBe(true);
   });
 
-  it("does not hide complaints or proposals", () => {
-    const options = {
+  it("shows complaints without an explicit date window", () => {
+    expect(
+      isAdminVisibleBookingRequest(request("complaint", "complaint"), {
+        todayYmd: "2026-05-16",
+      }),
+    ).toBe(true);
+  });
+
+  it("filters complaints by createdAt in Cairo when a date window is set", () => {
+    const tomorrowFilter = {
       todayYmd: "2026-05-16",
-      bookingDateFrom: "2026-05-20",
-      bookingDateTo: "2026-05-22",
+      bookingDateFrom: "2026-05-17",
+      bookingDateTo: "2026-05-17",
     };
 
     expect(
-      isAdminVisibleBookingRequest(request("complaint", "complaint"), options),
+      isAdminVisibleBookingRequest(
+        request("complaint-today", "complaint", {
+          createdAt: "2026-05-16T12:00:00.000Z",
+        }),
+        tomorrowFilter,
+      ),
+    ).toBe(false);
+    expect(
+      isAdminVisibleBookingRequest(
+        request("complaint-tomorrow", "complaint", {
+          createdAt: "2026-05-17T12:00:00.000Z",
+        }),
+        tomorrowFilter,
+      ),
     ).toBe(true);
     expect(
-      isAdminVisibleBookingRequest(request("proposal", "proposal"), options),
+      isAdminVisibleBookingRequest(
+        request("proposal-tomorrow", "proposal", {
+          createdAt: "2026-05-17T12:00:00.000Z",
+        }),
+        tomorrowFilter,
+      ),
     ).toBe(true);
   });
 });

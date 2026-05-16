@@ -272,10 +272,10 @@ export function AdminRequestsTable({
     [requests],
   );
   const summaryLine = hasCustomDateRange
-    ? `الطلبات المحمّلة، مع عرض الحجوزات بتاريخ من ${customDateFrom} إلى ${customDateTo} (توقيت القاهرة).`
+    ? `الحجوزات بتاريخ من ${customDateFrom} إلى ${customDateTo}؛ الشكاوى والمقترحات الجديدة المُنشأة في نفس الفترة (توقيت القاهرة).`
     : dateRange === "all"
       ? "الحجوزات المعروضة هي الحجوزات القادمة فقط؛ تبويب الشكاوى يعرض الجديد فقط."
-      : "الحجوزات المعروضة حسب تاريخ الحجز المختار؛ تبويب الشكاوى يعرض الجديد فقط.";
+      : `الحجوزات حسب تاريخ الحجز (${periodLabel})؛ الشكاوى والمقترحات الجديدة المُنشأة في نفس الفترة (توقيت القاهرة).`;
 
   const dateHrefParams = useMemo(
     (): Pick<AdminRequestsHrefParams, "from" | "to" | "range"> =>
