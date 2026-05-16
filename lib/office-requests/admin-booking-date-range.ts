@@ -1,4 +1,4 @@
-import { getCairoTodayYmd, getCairoYesterdayYmd } from "@/lib/cairo-today-ymd";
+import { getCairoTodayYmd, getCairoTomorrowYmd } from "@/lib/cairo-today-ymd";
 import { validateYmdRange } from "@/lib/ymd-range";
 import type { AdminBookingDateRange } from "@/lib/office-requests/admin-booking-date-range-ui";
 
@@ -11,8 +11,7 @@ export {
 export const ADMIN_BOOKING_DATE_RANGES = new Set<string>([
   "all",
   "today",
-  "yesterday",
-  "today_yesterday",
+  "tomorrow",
 ]);
 
 export type BookingDateYmdRange = {
@@ -31,26 +30,16 @@ export type ParsedAdminBookingDateParams = {
 
 export function resolveBookingDateRange(
   dateRange: AdminBookingDateRange,
-  options?: { todayYmd?: string; yesterdayYmd?: string },
+  options?: { todayYmd?: string; tomorrowYmd?: string },
 ): BookingDateYmdRange | null {
   if (dateRange === "all") return null;
 
   const todayYmd = options?.todayYmd ?? getCairoTodayYmd();
-  const yesterdayYmd = options?.yesterdayYmd ?? getCairoYesterdayYmd();
-  let fromYmd: string;
-  let toYmd: string;
+  const tomorrowYmd = options?.tomorrowYmd ?? getCairoTomorrowYmd();
   if (dateRange === "today") {
-    fromYmd = todayYmd;
-    toYmd = todayYmd;
-  } else if (dateRange === "yesterday") {
-    fromYmd = yesterdayYmd;
-    toYmd = yesterdayYmd;
-  } else {
-    fromYmd = yesterdayYmd;
-    toYmd = todayYmd;
+    return { fromYmd: todayYmd, toYmd: todayYmd };
   }
-
-  return { fromYmd, toYmd };
+  return { fromYmd: tomorrowYmd, toYmd: tomorrowYmd };
 }
 
 export function resolveCustomBookingDateRange(

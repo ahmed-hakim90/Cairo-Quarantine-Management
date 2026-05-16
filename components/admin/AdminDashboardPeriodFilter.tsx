@@ -19,8 +19,7 @@ type AdminDashboardPeriodFilterProps = {
 const PRESETS: { id: AdminBookingDateRange; label: string }[] = [
   { id: "all", label: "الكل" },
   { id: "today", label: "اليوم" },
-  { id: "yesterday", label: "أمس" },
-  { id: "today_yesterday", label: "اليوم + أمس" },
+  { id: "tomorrow", label: "بكره" },
 ];
 
 export function AdminDashboardPeriodFilter({

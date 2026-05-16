@@ -61,6 +61,8 @@ export type OfficeRequest = {
   phone: string;
   details: string;
   notes: string;
+  /** true عند اختيار «ذوي همم» في نموذج الحجز */
+  hasSpecialNeeds?: boolean;
   /** Secret segment for the public booking pass URL; absent on legacy documents. */
   passToken?: string;
   /** Public pass links expire after the configured token TTL. */

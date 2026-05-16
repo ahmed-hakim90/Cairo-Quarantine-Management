@@ -37,6 +37,8 @@ export function officeRequestsToXlsxBuffer(
     الحالة: REQUEST_STATUS_LABELS[r.status],
     الاسم: r.name,
     الهاتف: r.phone,
+    "ذوي همم":
+      r.type === "booking" && r.hasSpecialNeeds ? "نعم" : "—",
     التفاصيل: r.details,
     الملاحظات: r.notes,
     "تاريخ الإنشاء": r.createdAt,

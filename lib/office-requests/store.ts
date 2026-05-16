@@ -603,6 +603,7 @@ function requestFromDoc(
     phone: String(data.phone ?? ""),
     details: String(data.details ?? ""),
     notes: String(data.notes ?? ""),
+    ...(data.hasSpecialNeeds === true ? { hasSpecialNeeds: true } : {}),
     ...(data.passToken ? { passToken: String(data.passToken) } : {}),
     ...(data.passTokenExpiresAt
       ? { passTokenExpiresAt: iso(data.passTokenExpiresAt) }
@@ -801,6 +802,7 @@ export async function createOfficeRequest(input: {
   name: string;
   phone: string;
   details: string;
+  hasSpecialNeeds?: boolean;
 }): Promise<CreatedOfficeRequestPublic> {
   if (!isFirebaseAdminConfigured()) {
     throw new Error("Firebase غير مضبوط حالياً، لا يمكن حفظ الطلب.");
@@ -865,6 +867,9 @@ export async function createOfficeRequest(input: {
       ? { travelerCategory: input.travelerCategory }
       : {}),
     ...(input.preferredDate ? { preferredDate: input.preferredDate } : {}),
+    ...(input.type === "booking" && input.hasSpecialNeeds
+      ? { hasSpecialNeeds: true }
+      : {}),
     status: "new",
     name: input.name.trim(),
     phone: normalizePhone(input.phone),

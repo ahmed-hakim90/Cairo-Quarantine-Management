@@ -34,6 +34,7 @@ export type BookingFormState = {
     name: string;
     phone: string;
     details: string;
+    hasSpecialNeeds?: boolean;
   };
   request?: PublicOfficeRequestStatus & { phone: string; passToken: string };
 };
@@ -73,6 +74,7 @@ export async function submitOfficeRequest(
   const name = value(formData, "name");
   const phone = value(formData, "phone");
   const details = value(formData, "details");
+  const hasSpecialNeeds = formData.get("hasSpecialNeeds") === "on";
 
   const errors: Record<string, string> = {};
   const values = {
@@ -83,6 +85,7 @@ export async function submitOfficeRequest(
     name,
     phone,
     details,
+    ...(type === "booking" ? { hasSpecialNeeds } : {}),
   };
   if (!officeId) errors.officeId = "اختر المكتب.";
   if (officeId.length > MAX_OFFICE_ID_LENGTH) {
@@ -214,6 +217,7 @@ export async function submitOfficeRequest(
         type === "booking" && details.length === 0
           ? `حالة المسافر: ${stateLabel}\nالتاريخ المطلوب: ${preferredDate}`
           : details,
+      hasSpecialNeeds: type === "booking" && hasSpecialNeeds,
     });
     return {
       ok: true,

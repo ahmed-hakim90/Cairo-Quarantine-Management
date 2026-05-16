@@ -513,6 +513,18 @@ export function BookingRequestForm({
           </label>
         </div>
 
+        {mode === "booking" ? (
+          <label className="flex items-center gap-2 text-sm font-semibold text-gov-gray-800">
+            <input
+              type="checkbox"
+              name="hasSpecialNeeds"
+              defaultChecked={state.values?.hasSpecialNeeds ?? false}
+              className="size-4 rounded border-gov-gray-300"
+            />
+            <span>أنا من ذوي الهمم</span>
+          </label>
+        ) : null}
+
         <label className={labelClass}>
           {mode === "booking" ? "ملاحظات إضافية" : "تفاصيل الشكوى أو المقترح"}
           <textarea

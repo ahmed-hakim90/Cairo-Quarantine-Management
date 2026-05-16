@@ -14,25 +14,19 @@ describe("resolveBookingDateRange", () => {
     expect(resolveBookingDateRange("all")).toBeNull();
   });
 
-  it("resolves today and yesterday presets", () => {
+  it("resolves today and tomorrow presets", () => {
     expect(
       resolveBookingDateRange("today", {
         todayYmd: "2026-05-16",
-        yesterdayYmd: "2026-05-15",
+        tomorrowYmd: "2026-05-17",
       }),
     ).toEqual({ fromYmd: "2026-05-16", toYmd: "2026-05-16" });
     expect(
-      resolveBookingDateRange("yesterday", {
+      resolveBookingDateRange("tomorrow", {
         todayYmd: "2026-05-16",
-        yesterdayYmd: "2026-05-15",
+        tomorrowYmd: "2026-05-17",
       }),
-    ).toEqual({ fromYmd: "2026-05-15", toYmd: "2026-05-15" });
-    expect(
-      resolveBookingDateRange("today_yesterday", {
-        todayYmd: "2026-05-16",
-        yesterdayYmd: "2026-05-15",
-      }),
-    ).toEqual({ fromYmd: "2026-05-15", toYmd: "2026-05-16" });
+    ).toEqual({ fromYmd: "2026-05-17", toYmd: "2026-05-17" });
   });
 });
 
@@ -96,6 +90,12 @@ describe("parseAdminBookingDateParams", () => {
     expect(parseAdminBookingDateParams({ rawRange: "week" }).dateRange).toBe(
       "all",
     );
+    expect(parseAdminBookingDateParams({ rawRange: "yesterday" }).dateRange).toBe(
+      "all",
+    );
+    expect(
+      parseAdminBookingDateParams({ rawRange: "today_yesterday" }).dateRange,
+    ).toBe("all");
   });
 });
 
@@ -119,10 +119,7 @@ describe("isExplicitBookingDateFilter", () => {
 describe("formatBookingPeriodLabel", () => {
   it("formats presets", () => {
     expect(formatBookingPeriodLabel({ dateRange: "today" })).toBe("اليوم");
-    expect(formatBookingPeriodLabel({ dateRange: "yesterday" })).toBe("أمس");
-    expect(formatBookingPeriodLabel({ dateRange: "today_yesterday" })).toBe(
-      "اليوم + أمس",
-    );
+    expect(formatBookingPeriodLabel({ dateRange: "tomorrow" })).toBe("بكره");
   });
 
   it("formats custom single day and range", () => {

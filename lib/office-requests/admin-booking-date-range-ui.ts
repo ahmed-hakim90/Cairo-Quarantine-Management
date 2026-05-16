@@ -1,8 +1,7 @@
 export type AdminBookingDateRange =
   | "all"
   | "today"
-  | "yesterday"
-  | "today_yesterday";
+  | "tomorrow";
 
 export function isExplicitBookingDateFilter(args: {
   dateRange: AdminBookingDateRange;
@@ -27,10 +26,8 @@ export function formatBookingPeriodLabel(args: {
   switch (args.dateRange) {
     case "today":
       return "اليوم";
-    case "yesterday":
-      return "أمس";
-    case "today_yesterday":
-      return "اليوم + أمس";
+    case "tomorrow":
+      return "بكره";
     default:
       return "الكل";
   }

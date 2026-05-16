@@ -8,6 +8,7 @@ import {
   effectiveTravelerStateIdOnRequest,
   mergeTravelerStateLabelsWithLegacy,
 } from "@/lib/office-requests/office-traveler-state";
+import { bookingUserNotes } from "@/lib/office-requests/booking-user-notes";
 import {
   buildAdminRequestsHref,
   type AdminRequestsHrefParams,
@@ -318,8 +319,11 @@ export function AdminRequestsTable({
     [listHref, nextCursor],
   );
 
-  const showClearDateFilter = dateRange !== "today" || hasCustomDateRange;
-  const clearDateFilterHref = listHref({ range: "today" });
+  const showClearDateFilter = explicitDateFilter;
+  const clearDateFilterHref = buildAdminRequestsHref(requestsListHref, {
+    status: statusFilter,
+    sort,
+  });
 
   return (
     <div className="rounded-lg border border-gov-gray-200 bg-white shadow-sm">
@@ -406,7 +410,7 @@ export function AdminRequestsTable({
                   aria-label="فترة تاريخ الحجز"
                 >
                   <Link
-                    href={listHref()}
+                    href={listHref({ range: "all" })}
                     className={segmentClass(
                       dateRange === "all" && !hasCustomDateRange,
                     )}
@@ -432,30 +436,17 @@ export function AdminRequestsTable({
                     اليوم
                   </Link>
                   <Link
-                    href={listHref({ range: "yesterday" })}
+                    href={listHref({ range: "tomorrow" })}
                     className={segmentClass(
-                      dateRange === "yesterday" && !hasCustomDateRange,
+                      dateRange === "tomorrow" && !hasCustomDateRange,
                     )}
                     aria-current={
-                      dateRange === "yesterday" && !hasCustomDateRange
+                      dateRange === "tomorrow" && !hasCustomDateRange
                         ? "true"
                         : undefined
                     }
                   >
-                    أمس
-                  </Link>
-                  <Link
-                    href={listHref({ range: "today_yesterday" })}
-                    className={segmentClass(
-                      dateRange === "today_yesterday" && !hasCustomDateRange,
-                    )}
-                    aria-current={
-                      dateRange === "today_yesterday" && !hasCustomDateRange
-                        ? "true"
-                        : undefined
-                    }
-                  >
-                    اليوم + أمس
+                    بكره
                   </Link>
                 </nav>
                 <form
@@ -614,9 +605,11 @@ export function AdminRequestsTable({
             <tr>
               <th className="px-4 py-3 text-start">الاسم</th>
               <th className="px-4 py-3 text-start">الهاتف</th>
+              <th className="px-4 py-3 text-start">ذوي همم</th>
               <th className="px-4 py-3 text-start">المكتب</th>
               <th className="px-4 py-3 text-start">النوع</th>
               <th className="px-4 py-3 text-start">الحالة</th>
+              <th className="px-4 py-3 text-start">ملاحظات</th>
               <th className="px-4 py-3 text-start">الإجراء</th>
             </tr>
           </thead>
@@ -624,7 +617,7 @@ export function AdminRequestsTable({
             {requests.length === 0 ? (
               <tr>
                 <td
-                  colSpan={6}
+                  colSpan={8}
                   className="px-4 py-8 text-center text-gov-gray-600"
                 >
                   لا توجد طلبات حالياً.
@@ -633,7 +626,7 @@ export function AdminRequestsTable({
             ) : filteredRequests.length === 0 ? (
               <tr>
                 <td
-                  colSpan={6}
+                  colSpan={8}
                   className="px-4 py-8 text-center text-gov-gray-600"
                 >
                   {emptyMessage(
@@ -649,19 +642,38 @@ export function AdminRequestsTable({
               filteredRequests.map((request) => {
                 const latest = latestActivityByRequestId[request.id];
                 const isComplaintRow = request.type === "complaint";
+                const isSpecialNeedsBooking =
+                  request.type === "booking" && request.hasSpecialNeeds === true;
+                const notes = bookingUserNotes(request, labelById);
                 return (
                   <tr
                     key={request.id}
                     className={
                       isComplaintRow
                         ? "bg-red-50/80 hover:bg-red-100/70"
-                        : "hover:bg-gov-gray-50/70"
+                        : isSpecialNeedsBooking
+                          ? "bg-green-50/80 hover:bg-green-100/70"
+                          : "hover:bg-gov-gray-50/70"
                     }
                   >
                     <td className="px-4 py-3 font-bold text-gov-navy">
                       {request.name}
                     </td>
                     <td className="px-4 py-3">{request.phone}</td>
+                    <td className="px-4 py-3">
+                      {request.type === "booking" ? (
+                        <input
+                          type="checkbox"
+                          checked={request.hasSpecialNeeds === true}
+                          disabled
+                          readOnly
+                          aria-label="ذوي همم"
+                          className="size-4 rounded border-gov-gray-300"
+                        />
+                      ) : (
+                        "—"
+                      )}
+                    </td>
                     <td className="px-4 py-3">{request.officeNameAr}</td>
                     <td className="px-4 py-3">
                       {REQUEST_TYPE_LABELS[request.type]}
@@ -669,6 +681,18 @@ export function AdminRequestsTable({
                     </td>
                     <td className="px-4 py-3">
                       <StatusBadge status={request.status} />
+                    </td>
+                    <td className="max-w-[min(14rem,32vw)] px-4 py-3 align-top">
+                      {notes ? (
+                        <p
+                          className="line-clamp-4 whitespace-pre-wrap text-xs leading-relaxed text-gov-gray-800"
+                          title={notes}
+                        >
+                          {notes}
+                        </p>
+                      ) : (
+                        "—"
+                      )}
                     </td>
                     <td className="max-w-[min(18rem,40vw)] px-4 py-3 align-top">
                       {request.type === "booking" ? (
