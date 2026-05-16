@@ -1,7 +1,6 @@
 import { HajjVaccinationGuide } from "@/components/health-guide/HajjVaccinationGuide";
 import { HajjUmrahTripPricing } from "@/components/hajj/HajjUmrahTripPricing";
 import { HajjTravelerOfficesTable } from "@/components/hajj/HajjTravelerOfficesTable";
-import { VaccineSelector } from "@/components/home/VaccineSelector";
 import { PageHeading } from "@/components/layout/PageHeading";
 import { ScrollReveal } from "@/components/motion/ScrollReveal";
 import type { Metadata } from "next";
@@ -75,27 +74,11 @@ export default async function HajjUmrahPage({
           locale={locale}
           pricing={p.pricing}
           currencyLabel={m.vaccineSelector.currency}
-          vaccinesByCategory={vaccinesByCategory}
+          vaccinesByCategory={{
+            hajj: vaccinesByCategory.hajj,
+            umrah: vaccinesByCategory.umrah,
+          }}
           freeLabel={m.vaccineSelector.free}
-        />
-      </ScrollReveal>
-      <ScrollReveal>
-        <section className="mx-auto max-w-6xl px-4 pb-4 pt-2">
-          <h2 className="font-heading text-xl font-bold text-gov-navy">
-            {p.umrahPathTitle}
-          </h2>
-          <p className="mt-3 max-w-3xl leading-relaxed text-gov-gray-700">
-            {p.umrahPathBody}
-          </p>
-        </section>
-      </ScrollReveal>
-      <ScrollReveal>
-        <VaccineSelector
-          vaccinesByCategory={vaccinesByCategory}
-          initialCategory="hajj"
-          allowedCategories={["hajj", "umrah"]}
-          locale={locale}
-          labels={m.vaccineSelector}
           bookingNav={{
             label: m.nav.bookVaccination,
             ariaLabel: m.nav.bookVaccinationAria,

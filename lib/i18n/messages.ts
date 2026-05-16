@@ -159,8 +159,6 @@ export type Messages = {
         locationsTitle: string;
         locationsBody: string;
       };
-      umrahPathTitle: string;
-      umrahPathBody: string;
     };
     citizen: {
       metaTitle: string;
@@ -390,9 +388,6 @@ const ar: Messages = {
         locationsBody:
           "الخدمة متاحة في جميع الأماكن المعتمدة.",
       },
-      umrahPathTitle: "لقاحات إضافية",
-      umrahPathBody:
-        "لمعرفة سعر لقاح الإنفلونزا الموسمية أو التفاصيل التوجيهية، استخدم أداة الاستعلام أدناه بعد اختيار «حج» أو «عمرة» حسب رحلتك.",
     },
     citizen: {
       metaTitle: "خدمات المواطنين",
@@ -636,9 +631,6 @@ const en: Messages = {
         locationsBody:
           "Services are available at all authorised locations .",
       },
-      umrahPathTitle: "Additional vaccines",
-      umrahPathBody:
-        "For the indicative price of seasonal influenza or other details, use the lookup tool below and choose “Hajj” or “Umrah” to match your trip.",
     },
     citizen: {
       metaTitle: "Citizen services",
@@ -870,9 +862,6 @@ const zh: Messages = {
         locationsBody:
           "所有授权地点均可提供服务。",
       },
-      umrahPathTitle: "其他疫苗",
-      umrahPathBody:
-        "如需季节性流感等参考价格，请在下方工具中选择与行程相符的「朝觐」或「副朝」。",
     },
     citizen: {
       metaTitle: "公民服务",
