@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useActionState, useEffect, useMemo, useRef, useState } from "react";
 import {
   submitOfficeRequest,
@@ -44,6 +45,7 @@ const initialState: BookingFormState = {
 };
 
 const STORAGE_KEY = "cairo-office-requests:v1";
+const DUPLICATE_REDIRECT_DELAY_MS = 1500;
 
 const inputClass =
   "mt-2 w-full rounded-md border border-gov-gray-200 bg-white px-3 py-3 text-sm text-gov-gray-900 outline-none transition focus:border-gov-accent focus:ring-2 focus:ring-gov-accent/20 disabled:bg-gov-gray-50 disabled:text-gov-gray-600";
@@ -78,6 +80,7 @@ export function BookingRequestForm({
   sameDayCutoffHour = DEFAULT_BOOKING_SAME_DAY_CUTOFF_HOUR,
   serverSiteOrigin,
 }: BookingRequestFormProps) {
+  const router = useRouter();
   const bookingStates = useMemo(
     () =>
       travelerStates.length > 0
@@ -92,6 +95,7 @@ export function BookingRequestForm({
   );
   const savedRequestId = useRef<string | null>(null);
   const lastToastKeyRef = useRef("");
+  const lastDuplicateRedirectKeyRef = useRef("");
   const officeRef = useRef<HTMLSelectElement>(null);
   const travelerStateRef = useRef<HTMLSelectElement>(null);
   const typeRef = useRef<HTMLSelectElement>(null);
@@ -151,6 +155,7 @@ export function BookingRequestForm({
 
   useEffect(() => {
     if (!state.message) return;
+    if (state.duplicate && !state.ok) return;
     const key = `${state.ok}:${state.message}`;
     if (lastToastKeyRef.current === key) return;
     lastToastKeyRef.current = key;
@@ -159,7 +164,21 @@ export function BookingRequestForm({
     } else {
       feedbackToast.error(state.message);
     }
-  }, [state.ok, state.message]);
+  }, [state.ok, state.message, state.duplicate]);
+
+  useEffect(() => {
+    if (!state.duplicate || state.ok || !state.message) return;
+    const key = state.message;
+    if (lastDuplicateRedirectKeyRef.current === key) return;
+    lastDuplicateRedirectKeyRef.current = key;
+
+    feedbackToast.error(state.message);
+    const timer = window.setTimeout(() => {
+      router.push(`/${locale}/my-requests`);
+    }, DUPLICATE_REDIRECT_DELAY_MS);
+
+    return () => window.clearTimeout(timer);
+  }, [state.duplicate, state.ok, state.message, locale, router]);
 
   useEffect(() => {
     if (state.ok || !state.values) return;

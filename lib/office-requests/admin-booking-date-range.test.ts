@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
+  formatBookingPeriodLabel,
+  isExplicitBookingDateFilter,
+} from "@/lib/office-requests/admin-booking-date-range-ui";
+import {
   parseAdminBookingDateParams,
   resolveBookingDateRange,
   resolveCustomBookingDateRange,
@@ -92,5 +96,48 @@ describe("parseAdminBookingDateParams", () => {
     expect(parseAdminBookingDateParams({ rawRange: "week" }).dateRange).toBe(
       "all",
     );
+  });
+});
+
+describe("isExplicitBookingDateFilter", () => {
+  it("is false for default all", () => {
+    expect(
+      isExplicitBookingDateFilter({ dateRange: "all", hasCustomRange: false }),
+    ).toBe(false);
+  });
+
+  it("is true for presets and custom range", () => {
+    expect(
+      isExplicitBookingDateFilter({ dateRange: "today", hasCustomRange: false }),
+    ).toBe(true);
+    expect(
+      isExplicitBookingDateFilter({ dateRange: "all", hasCustomRange: true }),
+    ).toBe(true);
+  });
+});
+
+describe("formatBookingPeriodLabel", () => {
+  it("formats presets", () => {
+    expect(formatBookingPeriodLabel({ dateRange: "today" })).toBe("اليوم");
+    expect(formatBookingPeriodLabel({ dateRange: "yesterday" })).toBe("أمس");
+    expect(formatBookingPeriodLabel({ dateRange: "today_yesterday" })).toBe(
+      "اليوم + أمس",
+    );
+  });
+
+  it("formats custom single day and range", () => {
+    expect(
+      formatBookingPeriodLabel({
+        dateRange: "all",
+        customFrom: "2026-05-10",
+      }),
+    ).toBe("2026-05-10");
+    expect(
+      formatBookingPeriodLabel({
+        dateRange: "all",
+        customFrom: "2026-05-01",
+        customTo: "2026-05-05",
+      }),
+    ).toBe("من 2026-05-01 إلى 2026-05-05");
   });
 });

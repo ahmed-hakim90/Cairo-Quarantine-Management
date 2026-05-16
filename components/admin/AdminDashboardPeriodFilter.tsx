@@ -7,7 +7,7 @@ import {
   segmentClass,
   SEGMENT_TRAY,
 } from "@/components/admin/admin-filter-segments";
-import type { AdminBookingDateRange } from "@/lib/office-requests/admin-booking-date-range";
+import type { AdminBookingDateRange } from "@/lib/office-requests/admin-booking-date-range-ui";
 
 type AdminDashboardPeriodFilterProps = {
   locale: string;

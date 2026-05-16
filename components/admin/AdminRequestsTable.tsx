@@ -19,7 +19,11 @@ import {
   segmentClass,
   SEGMENT_TRAY,
 } from "@/components/admin/admin-filter-segments";
-import type { AdminBookingDateRange } from "@/lib/office-requests/admin-booking-date-range";
+import {
+  formatBookingPeriodLabel,
+  isExplicitBookingDateFilter,
+  type AdminBookingDateRange,
+} from "@/lib/office-requests/admin-booking-date-range-ui";
 import {
   REQUEST_STATUS_LABELS,
   REQUEST_TYPE_LABELS,
@@ -121,6 +125,14 @@ function BookingMeta({
   );
 }
 
+function isComplaintOrProposal(request: OfficeRequest): boolean {
+  return request.type === "complaint" || request.type === "proposal";
+}
+
+function isNewComplaintOrProposal(request: OfficeRequest): boolean {
+  return isComplaintOrProposal(request) && request.status === "new";
+}
+
 function formatActivityTime(iso: string): string {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "";
@@ -152,7 +164,7 @@ function emptyMessage(
     return `لا توجد حجوزات ${scope}`;
   }
   if (typeFilter === "complaint") {
-    return `لا توجد شكاوى أو مقترحات ${scope}`;
+    return `لا توجد شكاوى أو مقترحات بحالة «جديد» ${scope}`;
   }
   if (typeFilter === "all") {
     return `لا توجد طلبات ${scope}`;
@@ -197,9 +209,7 @@ export function AdminRequestsTable({
     if (typeFilter === "booking") {
       list = requests.filter((r) => r.type === "booking");
     } else if (typeFilter === "complaint") {
-      list = requests.filter(
-        (r) => r.type === "complaint" || r.type === "proposal",
-      );
+      list = requests.filter(isNewComplaintOrProposal);
     }
     if (activeTravelerStateId !== null) {
       list = list.filter(
@@ -215,13 +225,14 @@ export function AdminRequestsTable({
     let booking = 0;
     let complaint = 0;
     let proposal = 0;
+    let newComplaintOrProposal = 0;
     for (const r of requests) {
-      if (r.status !== "new") continue;
       if (r.type === "booking") booking++;
       else if (r.type === "complaint") complaint++;
       else if (r.type === "proposal") proposal++;
+      if (isNewComplaintOrProposal(r)) newComplaintOrProposal++;
     }
-    return { booking, complaint, proposal };
+    return { booking, complaint, proposal, newComplaintOrProposal };
   }, [requests]);
 
   const travelerStateBookingCounts = useMemo(() => {
@@ -230,7 +241,7 @@ export function AdminRequestsTable({
       filterStates.map((s) => [s.id, 0]),
     );
     for (const r of requests) {
-      if (r.type !== "booking" || r.status !== "new") continue;
+      if (r.type !== "booking") continue;
       const tid = effectiveTravelerStateIdOnRequest(r);
       if (tid && ids.has(tid)) counts[tid] = (counts[tid] ?? 0) + 1;
     }
@@ -242,15 +253,28 @@ export function AdminRequestsTable({
       return typeCounts.booking + typeCounts.complaint + typeCounts.proposal;
     }
     if (tabId === "booking") return typeCounts.booking;
-    return typeCounts.complaint + typeCounts.proposal;
+    return typeCounts.newComplaintOrProposal;
   }
 
   const hasCustomDateRange = Boolean(customDateFrom || customDateTo);
+  const explicitDateFilter = isExplicitBookingDateFilter({
+    dateRange,
+    hasCustomRange: hasCustomDateRange,
+  });
+  const periodLabel = formatBookingPeriodLabel({
+    dateRange,
+    customFrom: customDateFrom,
+    customTo: customDateTo,
+  });
+  const bookingsInPeriod = useMemo(
+    () => requests.filter((r) => r.type === "booking").length,
+    [requests],
+  );
   const summaryLine = hasCustomDateRange
     ? `الطلبات المحمّلة، مع عرض الحجوزات بتاريخ من ${customDateFrom} إلى ${customDateTo} (توقيت القاهرة).`
     : dateRange === "all"
-      ? "الحجوزات المعروضة هي الحجوزات القادمة فقط؛ الشكاوى والمقترحات كما هي."
-      : "الحجوزات المعروضة حسب تاريخ الحجز المختار؛ الشكاوى والمقترحات كما هي.";
+      ? "الحجوزات المعروضة هي الحجوزات القادمة فقط؛ تبويب الشكاوى يعرض الجديد فقط."
+      : "الحجوزات المعروضة حسب تاريخ الحجز المختار؛ تبويب الشكاوى يعرض الجديد فقط.";
 
   const dateHrefParams = useMemo(
     (): Pick<AdminRequestsHrefParams, "from" | "to" | "range"> =>
@@ -294,32 +318,30 @@ export function AdminRequestsTable({
     [listHref, nextCursor],
   );
 
+  const showClearDateFilter = dateRange !== "today" || hasCustomDateRange;
+  const clearDateFilterHref = listHref({ range: "today" });
+
   return (
     <div className="rounded-lg border border-gov-gray-200 bg-white shadow-sm">
       <div className="border-b border-gov-gray-200 px-4 py-3">
         <h2 className="font-heading text-lg font-bold text-gov-navy">
           أحدث الطلبات
         </h2>
-        <p className="mt-1.5 text-sm leading-relaxed text-gov-gray-600">
+        {explicitDateFilter ? (
+          <div className="mt-2 flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+            <span className="text-sm font-extrabold text-gov-navy">
+              حجوزات {periodLabel}:
+            </span>
+            <span className="font-heading text-3xl font-black tabular-nums leading-none text-gov-accent sm:text-4xl">
+              {bookingsInPeriod}
+            </span>
+          </div>
+        ) : null}
+        <p
+          className={`text-sm leading-relaxed text-gov-gray-600 ${explicitDateFilter ? "mt-1" : "mt-1.5"}`}
+        >
           {summaryLine}
         </p>
-        <details className="group mt-2 text-sm">
-          <summary className="cursor-pointer list-none text-xs font-bold text-gov-navy marker:content-none [&::-webkit-details-marker]:hidden">
-            <span className="underline decoration-gov-gray-300 underline-offset-2 group-open:decoration-gov-navy">
-              شرح القائمة والأعمدة
-            </span>
-          </summary>
-          <div className="mt-2 space-y-1.5 border-s-2 border-gov-gray-200 ps-3 text-xs leading-relaxed text-gov-gray-600">
-            <p>
-              «الكل» يعرض كل الأنواع؛ «الحجوزات» يعرض طلبات التطعيم فقط؛
-              «الشكاوى» يعرض الشكاوى والمقترحات معاً.
-            </p>
-            <p>
-              عمود «الإجراء» يخص الشكاوى والمقترحات فقط؛ الحجوزات لا تحتاج
-              إجراء أو تفاصيل متابعة من المكتب.
-            </p>
-          </div>
-        </details>
       </div>
 
       <div className="border-b border-gov-gray-200 px-4 py-4">
@@ -346,7 +368,11 @@ export function AdminRequestsTable({
                       type="button"
                       role="tab"
                       aria-selected={selected}
-                      aria-label={`${tab.label}، ${n} طلب جديد في القائمة المحمّلة`}
+                      aria-label={
+                        tab.id === "complaint"
+                          ? `${tab.label} الجديدة، ${n} في القائمة المحمّلة`
+                          : `${tab.label}، ${n} في القائمة المحمّلة`
+                      }
                       onClick={() => {
                         setTypeFilter(tab.id);
                         if (tab.id !== "booking") {
@@ -470,9 +496,9 @@ export function AdminRequestsTable({
                   >
                     تطبيق
                   </button>
-                  {hasCustomDateRange ? (
+                  {showClearDateFilter ? (
                     <Link
-                      href={listHref()}
+                      href={clearDateFilterHref}
                       className="inline-flex min-h-9 items-center justify-center rounded-md border border-gov-gray-200 bg-white px-3 py-1.5 text-xs font-extrabold text-gov-navy transition hover:bg-gov-gray-50"
                     >
                       مسح
@@ -555,7 +581,7 @@ export function AdminRequestsTable({
                         key={s.id}
                         type="button"
                         aria-pressed={pressed}
-                        aria-label={`${s.labelAr}، ${n} حجز جديد في القائمة المحمّلة`}
+                        aria-label={`${s.labelAr}، ${n} حجز في القائمة المحمّلة`}
                         onClick={() =>
                           setActiveTravelerStateId((prev) =>
                             prev === s.id ? null : s.id,
@@ -622,8 +648,16 @@ export function AdminRequestsTable({
             ) : (
               filteredRequests.map((request) => {
                 const latest = latestActivityByRequestId[request.id];
+                const isComplaintRow = request.type === "complaint";
                 return (
-                  <tr key={request.id} className="hover:bg-gov-gray-50/70">
+                  <tr
+                    key={request.id}
+                    className={
+                      isComplaintRow
+                        ? "bg-red-50/80 hover:bg-red-100/70"
+                        : "hover:bg-gov-gray-50/70"
+                    }
+                  >
                     <td className="px-4 py-3 font-bold text-gov-navy">
                       {request.name}
                     </td>

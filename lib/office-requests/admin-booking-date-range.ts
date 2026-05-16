@@ -1,11 +1,12 @@
 import { getCairoTodayYmd, getCairoYesterdayYmd } from "@/lib/cairo-today-ymd";
-import { parseExportCreatedBounds } from "@/lib/office-requests/export-date-bounds";
+import { validateYmdRange } from "@/lib/ymd-range";
+import type { AdminBookingDateRange } from "@/lib/office-requests/admin-booking-date-range-ui";
 
-export type AdminBookingDateRange =
-  | "all"
-  | "today"
-  | "yesterday"
-  | "today_yesterday";
+export type { AdminBookingDateRange } from "@/lib/office-requests/admin-booking-date-range-ui";
+export {
+  formatBookingPeriodLabel,
+  isExplicitBookingDateFilter,
+} from "@/lib/office-requests/admin-booking-date-range-ui";
 
 export const ADMIN_BOOKING_DATE_RANGES = new Set<string>([
   "all",
@@ -56,17 +57,9 @@ export function resolveCustomBookingDateRange(
   fromRaw: string | undefined,
   toRaw: string | undefined,
 ): BookingDateYmdRange | null {
-  const from = fromRaw?.trim() || undefined;
-  const to = toRaw?.trim() || undefined;
-  if (!from && !to) return null;
-
-  const fromYmd = from ?? to;
-  const toYmd = to ?? from;
-  if (!fromYmd || !toYmd) return null;
-
-  const parsed = parseExportCreatedBounds(fromYmd, toYmd);
-  if ("error" in parsed) return null;
-  return { fromYmd, toYmd };
+  const validated = validateYmdRange(fromRaw, toRaw);
+  if (!validated || "error" in validated) return null;
+  return { fromYmd: validated.fromYmd, toYmd: validated.toYmd };
 }
 
 export function parseAdminBookingDateParams(args: {
