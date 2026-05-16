@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { isFirebaseAdminConfigured } from "@/lib/firebase/admin";
 import { getCairoTodayYmd } from "@/lib/cairo-today-ymd";
 import { parseExportCreatedBounds } from "@/lib/office-requests/export-date-bounds";
 import { officeRequestsToXlsxBuffer } from "@/lib/office-requests/export-xlsx";
@@ -125,39 +126,67 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: bounds.error }, { status: 400 });
   }
 
-  const { requests, capped } = await listRequestsForSuperAdminExport({
-    types,
-    officeId,
-    officeIds,
-    travelerStateIds,
-    travelerCategories,
-    includeUncategorizedBookings: includeUncategorized,
-    createdFrom: bounds.createdFrom,
-    createdTo: bounds.createdTo,
-    adminBookingTodayYmd: getCairoTodayYmd(),
-  });
-
-  const stateLabels = mergeTravelerStateLabelsWithLegacy(
-    await listTravelerStates({ includeInactive: true }),
-  );
-  const buffer = officeRequestsToXlsxBuffer(requests, stateLabels);
-  const dateStamp = new Date().toISOString().slice(0, 10);
-  const filename = `requests-${dateStamp}.xlsx`;
-
-  const headers = new Headers();
-  headers.set(
-    "Content-Type",
-    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-  );
-  headers.set(
-    "Content-Disposition",
-    `attachment; filename="${filename}"; filename*=UTF-8''${encodeURIComponent(filename)}`,
-  );
-  headers.set("X-Export-Row-Count", String(requests.length));
-  if (capped) {
-    headers.set("X-Export-Capped", "true");
-    headers.set("X-Export-Max-Rows", String(SUPER_ADMIN_EXPORT_MAX_ROWS));
+  if (!isFirebaseAdminConfigured()) {
+    return NextResponse.json(
+      {
+        error:
+          "إعدادات Firebase على الخادم غير مكتملة. راجع متغيرات FIREBASE_* في البيئة.",
+      },
+      { status: 503 },
+    );
   }
 
-  return new NextResponse(new Uint8Array(buffer), { status: 200, headers });
+  try {
+    const { requests, capped } = await listRequestsForSuperAdminExport({
+      types,
+      officeId,
+      officeIds,
+      travelerStateIds,
+      travelerCategories,
+      includeUncategorizedBookings: includeUncategorized,
+      createdFrom: bounds.createdFrom,
+      createdTo: bounds.createdTo,
+      adminBookingTodayYmd: getCairoTodayYmd(),
+    });
+
+    const stateLabels = mergeTravelerStateLabelsWithLegacy(
+      await listTravelerStates({ includeInactive: true }),
+    );
+    const buffer = officeRequestsToXlsxBuffer(requests, stateLabels);
+    const dateStamp = new Date().toISOString().slice(0, 10);
+    const filename = `requests-${dateStamp}.xlsx`;
+
+    const headers = new Headers();
+    headers.set(
+      "Content-Type",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    );
+    headers.set(
+      "Content-Disposition",
+      `attachment; filename="${filename}"; filename*=UTF-8''${encodeURIComponent(filename)}`,
+    );
+    headers.set("X-Export-Row-Count", String(requests.length));
+    if (capped) {
+      headers.set("X-Export-Capped", "true");
+      headers.set("X-Export-Max-Rows", String(SUPER_ADMIN_EXPORT_MAX_ROWS));
+    }
+
+    return new NextResponse(new Uint8Array(buffer), { status: 200, headers });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.error("[admin/requests/export]", message);
+
+    const needsIndex =
+      message.includes("FAILED_PRECONDITION") ||
+      message.includes("requires an index");
+
+    return NextResponse.json(
+      {
+        error: needsIndex
+          ? "فهرس Firestore مطلوب لهذا التصدير. انشر firestore.indexes.json ثم أعد المحاولة."
+          : "تعذّر جلب الطلبات من قاعدة البيانات. حاول لاحقاً أو ضيّق التصفية.",
+      },
+      { status: 500 },
+    );
+  }
 }

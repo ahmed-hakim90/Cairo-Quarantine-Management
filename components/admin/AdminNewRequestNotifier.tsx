@@ -2,15 +2,11 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { collection, onSnapshot, query, where, type Query, type Unsubscribe } from "firebase/firestore";
 import {
-  collection,
-  FirestoreError,
-  onSnapshot,
-  query,
-  where,
-  type Query,
-  type Unsubscribe,
-} from "firebase/firestore";
+  getFirestoreListenerErrorMessage,
+  isFirestorePermissionDenied,
+} from "@/lib/firebase/firestore-listener-error";
 import {
   isNewRequestSoundMuted,
   playNewRequestSound,
@@ -81,6 +77,10 @@ function RequestToast({
 }) {
   const { request } = toast;
   const typeLabel = REQUEST_TYPE_LABELS[request.type] ?? request.type;
+  const href =
+    request.type === "booking"
+      ? `/${locale}/admin/requests`
+      : `/${locale}/admin/requests/${request.id}`;
 
   return (
     <div
@@ -112,11 +112,11 @@ function RequestToast({
       </p>
       <p className="text-sm font-semibold text-gov-navy">{request.name}</p>
       <Link
-        href={`/${locale}/admin/requests/${request.id}`}
+        href={href}
         className="mt-3 inline-flex text-sm font-bold text-gov-accent underline decoration-gov-accent/40 underline-offset-2 hover:decoration-gov-accent"
         onClick={onDismiss}
       >
-        عرض الطلب
+        {request.type === "booking" ? "عرض الحجوزات" : "عرض الطلب"}
       </Link>
     </div>
   );
@@ -200,7 +200,13 @@ export function AdminNewRequestNotifier({
   const setupListeners = useCallback(async () => {
     teardownListeners();
 
-    if (!isFirebaseClientConfigured()) return;
+    if (!isFirebaseClientConfigured()) {
+      setListenerStatus("error");
+      setListenerError(
+        "إعدادات Firebase في المتصفح غير مكتملة (NEXT_PUBLIC_FIREBASE_*).",
+      );
+      return;
+    }
     if (
       scope.role !== "super_admin" &&
       buildNotifyOfficeIdBatches(scope).length === 0
@@ -251,13 +257,12 @@ export function AdminNewRequestNotifier({
         },
         (error) => {
           setListenerStatus("error");
-          if (error instanceof FirestoreError) {
-            setListenerError(`${error.code}: ${error.message}`);
-            if (error.code === "permission-denied") {
-              setAuthFailed(true);
-            }
-          } else {
-            setListenerError("تعذّر الاتصال بقاعدة البيانات");
+          setListenerError(getFirestoreListenerErrorMessage(error));
+          if (isFirestorePermissionDenied(error)) {
+            setAuthFailed(true);
+          }
+          if (process.env.NODE_ENV === "development") {
+            console.error("[AdminNewRequestNotifier] onSnapshot", error);
           }
         },
       );

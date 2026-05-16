@@ -11,6 +11,8 @@ import {
 import { SUPER_ADMIN_EXPORT_MAX_ROWS } from "@/lib/office-requests/export-limits";
 import { feedbackToast } from "@/lib/ui/feedback-toast";
 
+const EXPORT_FETCH_TIMEOUT_MS = 120_000;
+
 type SuperAdminExportLauncherProps = {
   /** لمستخدم السوبر أدمن: قائمة المكاتب في القائمة المنسدلة */
   offices?: Office[];
@@ -133,8 +135,16 @@ export function SuperAdminExportLauncher({
     const url = `/api/admin/requests/export${qs ? `?${qs}` : ""}`;
 
     setLoading(true);
+    const abortController = new AbortController();
+    const timeoutId = window.setTimeout(
+      () => abortController.abort(),
+      EXPORT_FETCH_TIMEOUT_MS,
+    );
     try {
-      const res = await fetch(url, { credentials: "include" });
+      const res = await fetch(url, {
+        credentials: "include",
+        signal: abortController.signal,
+      });
       if (res.status === 401) {
         const msg = "انتهت الجلسة أو غير مصرح. سجّل الدخول من جديد.";
         setError(msg);
@@ -157,8 +167,22 @@ export function SuperAdminExportLauncher({
         feedbackToast.error(msg);
         return;
       }
+      if (res.status === 503) {
+        const body = (await res.json().catch(() => null)) as { error?: string } | null;
+        const msg =
+          body?.error ??
+          "الخادم غير مهيأ للاتصال بقاعدة البيانات. راجع إعدادات Firebase.";
+        setError(msg);
+        feedbackToast.error(msg);
+        return;
+      }
       if (!res.ok) {
-        const msg = "تعذر إنشاء الملف. حاول مرة أخرى.";
+        const contentType = res.headers.get("Content-Type") ?? "";
+        const body =
+          contentType.includes("application/json")
+            ? ((await res.json().catch(() => null)) as { error?: string } | null)
+            : null;
+        const msg = body?.error ?? "تعذر إنشاء الملف. حاول مرة أخرى.";
         setError(msg);
         feedbackToast.error(msg);
         return;
@@ -207,11 +231,16 @@ export function SuperAdminExportLauncher({
         setExportSuccessNote(msg);
         feedbackToast.success(msg);
       }
-    } catch {
-      const msg = "تعذر تنزيل الملف. تحقق من الاتصال وحاول مرة أخرى.";
+    } catch (err) {
+      const aborted =
+        err instanceof DOMException && err.name === "AbortError";
+      const msg = aborted
+        ? "استغرق التصدير وقتاً طويلاً. ضيّق الفترة أو المكتب وحاول مرة أخرى."
+        : "تعذر تنزيل الملف. تحقق من الاتصال وحاول مرة أخرى.";
       setError(msg);
       feedbackToast.error(msg);
     } finally {
+      window.clearTimeout(timeoutId);
       setLoading(false);
     }
   }

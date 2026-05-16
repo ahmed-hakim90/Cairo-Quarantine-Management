@@ -7,9 +7,11 @@ import {
 } from "@/lib/cairo-today-ymd";
 import { checkRateLimit, rateLimitKeyFromHeaders } from "@/lib/rate-limit";
 import { officeAcceptsTravelerState } from "@/lib/office-requests/office-traveler-state";
+import { DUPLICATE_BOOKING_MESSAGE } from "@/lib/office-requests/booking-duplicate";
 import {
   countBookingRequestsForOfficeDay,
   createOfficeRequest,
+  findDuplicateBookingRequest,
   getBookingSettings,
   getOffice,
   listTravelerStatesForPublicBooking,
@@ -22,6 +24,7 @@ import type {
 export type BookingFormState = {
   ok: boolean;
   message: string;
+  duplicate?: boolean;
   errors?: Record<string, string>;
   values?: {
     officeId: string;
@@ -177,6 +180,24 @@ export async function submitOfficeRequest(
     };
   }
 
+  if (type === "booking" && preferredDate && travelerStateId) {
+    const duplicate = await findDuplicateBookingRequest({
+      officeId,
+      preferredDate,
+      travelerStateId,
+      name,
+      phone,
+    });
+    if (duplicate) {
+      return {
+        ok: false,
+        duplicate: true,
+        message: DUPLICATE_BOOKING_MESSAGE,
+        values,
+      };
+    }
+  }
+
   try {
     const stateLabel =
       type === "booking" && travelerStateId
@@ -203,12 +224,16 @@ export async function submitOfficeRequest(
       },
     };
   } catch (error) {
+    const message =
+      error instanceof Error
+        ? error.message
+        : "تعذر حفظ الطلب حالياً، حاول مرة أخرى.";
     return {
       ok: false,
-      message:
-        error instanceof Error
-          ? error.message
-          : "تعذر حفظ الطلب حالياً، حاول مرة أخرى.",
+      message,
+      ...(message === DUPLICATE_BOOKING_MESSAGE
+        ? { duplicate: true, values }
+        : {}),
     };
   }
 }

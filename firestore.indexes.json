@@ -47,6 +47,16 @@
       "queryScope": "COLLECTION",
       "fields": [
         { "fieldPath": "officeId", "order": "ASCENDING" },
+        { "fieldPath": "preferredDate", "order": "ASCENDING" },
+        { "fieldPath": "type", "order": "ASCENDING" },
+        { "fieldPath": "phone", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "requests",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "officeId", "order": "ASCENDING" },
         { "fieldPath": "createdAt", "order": "DESCENDING" }
       ]
     },

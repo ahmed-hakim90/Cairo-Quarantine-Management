@@ -305,6 +305,15 @@ export function BookingRequestForm({
           role="status"
         >
           {state.message}
+          {state.duplicate && !state.ok ? (
+            <LocaleLink
+              locale={locale}
+              href="/my-requests"
+              className="mt-3 inline-flex min-h-10 items-center rounded-md bg-gov-accent px-4 text-sm font-bold text-white transition hover:bg-gov-navy"
+            >
+              صفحة طلباتي
+            </LocaleLink>
+          ) : null}
           {state.ok && state.request ? (
             <div className="mt-3 rounded-md bg-white/70 p-3 text-gov-navy">
               <p>

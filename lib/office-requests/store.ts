@@ -50,6 +50,11 @@ import {
   adminCanAccessOffice,
   normalizeOfficeIds,
 } from "@/lib/office-requests/admin-access";
+import {
+  DUPLICATE_BOOKING_MESSAGE,
+  findMatchingDuplicateBooking,
+  type BookingDuplicateLookupInput,
+} from "@/lib/office-requests/booking-duplicate";
 import { isAdminVisibleBookingRequest } from "@/lib/office-requests/booking-visibility";
 import {
   VACCINES_BY_CATEGORY,
@@ -57,6 +62,12 @@ import {
   type VaccineRecord,
 } from "@/data/vaccines";
 import { SUPER_ADMIN_EXPORT_MAX_ROWS } from "@/lib/office-requests/export-limits";
+import {
+  isLastExportCursorPage,
+  maxExportScanPages,
+  shouldStopExportCursorPagination,
+  SUPER_ADMIN_EXPORT_PAGE_SIZE,
+} from "@/lib/office-requests/super-admin-export-pagination";
 
 export { SUPER_ADMIN_EXPORT_MAX_ROWS };
 
@@ -765,6 +776,22 @@ export async function countBookingRequestsForOfficeDay(
   return snap.size;
 }
 
+export async function findDuplicateBookingRequest(
+  input: BookingDuplicateLookupInput,
+): Promise<OfficeRequest | null> {
+  if (!isFirebaseAdminConfigured()) return null;
+  const phone = normalizePhone(input.phone);
+  const snap = await getAdminDb()
+    .collection(REQUESTS)
+    .where("officeId", "==", input.officeId)
+    .where("preferredDate", "==", input.preferredDate)
+    .where("type", "==", "booking")
+    .where("phone", "==", phone)
+    .get();
+  const candidates = snap.docs.map((doc) => requestFromDoc(doc.id, doc.data()));
+  return findMatchingDuplicateBooking(candidates, input) as OfficeRequest | null;
+}
+
 export async function createOfficeRequest(input: {
   officeId: string;
   type: OfficeRequestType;
@@ -803,6 +830,23 @@ export async function createOfficeRequest(input: {
           "لا يمكن الحجز في هذا اليوم؛ تم بلوغ العدد المسموح لهذا المكتب.",
         );
       }
+    }
+  }
+
+  if (
+    input.type === "booking" &&
+    input.preferredDate &&
+    input.travelerStateId?.trim()
+  ) {
+    const duplicate = await findDuplicateBookingRequest({
+      officeId: input.officeId,
+      preferredDate: input.preferredDate,
+      travelerStateId: input.travelerStateId.trim(),
+      name: input.name,
+      phone: input.phone,
+    });
+    if (duplicate) {
+      throw new Error(DUPLICATE_BOOKING_MESSAGE);
     }
   }
 
@@ -1192,7 +1236,7 @@ export async function listRequestsForSessionPage(args: {
   };
 }
 
-const EXPORT_PAGE_SIZE = 400;
+const EXPORT_PAGE_SIZE = SUPER_ADMIN_EXPORT_PAGE_SIZE;
 
 const ALL_REQUEST_TYPES: readonly OfficeRequestType[] = [
   "booking",
@@ -1270,6 +1314,8 @@ export async function listRequestsForSuperAdminExport(
   const collected: OfficeRequest[] = [];
   let lastDoc: FirebaseFirestore.QueryDocumentSnapshot | null = null;
   let capped = false;
+  let scanPages = 0;
+  const maxScanPages = maxExportScanPages(SUPER_ADMIN_EXPORT_MAX_ROWS, EXPORT_PAGE_SIZE);
 
   while (collected.length < SUPER_ADMIN_EXPORT_MAX_ROWS) {
     const scopedOfficeIds = normalizeOfficeIds(filters.officeIds ?? []);
@@ -1289,6 +1335,9 @@ export async function listRequestsForSuperAdminExport(
           )
         : [null];
 
+    const usesCursorPagination = officeBatches.length === 1;
+    let stopPagination = false;
+
     for (const officeBatch of officeBatches) {
       let q: FirebaseFirestore.Query = getAdminDb().collection(REQUESTS);
       if (officeBatch && officeBatch.length === 1) {
@@ -1303,12 +1352,23 @@ export async function listRequestsForSuperAdminExport(
         q = q.where("createdAt", "<=", filters.createdTo);
       }
       q = q.orderBy("createdAt", "desc").limit(EXPORT_PAGE_SIZE);
-      if (lastDoc && officeBatches.length === 1) {
+      if (lastDoc && usesCursorPagination) {
         q = q.startAfter(lastDoc);
       }
 
       const snap = await q.get();
-      if (snap.empty) continue;
+
+      if (
+        shouldStopExportCursorPagination({
+          usesCursorPagination,
+          snapEmpty: snap.empty,
+          snapSize: snap.size,
+          pageSize: EXPORT_PAGE_SIZE,
+        })
+      ) {
+        stopPagination = true;
+        break;
+      }
 
       for (const doc of snap.docs) {
         const request = requestFromDoc(doc.id, doc.data());
@@ -1321,8 +1381,11 @@ export async function listRequestsForSuperAdminExport(
         }
       }
 
-      if (officeBatches.length === 1) {
+      if (usesCursorPagination) {
         lastDoc = snap.docs[snap.docs.length - 1] ?? null;
+        if (isLastExportCursorPage(snap.size, EXPORT_PAGE_SIZE)) {
+          stopPagination = true;
+        }
       }
       if (capped) break;
     }
@@ -1330,8 +1393,11 @@ export async function listRequestsForSuperAdminExport(
       (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
     );
     if (officeBatches.length > 1) break;
+    if (stopPagination || capped) break;
     if (!lastDoc) break;
-    if (capped) break;
+
+    scanPages += 1;
+    if (scanPages >= maxScanPages) break;
   }
 
   return { requests: collected.slice(0, SUPER_ADMIN_EXPORT_MAX_ROWS), capped };
