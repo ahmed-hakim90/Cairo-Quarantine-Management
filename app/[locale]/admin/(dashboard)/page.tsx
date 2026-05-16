@@ -44,11 +44,10 @@ export default async function AdminOverviewPage({
   const isSuperAdmin = session.profile.role === "super_admin";
   const isOfficeAdmin = session.profile.role === "office_admin";
   const allOffices = await listOffices({ includeInactive: isSuperAdmin });
-  const offices = isOfficeAdmin
-    ? allOffices.filter((office) =>
-        adminAllowedOfficeIds(session.profile).includes(office.id),
-      )
-    : allOffices;
+  const allowedOfficeIds = adminAllowedOfficeIds(session.profile);
+  const offices = isSuperAdmin
+    ? allOffices
+    : allOffices.filter((office) => allowedOfficeIds.includes(office.id));
 
   const sp = (await searchParams) ?? {};
   const rawOfficeId = firstSearchParam(sp.officeId);
