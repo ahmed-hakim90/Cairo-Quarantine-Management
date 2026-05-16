@@ -93,6 +93,15 @@ const nextConfig: NextConfig = {
           },
         ],
       },
+      {
+        source: "/documents/:file*.pdf",
+        headers: [
+          {
+            key: "Content-Disposition",
+            value: "inline",
+          },
+        ],
+      },
     ];
   },
 };

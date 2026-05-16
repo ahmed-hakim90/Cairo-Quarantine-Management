@@ -1,3 +1,10 @@
+import type { HealthGuidesMessages } from "@/lib/i18n/health-guides-content";
+import {
+  healthGuidesAr,
+  healthGuidesEn,
+  healthGuidesZh,
+} from "@/lib/i18n/health-guides-content";
+
 export type Messages = {
   meta: { siteName: string; siteDescription: string };
   skipLink: string;
@@ -74,7 +81,9 @@ export type Messages = {
     heading: string;
     pdf: string;
     hajjInstructions: string;
+    mosquitoPrevention: string;
   };
+  healthGuides: HealthGuidesMessages;
   locations: {
     heading: string;
     introLead: string;
@@ -150,8 +159,6 @@ export type Messages = {
         locationsTitle: string;
         locationsBody: string;
       };
-      instructionsTitle: string;
-      instructions: [string, string, string];
       umrahPathTitle: string;
       umrahPathBody: string;
     };
@@ -281,9 +288,12 @@ const ar: Messages = {
   },
   importantLinks: {
     heading: "روابط مهمة",
-    pdf: "تحميل الدليل الصحي (PDF)",
+    pdf: "الدليل الصحي (PDF)",
     hajjInstructions: "تعليمات الحج والعمرة",
+    mosquitoPrevention:
+      "الوقاية من لدغات البعوض والأمراض المنقولة عن طريقها",
   },
+  healthGuides: healthGuidesAr,
   locations: {
     heading: "مراكز التطعيم المعتمدة",
     introLead: "قائمة مكاتب تطعيم المسافرين بالقاهرة لعام ٢٠٢٦ — خدمات",
@@ -368,12 +378,6 @@ const ar: Messages = {
       basicsTitle: "التطعيمات الأساسية",
       basicsBody:
         "يُطلب عادةً استكمال تطعيم التهاب السحايا وفق اللقاحات المعتمدة، مع الاحتفاظ بشهادة معتمدة تُعرض عند السفر. قد تُحدَّث القائمة وفق الموسم؛ يُرجى متابعة الإعلانات الرسمية.",
-      instructionsTitle: "تعليمات الحج والعمرة",
-      instructions: [
-        "احضر أصل شهادات التطعيم المعتمدة، وتأكد من مطابقة البيانات الشخصية لجميع الوثائق.",
-        "في حال ظهور أعراض تنفسية حادة، يُفضَّل تأجيل السفر والتواصل مع خط الإرشاد الطبي قبل الحضور إلى المركز.",
-        "احتفظ بنسخة إلكترونية من الوثائق الصحية وتجنّب ازدحام غير منظم داخل المراكز؛ إجراءات التنظيم تُعلَن رسمياً عبر القنوات المعتمدة.",
-      ],
       pricing: {
         sectionTitle: "التكلفة التوجيهية حسب نوع الرحلة",
         tripTypeLabel: "نوع الرحلة",
@@ -527,9 +531,12 @@ const en: Messages = {
   },
   importantLinks: {
     heading: "Important links",
-    pdf: "Download health guide (PDF)",
+    pdf: "Health guide (PDF)",
     hajjInstructions: "Hajj & Umrah instructions",
+    mosquitoPrevention:
+      "Mosquito bites & vector-borne disease prevention",
   },
+  healthGuides: healthGuidesEn,
   locations: {
     heading: "Approved vaccination centres",
     introLead:
@@ -617,12 +624,6 @@ const en: Messages = {
       basicsTitle: "Core vaccinations",
       basicsBody:
         "Meningitis vaccination is commonly required with an approved certificate for travel. The list may change by season — follow official announcements.",
-      instructionsTitle: "Hajj & Umrah instructions",
-      instructions: [
-        "Bring original approved vaccination certificates; personal details must match all documents.",
-        "If you have severe respiratory symptoms, postpone travel and contact medical guidance before visiting a centre.",
-        "Keep electronic copies of health documents and avoid unmanaged crowding; centre organisation is announced through official channels.",
-      ],
       pricing: {
         sectionTitle: "Indicative cost by trip type",
         tripTypeLabel: "Trip type",
@@ -770,9 +771,11 @@ const zh: Messages = {
   },
   importantLinks: {
     heading: "重要链接",
-    pdf: "下载健康指南（PDF）",
+    pdf: "健康指南（PDF）",
     hajjInstructions: "朝觐与副朝须知",
+    mosquitoPrevention: "蚊虫叮咬与媒介传播疾病预防",
   },
+  healthGuides: healthGuidesZh,
   locations: {
     heading: "授权接种中心",
     introLead: "开罗2026年旅客接种门诊列表 — 服务对象：",
@@ -855,12 +858,6 @@ const zh: Messages = {
       basicsTitle: "核心疫苗",
       basicsBody:
         "通常须按规定完成脑膜炎球菌等获批疫苗接种并持有旅行用接种证明。清单可能随季节调整，请以官方公告为准。",
-      instructionsTitle: "朝觐与副朝须知",
-      instructions: [
-        "携带接种证明原件；个人信息须与各文件一致。",
-        "若有严重呼吸道症状，建议暂缓出行并于到访中心前咨询医疗指引。",
-        "保存健康文件电子版，避免无序聚集；现场安排以官方渠道发布为准。",
-      ],
       pricing: {
         sectionTitle: "按行程类型的参考费用",
         tripTypeLabel: "行程类型",

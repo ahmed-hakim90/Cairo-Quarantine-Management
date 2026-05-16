@@ -1,3 +1,4 @@
+import { HajjVaccinationGuide } from "@/components/health-guide/HajjVaccinationGuide";
 import { HajjUmrahTripPricing } from "@/components/hajj/HajjUmrahTripPricing";
 import { HajjTravelerOfficesTable } from "@/components/hajj/HajjTravelerOfficesTable";
 import { VaccineSelector } from "@/components/home/VaccineSelector";
@@ -35,6 +36,9 @@ export default async function HajjUmrahPage({
     <>
       <ScrollReveal initialVisible>
         <PageHeading title={p.heading} description={p.description} />
+      </ScrollReveal>
+      <ScrollReveal initialVisible>
+        <HajjVaccinationGuide content={m.healthGuides.vaccination} />
       </ScrollReveal>
       <ScrollReveal>
         <section
@@ -100,25 +104,6 @@ export default async function HajjUmrahPage({
       </ScrollReveal>
       <ScrollReveal>
         <HajjTravelerOfficesTable content={m.hajjTable} />
-      </ScrollReveal>
-      <ScrollReveal>
-        <section
-          id="instructions"
-          className="mx-auto max-w-6xl px-4 py-14"
-          aria-labelledby="hajj-instructions-heading"
-        >
-          <h2
-            id="hajj-instructions-heading"
-            className="font-heading text-2xl font-bold text-gov-navy"
-          >
-            {p.instructionsTitle}
-          </h2>
-          <div className="mt-6 space-y-4 leading-relaxed text-gov-gray-700">
-            {p.instructions.map((paragraph) => (
-              <p key={paragraph}>{paragraph}</p>
-            ))}
-          </div>
-        </section>
       </ScrollReveal>
     </>
   );

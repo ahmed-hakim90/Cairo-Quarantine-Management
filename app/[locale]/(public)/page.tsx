@@ -1,3 +1,4 @@
+import { GeneralHealthTipsGrid } from "@/components/health-guide/GeneralHealthTipsGrid";
 import { HajjTravelerOfficesTable } from "@/components/hajj/HajjTravelerOfficesTable";
 import { HeroSection } from "@/components/home/HeroSection";
 import { ImportantLinks } from "@/components/home/ImportantLinks";
@@ -28,6 +29,9 @@ export default async function HomePage({
         <ServiceCards locale={locale} content={m.services} />
       </ScrollReveal>
       <ScrollReveal>
+        <GeneralHealthTipsGrid content={m.healthGuides.generalTips} />
+      </ScrollReveal>
+      <ScrollReveal>
         <TravelerStatsSection
           locale={locale}
           content={m.travelerStats}
@@ -50,7 +54,7 @@ export default async function HomePage({
         />
       </ScrollReveal>
       <ScrollReveal>
-        <ImportantLinks content={m.importantLinks} />
+        <ImportantLinks locale={locale} content={m.importantLinks} />
       </ScrollReveal>
       <ScrollReveal>
         <HajjTravelerOfficesTable content={m.hajjTable} />
