@@ -1,3 +1,4 @@
+import { HashAnchorScroll } from "@/components/navigation/HashAnchorScroll";
 import { FloatingTextToSpeechButton } from "@/components/layout/FloatingTextToSpeechButton";
 import { FloatingVaccinationBookingButton } from "@/components/layout/FloatingVaccinationBookingButton";
 import { FloatingWhatsAppButton } from "@/components/layout/FloatingWhatsAppButton";
@@ -31,6 +32,7 @@ export default async function PublicLayout({
       </a>
       <SiteHeader locale={locale} messages={messages} />
       <main id="main-content" className="flex-1">
+        <HashAnchorScroll />
         {children}
       </main>
       <SiteFooter messages={messages} />

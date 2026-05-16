@@ -6,7 +6,7 @@ type LocaleLinkProps = Omit<React.ComponentProps<typeof Link>, "href"> & {
   href: string;
 };
 
-export function LocaleLink({ locale, href, ...rest }: LocaleLinkProps) {
+export function LocaleLink({ locale, href, scroll, ...rest }: LocaleLinkProps) {
   const localized =
     href.startsWith("http://") ||
     href.startsWith("https://") ||
@@ -14,5 +14,13 @@ export function LocaleLink({ locale, href, ...rest }: LocaleLinkProps) {
       ? href
       : `/${locale}${href.startsWith("/") ? href : `/${href}`}`;
 
-  return <Link href={localized} {...rest} />;
+  const hasHash = href.includes("#");
+
+  return (
+    <Link
+      href={localized}
+      scroll={scroll ?? (hasHash ? false : undefined)}
+      {...rest}
+    />
+  );
 }
