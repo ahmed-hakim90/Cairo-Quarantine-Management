@@ -1,10 +1,13 @@
 import { Suspense } from "react";
 import { notFound, redirect } from "next/navigation";
 import { AdminAnalyticsCharts } from "@/components/admin/AdminAnalyticsCharts";
+import { AdminDashboardPeriodFilter } from "@/components/admin/AdminDashboardPeriodFilter";
 import { AdminStatCard } from "@/components/admin/AdminStatCard";
 import { SuperAdminDashboardOfficeFilter } from "@/components/admin/SuperAdminDashboardOfficeFilter";
 import { SuperAdminExportLauncher } from "@/components/admin/SuperAdminExportLauncher";
+import { getCairoTodayYmd } from "@/lib/cairo-today-ymd";
 import { isLocale } from "@/lib/i18n/config";
+import { parseAdminBookingDateParams } from "@/lib/office-requests/admin-booking-date-range";
 import {
   buildAdminRequestAnalytics,
   buildOfficePerformanceRatings,
@@ -65,12 +68,34 @@ export default async function AdminOverviewPage({
     }
   }
 
+  const dateParams = parseAdminBookingDateParams({
+    rawRange: firstSearchParam(sp.range),
+    rawFrom: firstSearchParam(sp.from),
+    rawTo: firstSearchParam(sp.to),
+  });
+  if (dateParams.invalid) {
+    const u = new URLSearchParams();
+    if (selectedOfficeId) u.set("officeId", selectedOfficeId);
+    const qs = u.toString();
+    redirect(qs ? `/${locale}/admin?${qs}` : `/${locale}/admin`);
+  }
+
+  const bookingDateRange = dateParams.bookingDateRange;
+  const applyBookingDateFilter = bookingDateRange != null;
+
   const [requests, travelerStates] = await Promise.all([
     listRequestsForSession({
       role: session.profile.role,
       officeId: session.profile.officeId,
       allowedOfficeIds: session.profile.allowedOfficeIds,
       ...(officeFilter ? { officeFilter } : {}),
+      ...(applyBookingDateFilter
+        ? {
+            adminBookingTodayYmd: getCairoTodayYmd(),
+            bookingDateFrom: bookingDateRange.fromYmd,
+            bookingDateTo: bookingDateRange.toYmd,
+          }
+        : {}),
     }),
     listTravelerStates({ includeInactive: true }),
   ]);
@@ -141,6 +166,24 @@ export default async function AdminOverviewPage({
             ) : null}
           </div>
         </div>
+        <Suspense
+          fallback={
+            <div
+              className="mt-4 border-t border-gov-gray-100 pt-4"
+              aria-hidden
+            >
+              <div className="mb-2 h-3 w-40 rounded bg-gov-gray-100 animate-pulse" />
+              <div className="h-10 w-full max-w-md rounded-md bg-gov-gray-100 animate-pulse" />
+            </div>
+          }
+        >
+          <AdminDashboardPeriodFilter
+            locale={locale}
+            dateRange={dateParams.dateRange}
+            customDateFrom={dateParams.customDateFrom}
+            customDateTo={dateParams.customDateTo}
+          />
+        </Suspense>
       </div>
 
       <div className="grid gap-4 py-6 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7">

@@ -15,6 +15,12 @@ import {
   type AdminRequestsStatusFilter,
 } from "@/lib/office-requests/requests-list-params";
 import {
+  dateInputClass,
+  segmentClass,
+  SEGMENT_TRAY,
+} from "@/components/admin/admin-filter-segments";
+import type { AdminBookingDateRange } from "@/lib/office-requests/admin-booking-date-range";
+import {
   REQUEST_STATUS_LABELS,
   REQUEST_TYPE_LABELS,
   type AdminActivityLogEntry,
@@ -23,11 +29,7 @@ import {
   type TravelerState,
 } from "@/lib/office-requests/types";
 
-export type AdminRequestsDateRange =
-  | "all"
-  | "today"
-  | "yesterday"
-  | "today_yesterday";
+export type AdminRequestsDateRange = AdminBookingDateRange;
 
 type RequestTypeFilter = "all" | "booking" | "complaint";
 
@@ -53,21 +55,6 @@ const SORT_OPTIONS: { value: AdminRequestsSort; label: string }[] = [
   { value: "updated_desc", label: "الأحدث تحديثًا" },
   { value: "updated_asc", label: "الأقدم تحديثًا" },
 ];
-
-const SEGMENT_TRAY =
-  "flex min-w-0 flex-wrap justify-start gap-1 rounded-md bg-gov-gray-100 p-1";
-
-const segmentClass = (active: boolean) =>
-  [
-    "inline-flex min-h-9 shrink-0 items-center justify-center rounded-md px-3 py-1.5 text-center text-xs font-extrabold transition",
-    "focus:outline-none focus-visible:ring-2 focus-visible:ring-gov-accent/40 focus-visible:ring-offset-1 focus-visible:ring-offset-gov-gray-100",
-    active
-      ? "bg-white text-gov-navy shadow-sm"
-      : "text-gov-gray-600 hover:text-gov-navy",
-  ].join(" ");
-
-const dateInputClass =
-  "min-h-9 w-full min-w-0 rounded-md border border-gov-gray-200 bg-white px-2 text-xs font-bold text-gov-navy outline-none transition focus:border-gov-accent focus:ring-2 focus:ring-gov-accent/20 sm:w-32 sm:shrink-0";
 
 const filterSelectClass =
   "min-h-9 w-full min-w-0 rounded-md border border-gov-gray-200 bg-white px-2 text-xs font-bold text-gov-navy outline-none transition focus:border-gov-accent focus:ring-2 focus:ring-gov-accent/20 sm:min-w-[8.5rem] sm:shrink-0";

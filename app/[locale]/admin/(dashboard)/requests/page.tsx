@@ -1,10 +1,10 @@
 import { notFound, redirect } from "next/navigation";
 import { AdminRequestsTable } from "@/components/admin/AdminRequestsTable";
 import { SuperAdminExportLauncher } from "@/components/admin/SuperAdminExportLauncher";
-import { getCairoTodayYmd, getCairoYesterdayYmd } from "@/lib/cairo-today-ymd";
+import { getCairoTodayYmd } from "@/lib/cairo-today-ymd";
 import { isLocale } from "@/lib/i18n/config";
 import { adminAllowedOfficeIds } from "@/lib/office-requests/admin-access";
-import { parseExportCreatedBounds } from "@/lib/office-requests/export-date-bounds";
+import { parseAdminBookingDateParams } from "@/lib/office-requests/admin-booking-date-range";
 import {
   parseAdminRequestsSort,
   parseAdminRequestsStatus,
@@ -21,62 +21,12 @@ import type { AdminRequestsDateRange } from "@/components/admin/AdminRequestsTab
 
 export const dynamic = "force-dynamic";
 
-const REQUEST_DATE_RANGES = new Set<string>([
-  "all",
-  "today",
-  "yesterday",
-  "today_yesterday",
-]);
-
 function firstSearchParam(
   value: string | string[] | undefined,
 ): string | undefined {
   if (typeof value === "string") return value.trim() || undefined;
   const first = value?.[0];
   return typeof first === "string" ? first.trim() || undefined : undefined;
-}
-
-function resolveBookingDateRange(
-  dateRange: AdminRequestsDateRange,
-): { fromYmd: string; toYmd: string } | null {
-  if (dateRange === "all") return null;
-
-  const todayYmd = getCairoTodayYmd();
-  const yesterdayYmd = getCairoYesterdayYmd();
-  let fromYmd: string;
-  let toYmd: string;
-  if (dateRange === "today") {
-    fromYmd = todayYmd;
-    toYmd = todayYmd;
-  } else if (dateRange === "yesterday") {
-    fromYmd = yesterdayYmd;
-    toYmd = yesterdayYmd;
-  } else {
-    fromYmd = yesterdayYmd;
-    toYmd = todayYmd;
-  }
-
-  return { fromYmd, toYmd };
-}
-
-function resolveCustomBookingDateRange(
-  fromRaw: string | undefined,
-  toRaw: string | undefined,
-): {
-  fromYmd: string;
-  toYmd: string;
-} | null {
-  const from = fromRaw?.trim() || undefined;
-  const to = toRaw?.trim() || undefined;
-  if (!from && !to) return null;
-
-  const fromYmd = from ?? to;
-  const toYmd = to ?? from;
-  if (!fromYmd || !toYmd) return null;
-
-  const parsed = parseExportCreatedBounds(fromYmd, toYmd);
-  if ("error" in parsed) return null;
-  return { fromYmd, toYmd };
 }
 
 export default async function AdminRequestsPage({
@@ -96,28 +46,20 @@ export default async function AdminRequestsPage({
   const isOfficeAdmin = session.profile.role === "office_admin";
 
   const sp = (await searchParams) ?? {};
-  const rawFrom = firstSearchParam(sp.from);
-  const rawTo = firstSearchParam(sp.to);
-  const hasCustomRange = Boolean(rawFrom || rawTo);
-  const customRange = resolveCustomBookingDateRange(rawFrom, rawTo);
-  if (hasCustomRange && !customRange) {
+  const dateParams = parseAdminBookingDateParams({
+    rawRange: firstSearchParam(sp.range),
+    rawFrom: firstSearchParam(sp.from),
+    rawTo: firstSearchParam(sp.to),
+  });
+  if (dateParams.invalid) {
     redirect(`/${locale}/admin/requests`);
   }
 
-  const rawRange = firstSearchParam(sp.range);
   const cursor = firstSearchParam(sp.cursor);
   const statusFilter = parseAdminRequestsStatus(firstSearchParam(sp.status));
   const sort = parseAdminRequestsSort(firstSearchParam(sp.sort));
-  const dateRange: AdminRequestsDateRange =
-    !hasCustomRange && rawRange && REQUEST_DATE_RANGES.has(rawRange)
-      ? (rawRange as AdminRequestsDateRange)
-      : "all";
-
-  const quickRange = resolveBookingDateRange(dateRange);
-  const bookingDateRange = customRange ?? quickRange;
-  if (dateRange !== "all" && !bookingDateRange) {
-    redirect(`/${locale}/admin/requests`);
-  }
+  const dateRange = dateParams.dateRange as AdminRequestsDateRange;
+  const bookingDateRange = dateParams.bookingDateRange;
 
   const { sortKey, sortDirection } = sortToFirestore(sort);
   const todayYmd = getCairoTodayYmd();
@@ -201,8 +143,8 @@ export default async function AdminRequestsPage({
         statusFilter={statusFilter}
         sort={sort}
         dateRange={dateRange}
-        customDateFrom={customRange?.fromYmd}
-        customDateTo={customRange?.toYmd}
+        customDateFrom={dateParams.customDateFrom}
+        customDateTo={dateParams.customDateTo}
         latestActivityByRequestId={latestActivityByRequestId}
         nextCursor={requestPage.nextCursor}
       />
