@@ -6,13 +6,8 @@ import type { Locale } from "@/lib/i18n/config";
 import { queueCitizenCopy } from "@/lib/i18n/queue-citizen-copy";
 import type { QueuePositionPublic, QueueTicket } from "@/lib/queue/types";
 import {
-  queueAheadDetail,
-  queueAheadHeadline,
   queueNotifyFiveAhead,
   queueNotifyYourTurn,
-  queuePositionLoadingMessage,
-  queueYourTurnHeadline,
-  queueYourTurnSubline,
 } from "@/lib/queue/queue-messages";
 import {
   isQueueNotifySupported,
@@ -36,6 +31,13 @@ type QueueWaitLiveProps = {
   iosHelp: string;
 };
 
+function formatAheadLine(locale: Locale, aheadCount: number): string {
+  const copy = queueCitizenCopy[locale];
+  if (aheadCount <= 0) return copy.yourTurnNow;
+  if (aheadCount === 1) return copy.aheadYouOne;
+  return copy.aheadYouMany.replace("{count}", String(aheadCount));
+}
+
 export function QueueWaitLive({
   locale,
   ticket,
@@ -46,6 +48,7 @@ export function QueueWaitLive({
   const t = queueCitizenCopy[locale];
   const [position, setPosition] = useState<QueuePositionPublic | null>(null);
   const [loading, setLoading] = useState(true);
+  const [positionError, setPositionError] = useState(false);
   const [notifyState, setNotifyState] = useState<
     "idle" | "pending" | "enabled" | "denied" | "unsupported"
   >(() =>
@@ -91,7 +94,19 @@ export function QueueWaitLive({
     }
     prevAheadRef.current = next.aheadCount;
     setPosition(next);
+    setPositionError(false);
   }, []);
+
+  const pollPosition = useCallback(async () => {
+    const next = await fetchPosition();
+    if (!next) {
+      setPositionError(true);
+      setLoading(false);
+      return;
+    }
+    applyPosition(next);
+    setLoading(false);
+  }, [applyPosition, fetchPosition]);
 
   useEffect(() => {
     saveQueueTicketId(ticket.id);
@@ -101,10 +116,8 @@ export function QueueWaitLive({
     let cancelled = false;
 
     async function poll() {
-      const next = await fetchPosition();
-      if (cancelled || !next) return;
-      applyPosition(next);
-      setLoading(false);
+      if (cancelled) return;
+      await pollPosition();
     }
 
     void poll();
@@ -113,7 +126,7 @@ export function QueueWaitLive({
       cancelled = true;
       window.clearInterval(id);
     };
-  }, [applyPosition, fetchPosition]);
+  }, [pollPosition]);
 
   async function enableNotifications() {
     if (!isQueueNotifySupported()) {
@@ -126,9 +139,7 @@ export function QueueWaitLive({
       const token = await obtainQueueFcmToken();
       if (!token) {
         setNotifyState("denied");
-        setNotifyError(
-          "لم يُفعَّل الإشعار. على iPhone ثبّت الموقع كتطبيق (PWA) ثم اسمح بالإشعارات من الإعدادات.",
-        );
+        setNotifyError(t.notifyDenied);
         return;
       }
       const ok = await registerQueueWatchOnServer({
@@ -137,13 +148,15 @@ export function QueueWaitLive({
       });
       if (!ok) {
         setNotifyState("denied");
-        setNotifyError("تعذر تسجيل التنبيه على الخادم.");
+        setNotifyError(t.notifyServerError);
         return;
       }
       setNotifyState("enabled");
     } catch (e) {
       setNotifyState("denied");
-      setNotifyError(e instanceof Error ? e.message : "تعذر تفعيل التنبيهات.");
+      setNotifyError(
+        e instanceof Error ? e.message : t.notifyServerError,
+      );
     }
   }
 
@@ -160,17 +173,11 @@ export function QueueWaitLive({
 
   const aheadCount = position?.aheadCount ?? null;
   const waitingInLine =
-    position?.status === "waiting" && !position.queueClosed;
-  const headline =
-    waitingInLine && aheadCount !== null && aheadCount > 0
-      ? queueAheadHeadline(aheadCount)
-      : null;
-  const detail =
-    waitingInLine && aheadCount !== null && aheadCount > 0
-      ? queueAheadDetail(aheadCount)
-      : null;
-  const isYourTurn =
-    waitingInLine && aheadCount === 0 && !loading;
+    position?.status === "waiting" && !position?.queueClosed;
+  const showAheadBlock =
+    !loading && !positionError && waitingInLine && aheadCount !== null;
+  const showTurnNow = showAheadBlock && aheadCount === 0;
+  const showAheadCount = showAheadBlock && aheadCount !== null && aheadCount > 0;
 
   return (
     <div className="mx-auto max-w-md space-y-4">
@@ -183,55 +190,54 @@ export function QueueWaitLive({
         iosHelp={iosHelp}
       />
       <div className="rounded-xl border border-gov-gray-200 bg-white p-6 text-center shadow-sm">
-        <p className="text-xs font-bold uppercase tracking-wide text-gov-gray-600">
-          {t.queueNumberHeading}
-        </p>
-        <p className="mt-2 font-heading text-6xl font-extrabold text-gov-accent">
-          {ticket.queueNumber}
-        </p>
+          <p className="text-xs font-bold uppercase tracking-wide text-gov-gray-600">
+            {t.queueNumberHeading}
+          </p>
+          <p className="mt-2 font-heading text-6xl font-extrabold text-gov-accent">
+            {ticket.queueNumber}
+          </p>
 
-        {headline ? (
-          <p className="mt-4 text-2xl font-extrabold text-gov-navy">{headline}</p>
-        ) : null}
+          <div className="mt-5 border-t border-gov-gray-100 pt-5">
+              <p className="text-xs font-bold uppercase tracking-wide text-gov-gray-600">
+                {t.aheadInQueue}
+              </p>
 
-        {isYourTurn ? (
-          <div className="mt-4 space-y-1">
-            <p className="text-2xl font-extrabold text-emerald-800">
-              {queueYourTurnHeadline()}
-            </p>
-            <p className="text-sm font-semibold text-gov-gray-700">
-              {queueYourTurnSubline()}
-            </p>
+              {loading ? (
+                <p className="mt-3 text-sm font-semibold text-gov-gray-600">
+                  {t.updatingPosition}
+                </p>
+              ) : positionError ? (
+                <p className="mt-3 text-sm font-semibold text-red-800">
+                  {t.positionError}
+                </p>
+              ) : showTurnNow ? (
+                <p className="mt-3 text-2xl font-extrabold text-emerald-800">
+                  {t.yourTurnNow}
+                </p>
+              ) : showAheadCount && aheadCount !== null ? (
+                <p className="mt-3 text-2xl font-extrabold leading-snug text-gov-navy">
+                  {formatAheadLine(locale, aheadCount)}
+                </p>
+              ) : position?.message ? (
+                <p className="mt-3 text-sm font-semibold text-gov-gray-700">
+                  {position.message}
+                </p>
+              ) : null}
           </div>
-        ) : null}
 
-        {loading ? (
-          <p className="mt-3 text-sm text-gov-gray-600">
-            {queuePositionLoadingMessage()}
-          </p>
-        ) : detail ? (
-          <p className="mt-3 text-sm font-semibold text-gov-gray-700">{detail}</p>
-        ) : !isYourTurn && position?.message ? (
-          <p className="mt-3 text-sm font-semibold text-gov-gray-700">
-            {position.message}
-          </p>
-        ) : null}
-
-        <dl className="mt-6 grid gap-2 text-sm text-start">
-          {citizenName ? (
-            <Row label={t.nameLabel} value={citizenName} />
-          ) : null}
-          <Row label={t.requestNumberLabel} value={ticket.requestNumber} />
-          <Row label={t.officeLabel} value={officeNameAr} />
-          <Row label={t.queueDateLabel} value={ticket.queueDate} />
-        </dl>
+          <dl className="mt-6 grid gap-2 text-sm text-start">
+            {citizenName ? (
+              <Row label={t.nameLabel} value={citizenName} />
+            ) : null}
+            <Row label={t.requestNumberLabel} value={ticket.requestNumber} />
+            <Row label={t.officeLabel} value={officeNameAr} />
+            <Row label={t.queueDateLabel} value={ticket.queueDate} />
+          </dl>
       </div>
 
       <div className="rounded-lg border border-gov-gray-200 bg-gov-gray-50/80 p-4 text-sm text-gov-gray-700">
         <p className="font-bold text-gov-navy">{t.notifyTitle}</p>
-        <p className="mt-1 leading-relaxed">
-          {t.notifyBody}
-        </p>
+        <p className="mt-1 leading-relaxed">{t.notifyBody}</p>
         {notifyState === "enabled" ? (
           <p className="mt-2 font-semibold text-emerald-800">{t.notifyEnabled}</p>
         ) : notifyState === "unsupported" ? (

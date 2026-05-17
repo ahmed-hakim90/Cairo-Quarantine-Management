@@ -177,6 +177,39 @@ async function appendActivityLog(payload: {
   }
 }
 
+const QUEUE_SYSTEM_ACTOR: AdminActivityActor = {
+  uid: "queue",
+  label: "طابور المكتب",
+};
+
+/** Activity log when queue check-in / completion changes request status. */
+export async function recordQueueRequestStatusFromQueue(args: {
+  requestId: string;
+  officeId: string;
+  prevStatus: OfficeRequestStatus;
+  nextStatus: OfficeRequestStatus;
+  phase: "checked_in" | "completed";
+}): Promise<void> {
+  const summaryAr =
+    args.phase === "checked_in"
+      ? `تسجيل حضور — الحالة «${REQUEST_STATUS_LABELS[args.prevStatus]}» → «${REQUEST_STATUS_LABELS[args.nextStatus]}»`
+      : `إتمام من المكتب — الحالة «${REQUEST_STATUS_LABELS[args.prevStatus]}» → «${REQUEST_STATUS_LABELS[args.nextStatus]}»`;
+
+  await appendActivityLog({
+    actor: QUEUE_SYSTEM_ACTOR,
+    action: "request.updated",
+    summaryAr,
+    officeId: args.officeId,
+    requestId: args.requestId,
+    meta: {
+      source: "queue",
+      phase: args.phase,
+      prevStatus: args.prevStatus,
+      nextStatus: args.nextStatus,
+    },
+  });
+}
+
 function publicRequestStatus(
   request: OfficeRequest,
   options?: { includePassToken?: boolean },

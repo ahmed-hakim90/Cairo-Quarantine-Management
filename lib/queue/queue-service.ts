@@ -2,7 +2,12 @@ import { FieldValue, Timestamp } from "firebase-admin/firestore";
 import { getAdminDb, isFirebaseAdminConfigured } from "@/lib/firebase/admin";
 import { getCairoTodayYmd } from "@/lib/cairo-today-ymd";
 import { phoneLookupVariants } from "@/lib/office-requests/whatsapp-message";
-import { createOfficeRequest, getOffice } from "@/lib/office-requests/store";
+import {
+  createOfficeRequest,
+  getOffice,
+  recordQueueRequestStatusFromQueue,
+} from "@/lib/office-requests/store";
+import { syncRequestStatusInTransaction } from "@/lib/queue/request-status-sync";
 import type { OfficeRequest } from "@/lib/office-requests/types";
 import {
   dailyStatsCreatePayload,
@@ -19,6 +24,7 @@ import {
   shouldIncrementTotalCompleted,
   shouldSkipNewTicket,
 } from "@/lib/queue/queue-logic";
+import { getTicketForWatch } from "@/lib/queue/queue-position";
 import type {
   DailyStats,
   QueueCreatedFrom,
@@ -334,9 +340,19 @@ export async function createQueueTicket(args: {
     .doc(queueTicketId({ requestId: args.requestId, officeId: args.officeId, queueDate }));
   const statsRef = db.collection(DAILY_STATS).doc(dailyStatsId(queueDate, args.officeId));
 
+  let statusSync: Awaited<ReturnType<typeof syncRequestStatusInTransaction>> | null =
+    null;
+
   await db.runTransaction(async (tx) => {
     const existing = await tx.get(ticketRef);
-    if (shouldSkipNewTicket(existing.exists)) return;
+    if (shouldSkipNewTicket(existing.exists)) {
+      statusSync = await syncRequestStatusInTransaction(
+        tx,
+        args.requestId,
+        "checked_in",
+      );
+      return;
+    }
 
     const statsSnap = await tx.get(statsRef);
     const stats = statsSnap.exists
@@ -374,7 +390,22 @@ export async function createQueueTicket(args: {
       },
       { merge: true },
     );
+    statusSync = await syncRequestStatusInTransaction(
+      tx,
+      args.requestId,
+      "checked_in",
+    );
   });
+
+  if (statusSync?.changed && statusSync.prevStatus && statusSync.nextStatus) {
+    void recordQueueRequestStatusFromQueue({
+      requestId: statusSync.requestId,
+      officeId: statusSync.officeId ?? args.officeId,
+      prevStatus: statusSync.prevStatus,
+      nextStatus: statusSync.nextStatus,
+      phase: "checked_in",
+    }).catch(() => undefined);
+  }
 
   const saved = await ticketRef.get();
   return ticketFromDoc(saved.id, saved.data() ?? {});
@@ -415,17 +446,51 @@ export async function createQuickRequestAndQueue(args: {
   return { request, ticket };
 }
 
+export async function restoreOfficeCheckinByTicketId(
+  officeId: string,
+  ticketId: string,
+): Promise<{ ticket: QueueTicket; request: OfficeRequest } | null> {
+  if (!isFirebaseAdminConfigured()) return null;
+  const id = ticketId.trim();
+  if (!id) return null;
+
+  const ticket = await getTicketForWatch(id);
+  if (!ticket || ticket.officeId !== officeId) return null;
+  if (ticket.queueDate !== getTodayKey()) return null;
+
+  const requestSnap = await getAdminDb()
+    .collection(REQUESTS)
+    .doc(ticket.requestId)
+    .get();
+  if (!requestSnap.exists) return null;
+
+  return {
+    ticket,
+    request: requestFromDoc(requestSnap.id, requestSnap.data() ?? {}),
+  };
+}
+
 export async function completeQueueTicket(ticketId: string): Promise<QueueTicket> {
   if (!isFirebaseAdminConfigured()) {
     throw new Error("Firebase غير مضبوط حالياً، لا يمكن تحديث الطابور.");
   }
   const db = getAdminDb();
   const ticketRef = db.collection(TODAY_QUEUE).doc(ticketId);
+  let statusSync: Awaited<ReturnType<typeof syncRequestStatusInTransaction>> | null =
+    null;
+
   await db.runTransaction(async (tx) => {
     const ticketSnap = await tx.get(ticketRef);
     if (!ticketSnap.exists) throw new Error("رقم الدور غير موجود.");
     const ticket = ticketFromDoc(ticketSnap.id, ticketSnap.data() ?? {});
-    if (!shouldIncrementTotalCompleted(ticket.status)) return;
+    if (!shouldIncrementTotalCompleted(ticket.status)) {
+      statusSync = await syncRequestStatusInTransaction(
+        tx,
+        ticket.requestId,
+        "completed",
+      );
+      return;
+    }
     const statsRef = db
       .collection(DAILY_STATS)
       .doc(dailyStatsId(ticket.queueDate, ticket.officeId));
@@ -445,7 +510,22 @@ export async function completeQueueTicket(ticketId: string): Promise<QueueTicket
       },
       { merge: true },
     );
+    statusSync = await syncRequestStatusInTransaction(
+      tx,
+      ticket.requestId,
+      "completed",
+    );
   });
+
+  if (statusSync?.changed && statusSync.prevStatus && statusSync.nextStatus) {
+    void recordQueueRequestStatusFromQueue({
+      requestId: statusSync.requestId,
+      officeId: statusSync.officeId ?? "",
+      prevStatus: statusSync.prevStatus,
+      nextStatus: statusSync.nextStatus,
+      phase: "completed",
+    }).catch(() => undefined);
+  }
   const saved = await ticketRef.get();
   const completed = ticketFromDoc(saved.id, saved.data() ?? {});
   void import("@/lib/queue/queue-notify")

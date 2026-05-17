@@ -7,6 +7,7 @@ import {
   createQueueTicket,
   findRequestByNumberOrPhone,
   getTodayKey,
+  restoreOfficeCheckinByTicketId,
 } from "@/lib/queue/queue-service";
 import { getOfficeTravelerStateIds } from "@/lib/office-requests/office-traveler-state";
 import { listTravelerStatesForPublicBooking } from "@/lib/office-requests/store";
@@ -23,6 +24,7 @@ export type CheckinState =
       requestId?: string;
       officeNameAr?: string;
       preferredDate?: string;
+      lookup?: string;
     }
   | {
       ok: false;
@@ -86,11 +88,37 @@ export async function checkinLookupAction(
         date,
       }));
 
-    return successFromRequest(request, ticket);
+    return { ...successFromRequest(request, ticket), lookup };
   } catch (e) {
     return {
       ok: false,
       error: e instanceof Error ? e.message : "تعذر تسجيل الحضور.",
+    };
+  }
+}
+
+export async function checkinRestoreAction(
+  officeId: string,
+  ticketId: string,
+): Promise<CheckinState> {
+  if (!officeId.trim() || !ticketId.trim()) {
+    return { ok: false };
+  }
+
+  try {
+    await assertActiveOffice(officeId);
+    const restored = await restoreOfficeCheckinByTicketId(officeId, ticketId);
+    if (!restored) {
+      return {
+        ok: false,
+        error: "لم يُعثر على دورك لهذا اليوم. سجّل حضورك من جديد.",
+      };
+    }
+    return successFromRequest(restored.request, restored.ticket);
+  } catch (e) {
+    return {
+      ok: false,
+      error: e instanceof Error ? e.message : "تعذر استعادة جلسة الحضور.",
     };
   }
 }
@@ -129,7 +157,7 @@ export async function checkinQuickAction(
       hasSpecialNeeds,
       details,
     });
-    return successFromRequest(request, ticket);
+    return { ...successFromRequest(request, ticket), lookup: phone };
   } catch (e) {
     return {
       ok: false,
