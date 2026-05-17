@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { QueueCompleteTicketForm } from "@/components/queue/QueueCompleteTicketForm";
 import type { QueueCreatedFrom, QueueTicketWithRequest } from "@/lib/queue/types";
 import {
   REQUEST_STATUS_LABELS,
@@ -116,28 +116,14 @@ export function QueueTicketSearchResult({
           </div>
         ) : null}
 
-        {request?.id ? (
-          <Link
-            href={`/${locale}/admin/requests/${request.id}`}
-            className="inline-flex min-h-10 items-center rounded-md border border-gov-gray-200 bg-white px-4 text-sm font-bold text-gov-navy shadow-sm transition hover:border-gov-accent hover:text-gov-accent"
-          >
-            فتح صفحة الطلب الكاملة
-          </Link>
-        ) : null}
-
         {ticket.status === "waiting" ? (
-          <form action={completeAction}>
-            <input type="hidden" name="locale" value={locale} />
-            <input type="hidden" name="ticketId" value={ticket.id} />
-            <input type="hidden" name="officeId" value={officeId} />
-            <button
-              type="submit"
-              disabled={completePending}
-              className="w-full rounded-md bg-emerald-700 px-4 py-3 text-sm font-bold text-white hover:bg-emerald-800 disabled:opacity-60"
-            >
-              {completePending ? "جاري التحديث…" : "تم الانتهاء"}
-            </button>
-          </form>
+          <QueueCompleteTicketForm
+            locale={locale}
+            officeId={officeId}
+            ticketId={ticket.id}
+            completeAction={completeAction}
+            disabled={completePending}
+          />
         ) : null}
       </div>
     </section>

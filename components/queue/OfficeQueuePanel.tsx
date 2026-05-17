@@ -1,11 +1,13 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useActionState, useEffect, useRef } from "react";
 import {
   completeTicketAction,
   searchTicketAction,
   type QueuePanelState,
 } from "@/app/[locale]/office-dashboard/[officeId]/queue/actions";
+import { QueueCompleteTicketForm } from "@/components/queue/QueueCompleteTicketForm";
 import { QueueTicketSearchResult } from "@/components/queue/QueueTicketSearchResult";
 import type { DailyStats, QueueTicketWithRequest } from "@/lib/queue/types";
 import { feedbackToast } from "@/lib/ui/feedback-toast";
@@ -34,6 +36,7 @@ export function OfficeQueuePanel({
   stats,
   tickets,
 }: OfficeQueuePanelProps) {
+  const router = useRouter();
   const [searchState, searchAction, searchPending] = useActionState(
     searchTicketAction,
     initial,
@@ -70,10 +73,11 @@ export function OfficeQueuePanel({
         if (message) feedbackToast.error(message);
       } else {
         feedbackToast.success("تم تحديث حالة الدور.");
+        router.refresh();
       }
     }
     wasCompletePending.current = completePending;
-  }, [completePending, completeState]);
+  }, [completePending, completeState, router]);
 
   const pending = searchPending || completePending;
   const noShow = Math.max(0, stats.totalCheckedIn - stats.totalCompleted);
@@ -171,6 +175,9 @@ export function OfficeQueuePanel({
                   <th scope="col" className="px-4 py-3 font-heading font-semibold">
                     الحالة
                   </th>
+                  <th scope="col" className="px-4 py-3 font-heading font-semibold">
+                    إجراء
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -201,6 +208,20 @@ export function OfficeQueuePanel({
                       >
                         {STATUS_LABELS[row.status]}
                       </span>
+                    </td>
+                    <td className="px-4 py-3">
+                      {row.status === "waiting" ? (
+                        <QueueCompleteTicketForm
+                          locale={locale}
+                          officeId={officeId}
+                          ticketId={row.id}
+                          completeAction={completeAction}
+                          disabled={completePending}
+                          compact
+                        />
+                      ) : (
+                        <span className="text-xs text-gov-gray-500">—</span>
+                      )}
                     </td>
                   </tr>
                 ))}
