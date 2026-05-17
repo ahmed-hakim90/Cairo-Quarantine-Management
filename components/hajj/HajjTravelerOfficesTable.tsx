@@ -1,13 +1,14 @@
-import {
-  CAIRO_TRAVELER_VACCINATION_OFFICES,
-  type TravelerVaccinationService,
-} from "@/data/hajj-traveler-offices-cairo";
 import { OfficeContactIcons } from "@/components/ui/OfficeContactIcons";
 import { resolveOfficeMapUrlAr } from "@/lib/google-maps-url";
 import type { Messages } from "@/lib/i18n/messages";
+import { effectiveOfficeService } from "@/lib/office-requests/office-traveler-state";
+import type { Office } from "@/lib/office-requests/types";
+
+type TravelerVaccinationService = Office["service"];
 
 type HajjTravelerOfficesTableProps = {
   content: Messages["hajjTable"];
+  offices: Office[];
   /** When set, only offices matching this service type are listed */
   serviceFilter?: TravelerVaccinationService;
 };
@@ -23,13 +24,14 @@ function serviceLabel(
 
 export function HajjTravelerOfficesTable({
   content,
+  offices,
   serviceFilter,
 }: HajjTravelerOfficesTableProps) {
   const rows =
     serviceFilter === undefined
-      ? CAIRO_TRAVELER_VACCINATION_OFFICES
-      : CAIRO_TRAVELER_VACCINATION_OFFICES.filter(
-          (row) => row.service === serviceFilter,
+      ? offices
+      : offices.filter(
+          (row) => effectiveOfficeService(row) === serviceFilter,
         );
 
   return (
@@ -52,42 +54,43 @@ export function HajjTravelerOfficesTable({
         aria-label={content.caption}
       >
         {rows.map((row) => {
+          const service = effectiveOfficeService(row);
           const mapsUrl = resolveOfficeMapUrlAr({
             mapsUrl: row.mapsUrl,
-            placeTitle: row.officeNameAr,
+            placeTitle: row.nameAr,
             address: row.addressAr,
           });
           return (
-          <li
-            key={row.id}
-            className={
-              row.service === "hajj_umrah_travelers"
-                ? "flex flex-row items-start gap-3 rounded-lg border border-gov-gray-200 bg-gov-gray-100 p-4 shadow-sm"
-                : "flex flex-row items-start gap-3 rounded-lg border border-gov-gray-200 bg-white p-4 shadow-sm"
-            }
-          >
-            <div className="min-w-0 flex-1 space-y-1.5 text-sm" lang="ar">
-              <p className="font-heading font-semibold text-gov-navy">
-                {row.officeNameAr}
-              </p>
-              <p className="text-gov-gray-700">{row.administrationAr}</p>
-              <p className="text-gov-gray-700">{row.addressAr}</p>
-              <p>
-                <span className="inline-flex max-w-full rounded-full border border-gov-gray-200 bg-white px-2.5 py-0.5 text-xs font-medium text-gov-gray-800">
-                  {serviceLabel(row.service, content)}
-                </span>
-              </p>
-            </div>
-            <OfficeContactIcons
-              phone={row.phone ?? undefined}
-              mapsUrl={mapsUrl}
-              ariaPhone={content.a11yPhone}
-              ariaMap={content.a11yMap}
-              ariaPhoneUnavailable={content.a11yPhoneUnavailable}
-              phoneMissingTitle={content.phoneMissing}
-            />
-          </li>
-        );
+            <li
+              key={row.id}
+              className={
+                service === "hajj_umrah_travelers"
+                  ? "flex flex-row items-start gap-3 rounded-lg border border-gov-gray-200 bg-gov-gray-100 p-4 shadow-sm"
+                  : "flex flex-row items-start gap-3 rounded-lg border border-gov-gray-200 bg-white p-4 shadow-sm"
+              }
+            >
+              <div className="min-w-0 flex-1 space-y-1.5 text-sm" lang="ar">
+                <p className="font-heading font-semibold text-gov-navy">
+                  {row.nameAr}
+                </p>
+                <p className="text-gov-gray-700">{row.administrationAr}</p>
+                <p className="text-gov-gray-700">{row.addressAr}</p>
+                <p>
+                  <span className="inline-flex max-w-full rounded-full border border-gov-gray-200 bg-white px-2.5 py-0.5 text-xs font-medium text-gov-gray-800">
+                    {serviceLabel(service, content)}
+                  </span>
+                </p>
+              </div>
+              <OfficeContactIcons
+                phone={row.phone ?? undefined}
+                mapsUrl={mapsUrl}
+                ariaPhone={content.a11yPhone}
+                ariaMap={content.a11yMap}
+                ariaPhoneUnavailable={content.a11yPhoneUnavailable}
+                phoneMissingTitle={content.phoneMissing}
+              />
+            </li>
+          );
         })}
       </ul>
 
@@ -124,60 +127,65 @@ export function HajjTravelerOfficesTable({
           </thead>
           <tbody className="divide-y divide-gov-gray-200">
             {rows.map((row) => {
+              const service = effectiveOfficeService(row);
               const mapsUrl = resolveOfficeMapUrlAr({
                 mapsUrl: row.mapsUrl,
-                placeTitle: row.officeNameAr,
+                placeTitle: row.nameAr,
                 address: row.addressAr,
               });
+              const serialDisplay =
+                row.serialInGovernorate > 0 && row.serialInGovernorate < 9999
+                  ? row.serialInGovernorate
+                  : "—";
               return (
-              <tr
-                key={row.id}
-                className={
-                  row.service === "hajj_umrah_travelers"
-                    ? "bg-gov-gray-100"
-                    : "bg-white"
-                }
-              >
-                <td className="whitespace-nowrap px-3 py-3 align-top text-gov-gray-700">
-                  {content.governorate}
-                </td>
-                <td className="whitespace-nowrap px-3 py-3 align-top text-gov-gray-700">
-                  {row.administrationAr}
-                </td>
-                <td className="whitespace-nowrap px-3 py-3 align-top text-gov-gray-700">
-                  {row.serialInGovernorate}
-                </td>
-                <th
-                  scope="row"
-                  className="max-w-[160px] px-3 py-3 align-top font-medium text-gov-navy"
-                  lang="ar"
+                <tr
+                  key={row.id}
+                  className={
+                    service === "hajj_umrah_travelers"
+                      ? "bg-gov-gray-100"
+                      : "bg-white"
+                  }
                 >
-                  {row.officeNameAr}
-                </th>
-                <td
-                  className="min-w-[200px] px-3 py-3 align-top text-gov-gray-700"
-                  lang="ar"
-                >
-                  {row.addressAr}
-                </td>
-                <td className="whitespace-nowrap px-3 py-3 align-top font-mono text-gov-gray-700">
-                  {row.phone ?? content.phoneMissing}
-                </td>
-                <td className="whitespace-nowrap px-3 py-3 align-top">
-                  <a
-                    href={mapsUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-gov-accent underline-offset-2 hover:underline"
+                  <td className="whitespace-nowrap px-3 py-3 align-top text-gov-gray-700">
+                    {content.governorate}
+                  </td>
+                  <td className="whitespace-nowrap px-3 py-3 align-top text-gov-gray-700">
+                    {row.administrationAr}
+                  </td>
+                  <td className="whitespace-nowrap px-3 py-3 align-top text-gov-gray-700">
+                    {serialDisplay}
+                  </td>
+                  <th
+                    scope="row"
+                    className="max-w-[160px] px-3 py-3 align-top font-medium text-gov-navy"
+                    lang="ar"
                   >
-                    {content.mapsLink}
-                  </a>
-                </td>
-                <td className="max-w-[11rem] px-3 py-3 align-top text-gov-gray-800">
-                  {serviceLabel(row.service, content)}
-                </td>
-              </tr>
-            );
+                    {row.nameAr}
+                  </th>
+                  <td
+                    className="min-w-[200px] px-3 py-3 align-top text-gov-gray-700"
+                    lang="ar"
+                  >
+                    {row.addressAr}
+                  </td>
+                  <td className="whitespace-nowrap px-3 py-3 align-top font-mono text-gov-gray-700">
+                    {row.phone ?? content.phoneMissing}
+                  </td>
+                  <td className="whitespace-nowrap px-3 py-3 align-top">
+                    <a
+                      href={mapsUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-gov-accent underline-offset-2 hover:underline"
+                    >
+                      {content.mapsLink}
+                    </a>
+                  </td>
+                  <td className="max-w-[11rem] px-3 py-3 align-top text-gov-gray-800">
+                    {serviceLabel(service, content)}
+                  </td>
+                </tr>
+              );
             })}
           </tbody>
         </table>

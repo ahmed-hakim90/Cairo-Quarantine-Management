@@ -9,7 +9,10 @@ import { ScrollReveal } from "@/components/motion/ScrollReveal";
 import { notFound } from "next/navigation";
 import { isLocale, type Locale } from "@/lib/i18n/config";
 import { getMessages } from "@/lib/i18n/messages";
-import { listVaccinesByCategoryForPublic } from "@/lib/office-requests/store";
+import {
+  listOffices,
+  listVaccinesByCategoryForPublic,
+} from "@/lib/office-requests/store";
 import { getSiteVisitorCount } from "@/lib/site-stats/store";
 
 export default async function HomePage({
@@ -21,9 +24,10 @@ export default async function HomePage({
   if (!isLocale(localeParam)) notFound();
   const locale = localeParam as Locale;
   const m = getMessages(locale);
-  const [vaccinesByCategory, siteVisitorCount] = await Promise.all([
+  const [vaccinesByCategory, siteVisitorCount, offices] = await Promise.all([
     listVaccinesByCategoryForPublic(),
     getSiteVisitorCount(),
+    listOffices(),
   ]);
 
   return (
@@ -62,7 +66,7 @@ export default async function HomePage({
         <ImportantLinks content={m.importantLinks} />
       </ScrollReveal>
       <ScrollReveal>
-        <HajjTravelerOfficesTable content={m.hajjTable} />
+        <HajjTravelerOfficesTable content={m.hajjTable} offices={offices} />
       </ScrollReveal>
     </>
   );

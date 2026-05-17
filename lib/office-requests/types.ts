@@ -21,6 +21,8 @@ export type TravelerState = {
 
 export type Office = {
   id: string;
+  /** ترتيب العرض في جداول المكاتب العامة (عمود «م»). */
+  serialInGovernorate: number;
   administrationAr: string;
   nameAr: string;
   addressAr: string;

@@ -24,6 +24,7 @@ export function OfficeFormFields({ office, travelerStates }: OfficeFormFieldsPro
   const baseOffice: Office =
     office ?? {
       id: "new",
+      serialInGovernorate: 0,
       administrationAr: "",
       nameAr: "",
       addressAr: "",
@@ -54,6 +55,22 @@ export function OfficeFormFields({ office, travelerStates }: OfficeFormFieldsPro
     <>
       <input type="hidden" name="id" value={docId} />
       <label className="mt-0 block text-sm font-bold text-gov-navy">
+        الترتيب في المحافظة (م)
+        <input
+          name="serialInGovernorate"
+          type="number"
+          min={1}
+          required
+          inputMode="numeric"
+          defaultValue={
+            office?.serialInGovernorate != null && office.serialInGovernorate > 0
+              ? String(office.serialInGovernorate)
+              : ""
+          }
+          className={officeFieldClass}
+        />
+      </label>
+      <label className="mt-3 block text-sm font-bold text-gov-navy">
         الإدارة
         <input
           name="administrationAr"

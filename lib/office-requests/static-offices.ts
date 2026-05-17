@@ -7,6 +7,7 @@ import type { Office } from "@/lib/office-requests/types";
 export function officeFromStatic(row: CairoTravelerVaccinationOffice): Office {
   return {
     id: row.id,
+    serialInGovernorate: row.serialInGovernorate,
     administrationAr: row.administrationAr,
     nameAr: row.officeNameAr,
     addressAr: row.addressAr,

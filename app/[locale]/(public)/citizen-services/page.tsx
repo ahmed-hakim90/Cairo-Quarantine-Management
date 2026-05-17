@@ -6,7 +6,10 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { isLocale, type Locale } from "@/lib/i18n/config";
 import { getMessages } from "@/lib/i18n/messages";
-import { listVaccinesByCategoryForPublic } from "@/lib/office-requests/store";
+import {
+  listOffices,
+  listVaccinesByCategoryForPublic,
+} from "@/lib/office-requests/store";
 
 export async function generateMetadata({
   params,
@@ -28,7 +31,10 @@ export default async function CitizenServicesPage({
   const locale = localeParam as Locale;
   const m = getMessages(locale);
   const p = m.pages.citizen;
-  const vaccinesByCategory = await listVaccinesByCategoryForPublic();
+  const [vaccinesByCategory, offices] = await Promise.all([
+    listVaccinesByCategoryForPublic(),
+    listOffices(),
+  ]);
 
   return (
     <>
@@ -104,7 +110,7 @@ export default async function CitizenServicesPage({
         </section>
       </ScrollReveal>
       <ScrollReveal>
-        <HajjTravelerOfficesTable content={m.hajjTable} />
+        <HajjTravelerOfficesTable content={m.hajjTable} offices={offices} />
       </ScrollReveal>
     </>
   );

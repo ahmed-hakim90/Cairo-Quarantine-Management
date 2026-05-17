@@ -234,11 +234,29 @@ function travelerStateFromDoc(
   };
 }
 
+function parseSerialInGovernorate(value: unknown): number {
+  const n =
+    typeof value === "number"
+      ? value
+      : Number.parseInt(String(value ?? ""), 10);
+  return Number.isFinite(n) && n > 0 ? n : 9999;
+}
+
+export function sortOffices(offices: Office[]): Office[] {
+  return [...offices].sort((a, b) => {
+    const serialA = a.serialInGovernorate > 0 ? a.serialInGovernorate : 9999;
+    const serialB = b.serialInGovernorate > 0 ? b.serialInGovernorate : 9999;
+    if (serialA !== serialB) return serialA - serialB;
+    return a.nameAr.localeCompare(b.nameAr, "ar");
+  });
+}
+
 function officeFromDoc(id: string, data: FirebaseFirestore.DocumentData): Office {
   const cap = parseDailyBookingCap(data.dailyBookingCap);
   const travelerStateIds = parseTravelerStateIdsFromDoc(data);
   return {
     id,
+    serialInGovernorate: parseSerialInGovernorate(data.serialInGovernorate),
     administrationAr: String(data.administrationAr ?? ""),
     nameAr: String(data.nameAr ?? ""),
     addressAr: String(data.addressAr ?? ""),
@@ -673,20 +691,22 @@ const listOfficesPublicCached = unstable_cache(
 async function listOfficesUncached(options?: {
   includeInactive?: boolean;
 }): Promise<Office[]> {
-  if (!isFirebaseAdminConfigured()) return STATIC_OFFICES;
+  if (!isFirebaseAdminConfigured()) return sortOffices(STATIC_OFFICES);
 
   let offices: Office[];
 
   try {
-    const snap = await getAdminDb().collection(OFFICES).orderBy("nameAr").get();
-    offices = snap.docs
-      .map((doc) => officeFromDoc(doc.id, doc.data()))
-      .filter((office) => options?.includeInactive || office.active);
+    const snap = await getAdminDb().collection(OFFICES).get();
+    offices = sortOffices(
+      snap.docs
+        .map((doc) => officeFromDoc(doc.id, doc.data()))
+        .filter((office) => options?.includeInactive || office.active),
+    );
   } catch {
-    return STATIC_OFFICES;
+    return sortOffices(STATIC_OFFICES);
   }
 
-  return offices.length > 0 ? offices : STATIC_OFFICES;
+  return offices.length > 0 ? offices : sortOffices(STATIC_OFFICES);
 }
 
 export async function getOffice(officeId: string): Promise<Office | null> {
@@ -1830,6 +1850,7 @@ export async function upsertOffice(
 
   await ref.set(
     {
+      serialInGovernorate: parseSerialInGovernorate(input.serialInGovernorate),
       administrationAr: input.administrationAr.trim(),
       nameAr: input.nameAr.trim(),
       addressAr: input.addressAr.trim(),

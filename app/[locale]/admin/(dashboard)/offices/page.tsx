@@ -61,6 +61,7 @@ export default async function AdminOfficesPage({
           <table className="min-w-full divide-y divide-gov-gray-200 text-sm">
             <thead className="bg-gov-gray-50 text-gov-navy">
               <tr>
+                <th className="px-4 py-3 text-start">م</th>
                 <th className="px-4 py-3 text-start">اسم المكتب</th>
                 <th className="px-4 py-3 text-start">الإدارة</th>
                 <th className="px-4 py-3 text-start">العنوان</th>
@@ -73,6 +74,12 @@ export default async function AdminOfficesPage({
             <tbody className="divide-y divide-gov-gray-100">
               {offices.map((office) => (
                 <tr key={office.id} className="hover:bg-gov-gray-50/70">
+                  <td className="px-4 py-3 whitespace-nowrap text-gov-gray-700">
+                    {office.serialInGovernorate > 0 &&
+                    office.serialInGovernorate < 9999
+                      ? office.serialInGovernorate
+                      : "—"}
+                  </td>
                   <td className="px-4 py-3 font-bold text-gov-navy">
                     {office.nameAr}
                   </td>
@@ -132,7 +139,7 @@ export default async function AdminOfficesPage({
               {offices.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={7}
+                    colSpan={8}
                     className="px-4 py-8 text-center text-gov-gray-600"
                   >
                     لا توجد مكاتب.

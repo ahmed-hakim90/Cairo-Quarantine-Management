@@ -8,7 +8,10 @@ import { notFound } from "next/navigation";
 import { isLocale, type Locale } from "@/lib/i18n/config";
 import { getMessages } from "@/lib/i18n/messages";
 import { getWhatsappComplaintsDigits } from "@/lib/site-contact";
-import { listVaccinesByCategoryForPublic } from "@/lib/office-requests/store";
+import {
+  listOffices,
+  listVaccinesByCategoryForPublic,
+} from "@/lib/office-requests/store";
 
 export async function generateMetadata({
   params,
@@ -36,7 +39,10 @@ export default async function InternationalTravelerPage({
         "السلام عليكم، أود معرفة طعوم الدولة المتجه إليها.",
       )}`
     : null;
-  const vaccinesByCategory = await listVaccinesByCategoryForPublic();
+  const [vaccinesByCategory, offices] = await Promise.all([
+    listVaccinesByCategoryForPublic(),
+    listOffices(),
+  ]);
 
   return (
     <>
@@ -87,6 +93,7 @@ export default async function InternationalTravelerPage({
       <ScrollReveal>
         <HajjTravelerOfficesTable
           content={m.hajjTable}
+          offices={offices}
           serviceFilter="hajj_umrah_travelers"
         />
       </ScrollReveal>

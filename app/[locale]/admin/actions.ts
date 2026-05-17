@@ -73,6 +73,17 @@ function revalidatePublicBookingData() {
   revalidateTag(OFFICE_REQUESTS_CACHE_TAGS.publicBookingSettings, "max");
 }
 
+function revalidatePublicOfficePages() {
+  for (const l of locales) {
+    revalidatePath(`/${l}`);
+    revalidatePath(`/${l}/international-traveler`);
+    revalidatePath(`/${l}/citizen-services`);
+    revalidatePath(`/${l}/hajj-umrah`);
+    revalidatePath(`/${l}/booking`);
+  }
+  revalidatePublicBookingData();
+}
+
 function revalidatePublicVaccineData() {
   revalidateTag(OFFICE_REQUESTS_CACHE_TAGS.publicVaccines, "max");
 }
@@ -296,9 +307,15 @@ export async function saveOfficeAction(formData: FormData) {
     service = "hajj_umrah_travelers";
   }
 
+  const serialRaw = formValue(formData, "serialInGovernorate");
+  const serialParsed = Number.parseInt(serialRaw, 10);
+  const serialInGovernorate =
+    Number.isFinite(serialParsed) && serialParsed > 0 ? serialParsed : 9999;
+
   await upsertOffice(
     {
       id,
+      serialInGovernorate,
       administrationAr: formValue(formData, "administrationAr"),
       nameAr: formValue(formData, "nameAr"),
       addressAr: formValue(formData, "addressAr"),
@@ -314,10 +331,7 @@ export async function saveOfficeAction(formData: FormData) {
 
   revalidatePath(`/${locale}/admin`);
   revalidatePath(`/${locale}/admin/offices`);
-  for (const l of locales) {
-    revalidatePath(`/${l}/booking`);
-  }
-  revalidateTag(OFFICE_REQUESTS_CACHE_TAGS.publicOffices, "max");
+  revalidatePublicOfficePages();
 }
 
 export async function setOfficeActiveAction(formData: FormData) {
@@ -333,10 +347,7 @@ export async function setOfficeActiveAction(formData: FormData) {
 
   revalidatePath(`/${locale}/admin`);
   revalidatePath(`/${locale}/admin/offices`);
-  for (const l of locales) {
-    revalidatePath(`/${l}/booking`);
-  }
-  revalidateTag(OFFICE_REQUESTS_CACHE_TAGS.publicOffices, "max");
+  revalidatePublicOfficePages();
 }
 
 export async function saveTravelerStateAction(formData: FormData) {

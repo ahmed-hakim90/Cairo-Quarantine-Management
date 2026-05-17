@@ -11,6 +11,7 @@ import {
 
 const base: Omit<Office, "service" | "travelerStateIds"> = {
   id: "x",
+  serialInGovernorate: 1,
   administrationAr: "إدارة",
   nameAr: "مكتب",
   addressAr: "عنوان",
