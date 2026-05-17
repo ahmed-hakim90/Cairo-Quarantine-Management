@@ -10,6 +10,7 @@ import {
 } from "@/lib/queue/queue-service";
 import { getOfficeTravelerStateIds } from "@/lib/office-requests/office-traveler-state";
 import { listTravelerStatesForPublicBooking } from "@/lib/office-requests/store";
+import type { OfficeRequest } from "@/lib/office-requests/types";
 import type { QueueTicket } from "@/lib/queue/types";
 
 export type CheckinState =
@@ -17,6 +18,11 @@ export type CheckinState =
       ok: true;
       ticket: QueueTicket;
       citizenName?: string;
+      passToken?: string;
+      requestType?: OfficeRequest["type"];
+      requestId?: string;
+      officeNameAr?: string;
+      preferredDate?: string;
     }
   | {
       ok: false;
@@ -27,6 +33,22 @@ export type CheckinState =
 
 function formValue(formData: FormData, key: string) {
   return String(formData.get(key) ?? "").trim();
+}
+
+function successFromRequest(
+  request: OfficeRequest,
+  ticket: QueueTicket,
+): Extract<CheckinState, { ok: true }> {
+  return {
+    ok: true,
+    ticket,
+    citizenName: request.name,
+    requestId: request.id,
+    requestType: request.type,
+    officeNameAr: request.officeNameAr,
+    ...(request.preferredDate ? { preferredDate: request.preferredDate } : {}),
+    ...(request.passToken ? { passToken: request.passToken } : {}),
+  };
 }
 
 export async function checkinLookupAction(
@@ -64,11 +86,7 @@ export async function checkinLookupAction(
         date,
       }));
 
-    return {
-      ok: true,
-      ticket,
-      citizenName: request.name,
-    };
+    return successFromRequest(request, ticket);
   } catch (e) {
     return {
       ok: false,
@@ -111,11 +129,7 @@ export async function checkinQuickAction(
       hasSpecialNeeds,
       details,
     });
-    return {
-      ok: true,
-      ticket,
-      citizenName: request.name,
-    };
+    return successFromRequest(request, ticket);
   } catch (e) {
     return {
       ok: false,

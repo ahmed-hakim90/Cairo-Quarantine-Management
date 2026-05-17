@@ -1,26 +1,34 @@
 "use client";
 
 import { useActionState } from "react";
+import { QueueCompletedCitizenView } from "@/components/queue/QueueCompletedCitizenView";
 import { QueueWaitLive } from "@/components/queue/QueueWaitLive";
 import {
   checkinLookupAction,
   checkinQuickAction,
   type CheckinState,
 } from "@/app/[locale]/(public)/checkin/actions";
+import type { Locale } from "@/lib/i18n/config";
 import type { TravelerState } from "@/lib/office-requests/types";
 
 const initial: CheckinState = { ok: false };
 
 type CheckinFormProps = {
+  locale: Locale;
   officeId: string;
   officeNameAr: string;
   travelerStates: TravelerState[];
+  serverSiteOrigin: string;
+  iosHelp: string;
 };
 
 export function CheckinForm({
+  locale,
   officeId,
   officeNameAr,
   travelerStates,
+  serverSiteOrigin,
+  iosHelp,
 }: CheckinFormProps) {
   const [lookupState, lookupAction, lookupPending] = useActionState(
     checkinLookupAction,
@@ -50,11 +58,29 @@ export function CheckinForm({
     !quickPending;
 
   if (result?.ok && result.ticket) {
+    if (result.ticket.status === "completed") {
+      return (
+        <QueueCompletedCitizenView
+          locale={locale}
+          ticket={result.ticket}
+          officeNameAr={officeNameAr}
+          citizenName={result.citizenName}
+          passToken={result.passToken}
+          requestType={result.requestType}
+          requestId={result.requestId}
+          requestOfficeNameAr={result.officeNameAr}
+          preferredDate={result.preferredDate}
+          serverSiteOrigin={serverSiteOrigin}
+        />
+      );
+    }
     return (
       <QueueWaitLive
+        locale={locale}
         ticket={result.ticket}
         officeNameAr={officeNameAr}
         citizenName={result.citizenName}
+        iosHelp={iosHelp}
       />
     );
   }

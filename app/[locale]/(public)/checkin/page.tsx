@@ -1,7 +1,10 @@
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { CheckinForm } from "@/components/queue/CheckinForm";
-import { isLocale } from "@/lib/i18n/config";
+import { inferredSiteOriginFromHeaders } from "@/lib/booking-pass-url";
+import { isLocale, type Locale } from "@/lib/i18n/config";
+import { getMessages } from "@/lib/i18n/messages";
 import { getOfficeTravelerStateIds } from "@/lib/office-requests/office-traveler-state";
 import { listTravelerStatesForPublicBooking } from "@/lib/office-requests/store";
 import { assertActiveOffice } from "@/lib/queue/queue-service";
@@ -18,8 +21,11 @@ export default async function CheckinPage({
   params: Promise<{ locale: string }>;
   searchParams: Promise<{ officeId?: string }>;
 }) {
-  const { locale } = await params;
-  if (!isLocale(locale)) notFound();
+  const { locale: localeParam } = await params;
+  if (!isLocale(localeParam)) notFound();
+  const locale = localeParam as Locale;
+  const messages = getMessages(locale);
+  const serverSiteOrigin = inferredSiteOriginFromHeaders(await headers());
 
   const officeId = String((await searchParams).officeId ?? "").trim();
   if (!officeId) {
@@ -65,9 +71,12 @@ export default async function CheckinPage({
           <p className="mt-2 text-sm text-gov-gray-700">{officeNameAr}</p>
         </header>
         <CheckinForm
+          locale={locale}
           officeId={officeId}
           officeNameAr={officeNameAr}
           travelerStates={travelerStates}
+          serverSiteOrigin={serverSiteOrigin}
+          iosHelp={messages.pwa.iosHelp}
         />
       </div>
     </section>

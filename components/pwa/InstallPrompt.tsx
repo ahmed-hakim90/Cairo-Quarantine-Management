@@ -1,113 +1,29 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useState } from "react";
 import type { Messages } from "@/lib/i18n/messages";
+import { usePwaInstall } from "@/lib/pwa/use-pwa-install";
 
-type BeforeInstallPromptEvent = Event & {
-  prompt: () => Promise<void>;
-  userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
-};
+const SNOOZE_KEY = "cqm:install-prompt-snoozed-until";
 
 type InstallPromptProps = {
   pwa: Messages["pwa"];
 };
 
-const SNOOZE_KEY = "cqm:install-prompt-snoozed-until";
-const SNOOZE_MS = 7 * 24 * 60 * 60 * 1000;
-
-function isSnoozed(): boolean {
-  try {
-    const v = window.localStorage.getItem(SNOOZE_KEY);
-    if (!v) return false;
-    const ts = Number.parseInt(v, 10);
-    return Number.isFinite(ts) && ts > Date.now();
-  } catch {
-    return false;
-  }
-}
-
-function snooze(): void {
-  try {
-    window.localStorage.setItem(SNOOZE_KEY, String(Date.now() + SNOOZE_MS));
-  } catch {
-    /* ignore */
-  }
-}
-
 export function InstallPrompt({ pwa }: InstallPromptProps) {
-  const [deferred, setDeferred] = useState<BeforeInstallPromptEvent | null>(
-    null
-  );
-  const [visible, setVisible] = useState(false);
+  const {
+    shouldShow,
+    canPromptInstall,
+    showIosHint,
+    promptInstall,
+    dismiss,
+  } = usePwaInstall({
+    snoozeKey: SNOOZE_KEY,
+    useSnooze: true,
+    iosHintDelayMs: 4000,
+  });
 
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-
-    const standalone =
-      window.matchMedia("(display-mode: standalone)").matches ||
-      // iOS Safari
-      (window.navigator as { standalone?: boolean }).standalone === true;
-    if (standalone) return;
-
-    if (isSnoozed()) return;
-
-    const ua = window.navigator.userAgent;
-    const ios =
-      /iPad|iPhone|iPod/.test(ua) &&
-      !(window as unknown as { MSStream?: unknown }).MSStream;
-
-    const onBeforeInstall = (event: Event) => {
-      event.preventDefault();
-      setDeferred(event as BeforeInstallPromptEvent);
-      setVisible(true);
-    };
-
-    const onInstalled = () => {
-      setVisible(false);
-      setDeferred(null);
-      try {
-        window.localStorage.setItem(SNOOZE_KEY, String(Date.now() + SNOOZE_MS));
-      } catch {
-        /* ignore */
-      }
-    };
-
-    window.addEventListener("beforeinstallprompt", onBeforeInstall);
-    window.addEventListener("appinstalled", onInstalled);
-
-    // iOS does not fire beforeinstallprompt — show the iOS hint after a
-    // short delay so it doesn't compete with first paint.
-    let iosTimer: number | undefined;
-    if (ios) {
-      iosTimer = window.setTimeout(() => setVisible(true), 4000);
-    }
-
-    return () => {
-      window.removeEventListener("beforeinstallprompt", onBeforeInstall);
-      window.removeEventListener("appinstalled", onInstalled);
-      if (iosTimer) window.clearTimeout(iosTimer);
-    };
-  }, []);
-
-  if (!visible) return null;
-
-  const handleInstall = async () => {
-    if (!deferred) return;
-    try {
-      await deferred.prompt();
-      const choice = await deferred.userChoice;
-      if (choice.outcome !== "accepted") snooze();
-    } finally {
-      setDeferred(null);
-      setVisible(false);
-    }
-  };
-
-  const handleDismiss = () => {
-    snooze();
-    setVisible(false);
-  };
+  if (!shouldShow) return null;
 
   return (
     <div
@@ -131,16 +47,16 @@ export function InstallPrompt({ pwa }: InstallPromptProps) {
           <p className="mt-1 text-xs leading-relaxed text-white/85">
             {pwa.installBody}
           </p>
-          {visible && !deferred ? (
+          {showIosHint && !canPromptInstall ? (
             <p className="mt-2 text-[11px] leading-relaxed text-white/75">
               {pwa.iosHelp}
             </p>
           ) : null}
           <div className="mt-3 flex flex-wrap items-center gap-2">
-            {deferred ? (
+            {canPromptInstall ? (
               <button
                 type="button"
-                onClick={handleInstall}
+                onClick={() => void promptInstall()}
                 className="inline-flex min-h-10 items-center rounded-md bg-white px-4 text-sm font-semibold text-gov-navy transition-colors hover:bg-white/90"
               >
                 {pwa.installButton}
@@ -148,7 +64,7 @@ export function InstallPrompt({ pwa }: InstallPromptProps) {
             ) : null}
             <button
               type="button"
-              onClick={handleDismiss}
+              onClick={dismiss}
               className="inline-flex min-h-10 items-center rounded-md border border-white/30 bg-transparent px-3 text-sm font-medium text-white transition-colors hover:bg-white/10"
             >
               {pwa.installDismiss}
@@ -157,7 +73,7 @@ export function InstallPrompt({ pwa }: InstallPromptProps) {
         </div>
         <button
           type="button"
-          onClick={handleDismiss}
+          onClick={dismiss}
           aria-label={pwa.installDismiss}
           className="-m-1 shrink-0 rounded-md p-1 text-white/70 transition-colors hover:bg-white/10 hover:text-white"
         >

@@ -1,10 +1,7 @@
 import { getAdminDb, isFirebaseAdminConfigured } from "@/lib/firebase/admin";
 import { getDailyStats } from "@/lib/queue/daily-stats-service";
-import type {
-  QueuePositionPublic,
-  QueueTicket,
-  QueueTicketStatus,
-} from "@/lib/queue/types";
+import { queuePositionMessage } from "@/lib/queue/queue-messages";
+import type { QueuePositionPublic, QueueTicket } from "@/lib/queue/types";
 
 export type { QueuePositionPublic } from "@/lib/queue/types";
 
@@ -40,18 +37,6 @@ function ticketFromDoc(
     createdFrom:
       data.createdFrom === "new_request" ? "new_request" : "existing_request",
   };
-}
-
-function positionMessage(
-  status: QueueTicketStatus,
-  aheadCount: number,
-  queueClosed: boolean,
-): string {
-  if (queueClosed) return "تم إغلاق طابور اليوم لهذا المكتب.";
-  if (status === "completed") return "تم الانتهاء من المكتب.";
-  if (aheadCount === 0) return "دورك الآن — توجه إلى الشباك.";
-  if (aheadCount === 1) return "أمامك شخص واحد.";
-  return `أمامك ${aheadCount} أشخاص.`;
 }
 
 export async function countAheadInQueue(args: {
@@ -95,7 +80,7 @@ export async function getQueuePositionPublic(
       status: ticket.status,
       aheadCount: 0,
       queueClosed,
-      message: positionMessage("completed", 0, queueClosed),
+      message: queuePositionMessage("completed", 0, queueClosed),
     };
   }
 
@@ -113,7 +98,7 @@ export async function getQueuePositionPublic(
     status: ticket.status,
     aheadCount,
     queueClosed,
-    message: positionMessage(ticket.status, aheadCount, queueClosed),
+    message: queuePositionMessage(ticket.status, aheadCount, queueClosed),
   };
 }
 

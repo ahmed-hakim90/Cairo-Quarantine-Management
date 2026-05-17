@@ -2,6 +2,10 @@ import { FieldValue } from "firebase-admin/firestore";
 import { getAdminDb, getAdminMessaging, isFirebaseAdminConfigured } from "@/lib/firebase/admin";
 import { AHEAD_NOTIFY_AT } from "@/lib/queue/queue-logic";
 import { getTodayKey } from "@/lib/queue/queue-service";
+import {
+  queueNotifyFiveAhead,
+  queueNotifyYourTurn,
+} from "@/lib/queue/queue-messages";
 import { countAheadInQueue, getTicketForWatch } from "@/lib/queue/queue-position";
 import { getDailyStats } from "@/lib/queue/daily-stats-service";
 
@@ -165,10 +169,11 @@ export async function scanAndNotifyQueueWatches(args?: {
       !watch.notifiedFive &&
       ticket.status === "waiting"
     ) {
+      const fiveAhead = queueNotifyFiveAhead();
       const ok = await sendFcm(
         watch.fcmToken,
-        "اقترب دورك",
-        "أمامك 5 أشخاص — استعد للتوجه إلى المكتب.",
+        fiveAhead.title,
+        fiveAhead.body,
       );
       if (ok) {
         updates.notifiedFive = true;
@@ -181,10 +186,11 @@ export async function scanAndNotifyQueueWatches(args?: {
       !watch.notifiedTurn &&
       ticket.status === "waiting"
     ) {
+      const yourTurn = queueNotifyYourTurn();
       const ok = await sendFcm(
         watch.fcmToken,
-        "دورك الآن",
-        "توجّه إلى شباك المكتب الآن.",
+        yourTurn.title,
+        yourTurn.body,
       );
       if (ok) {
         updates.notifiedTurn = true;

@@ -1,9 +1,19 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { QueueTicket } from "@/lib/queue/types";
-import type { QueuePositionPublic } from "@/lib/queue/types";
-import { AHEAD_NOTIFY_AT } from "@/lib/queue/queue-logic";
+import { PwaInstallCard } from "@/components/pwa/PwaInstallCard";
+import type { Locale } from "@/lib/i18n/config";
+import { queueCitizenCopy } from "@/lib/i18n/queue-citizen-copy";
+import type { QueuePositionPublic, QueueTicket } from "@/lib/queue/types";
+import {
+  queueAheadDetail,
+  queueAheadHeadline,
+  queueNotifyFiveAhead,
+  queueNotifyYourTurn,
+  queuePositionLoadingMessage,
+  queueYourTurnHeadline,
+  queueYourTurnSubline,
+} from "@/lib/queue/queue-messages";
 import {
   isQueueNotifySupported,
   obtainQueueFcmToken,
@@ -19,21 +29,30 @@ import {
 const POLL_MS = 20_000;
 
 type QueueWaitLiveProps = {
+  locale: Locale;
   ticket: QueueTicket;
   officeNameAr: string;
   citizenName?: string;
+  iosHelp: string;
 };
 
 export function QueueWaitLive({
+  locale,
   ticket,
   officeNameAr,
   citizenName,
+  iosHelp,
 }: QueueWaitLiveProps) {
+  const t = queueCitizenCopy[locale];
   const [position, setPosition] = useState<QueuePositionPublic | null>(null);
   const [loading, setLoading] = useState(true);
   const [notifyState, setNotifyState] = useState<
     "idle" | "pending" | "enabled" | "denied" | "unsupported"
-  >("idle");
+  >(() =>
+    typeof window !== "undefined" && !isQueueNotifySupported()
+      ? "unsupported"
+      : "idle",
+  );
   const [notifyError, setNotifyError] = useState<string | null>(null);
 
   const prevAheadRef = useRef<number | null>(null);
@@ -54,10 +73,8 @@ export function QueueWaitLive({
       shouldVibrateForAhead(next.aheadCount, prev, vibratedFiveRef.current)
     ) {
       vibrateQueueAlert("five_ahead");
-      showLocalNotification(
-        "اقترب دورك",
-        "أمامك 5 أشخاص — استعد للتوجه إلى المكتب.",
-      );
+      const fiveAhead = queueNotifyFiveAhead();
+      showLocalNotification(fiveAhead.title, fiveAhead.body);
       vibratedFiveRef.current = true;
     }
     if (
@@ -68,7 +85,8 @@ export function QueueWaitLive({
       )
     ) {
       vibrateQueueAlert("your_turn");
-      showLocalNotification("دورك الآن", "توجّه إلى شباك المكتب الآن.");
+      const yourTurn = queueNotifyYourTurn();
+      showLocalNotification(yourTurn.title, yourTurn.body);
       vibratedTurnRef.current = true;
     }
     prevAheadRef.current = next.aheadCount;
@@ -130,81 +148,94 @@ export function QueueWaitLive({
   }
 
   useEffect(() => {
-    if (!isQueueNotifySupported()) {
-      setNotifyState("unsupported");
-      return;
-    }
+    if (notifyState === "unsupported") return;
     if (typeof Notification !== "undefined" && Notification.permission === "granted") {
-      void enableNotifications();
+      const id = window.setTimeout(() => {
+        void enableNotifications();
+      }, 0);
+      return () => window.clearTimeout(id);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- run once on mount when already granted
   }, []);
 
   const aheadCount = position?.aheadCount ?? null;
-  const showAhead =
-    position &&
-    position.status === "waiting" &&
-    !position.queueClosed &&
-    aheadCount !== null &&
-    aheadCount > 0;
+  const waitingInLine =
+    position?.status === "waiting" && !position.queueClosed;
+  const headline =
+    waitingInLine && aheadCount !== null && aheadCount > 0
+      ? queueAheadHeadline(aheadCount)
+      : null;
+  const detail =
+    waitingInLine && aheadCount !== null && aheadCount > 0
+      ? queueAheadDetail(aheadCount)
+      : null;
+  const isYourTurn =
+    waitingInLine && aheadCount === 0 && !loading;
 
   return (
     <div className="mx-auto max-w-md space-y-4">
+      <PwaInstallCard
+        variant="queue"
+        title={t.installAppTitle}
+        body={t.installAppBody}
+        installButton={t.installAppButton}
+        ariaLabel={t.installAppAria}
+        iosHelp={iosHelp}
+      />
       <div className="rounded-xl border border-gov-gray-200 bg-white p-6 text-center shadow-sm">
         <p className="text-xs font-bold uppercase tracking-wide text-gov-gray-600">
-          رقم الدور
+          {t.queueNumberHeading}
         </p>
         <p className="mt-2 font-heading text-6xl font-extrabold text-gov-accent">
           {ticket.queueNumber}
         </p>
 
-        {showAhead ? (
-          <p className="mt-4 text-2xl font-extrabold text-gov-navy">
-            أمامك{" "}
-            <span className="text-gov-accent">{aheadCount}</span>{" "}
-            {aheadCount === 1 ? "شخص" : "أشخاص"}
-          </p>
+        {headline ? (
+          <p className="mt-4 text-2xl font-extrabold text-gov-navy">{headline}</p>
         ) : null}
 
-        {position?.status === "waiting" &&
-        aheadCount === 0 &&
-        !position.queueClosed ? (
-          <p className="mt-4 text-xl font-extrabold text-emerald-800">
-            دورك الآن — توجه إلى الشباك
-          </p>
+        {isYourTurn ? (
+          <div className="mt-4 space-y-1">
+            <p className="text-2xl font-extrabold text-emerald-800">
+              {queueYourTurnHeadline()}
+            </p>
+            <p className="text-sm font-semibold text-gov-gray-700">
+              {queueYourTurnSubline()}
+            </p>
+          </div>
         ) : null}
 
         {loading ? (
-          <p className="mt-3 text-sm text-gov-gray-600">جاري تحديث الموضع…</p>
-        ) : (
-          <p className="mt-3 text-sm font-semibold text-gov-gray-700">
-            {position?.message ?? "—"}
+          <p className="mt-3 text-sm text-gov-gray-600">
+            {queuePositionLoadingMessage()}
           </p>
-        )}
+        ) : detail ? (
+          <p className="mt-3 text-sm font-semibold text-gov-gray-700">{detail}</p>
+        ) : !isYourTurn && position?.message ? (
+          <p className="mt-3 text-sm font-semibold text-gov-gray-700">
+            {position.message}
+          </p>
+        ) : null}
 
         <dl className="mt-6 grid gap-2 text-sm text-start">
           {citizenName ? (
-            <Row label="الاسم" value={citizenName} />
+            <Row label={t.nameLabel} value={citizenName} />
           ) : null}
-          <Row label="رقم الطلب" value={ticket.requestNumber} />
-          <Row label="المكتب" value={officeNameAr} />
-          <Row label="تاريخ اليوم" value={ticket.queueDate} />
+          <Row label={t.requestNumberLabel} value={ticket.requestNumber} />
+          <Row label={t.officeLabel} value={officeNameAr} />
+          <Row label={t.queueDateLabel} value={ticket.queueDate} />
         </dl>
       </div>
 
       <div className="rounded-lg border border-gov-gray-200 bg-gov-gray-50/80 p-4 text-sm text-gov-gray-700">
-        <p className="font-bold text-gov-navy">التنبيهات</p>
+        <p className="font-bold text-gov-navy">{t.notifyTitle}</p>
         <p className="mt-1 leading-relaxed">
-          عند بقاء {AHEAD_NOTIFY_AT} أشخاص أمامك وعند دورك، يصل إشعار على
-          الموبايل (يفضّل الإبقاء على الصفحة مفتوحة أو تثبيت الموقع). على
-          iPhone يعمل الإشعار بعد التثبيت كتطبيق من الشاشة الرئيسية.
+          {t.notifyBody}
         </p>
         {notifyState === "enabled" ? (
-          <p className="mt-2 font-semibold text-emerald-800">التنبيهات مفعّلة.</p>
+          <p className="mt-2 font-semibold text-emerald-800">{t.notifyEnabled}</p>
         ) : notifyState === "unsupported" ? (
-          <p className="mt-2 text-gov-gray-600">
-            المتصفح لا يدعم الإشعارات — يمكنك متابعة «أمامك X» على هذه الشاشة.
-          </p>
+          <p className="mt-2 text-gov-gray-600">{t.notifyUnsupported}</p>
         ) : (
           <button
             type="button"
@@ -212,7 +243,7 @@ export function QueueWaitLive({
             onClick={() => void enableNotifications()}
             className="mt-3 w-full rounded-md bg-gov-navy px-4 py-2.5 text-sm font-bold text-white hover:bg-gov-accent disabled:opacity-60"
           >
-            {notifyState === "pending" ? "جاري التفعيل…" : "تفعيل التنبيهات"}
+            {notifyState === "pending" ? t.notifyEnabling : t.notifyEnable}
           </button>
         )}
         {notifyError ? (
