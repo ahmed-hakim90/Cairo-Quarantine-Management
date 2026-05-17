@@ -22,7 +22,11 @@ import {
   officeAcceptsTravelerState,
 } from "@/lib/office-requests/office-traveler-state";
 import { formatRequestNumber } from "@/lib/office-requests/request-number";
-import { normalizePhone } from "@/lib/office-requests/whatsapp-message";
+import {
+  normalizePhone,
+  normalizePhoneForStorage,
+  phoneLookupVariants,
+} from "@/lib/office-requests/whatsapp-message";
 import {
   DEFAULT_MESSAGE_TEMPLATE,
   REQUEST_STATUS_LABELS,
@@ -812,15 +816,18 @@ export async function findDuplicateBookingRequest(
   input: BookingDuplicateLookupInput,
 ): Promise<OfficeRequest | null> {
   if (!isFirebaseAdminConfigured()) return null;
-  const phone = normalizePhone(input.phone);
-  const snap = await getAdminDb()
-    .collection(REQUESTS)
-    .where("officeId", "==", input.officeId)
-    .where("preferredDate", "==", input.preferredDate)
-    .where("type", "==", "booking")
-    .where("phone", "==", phone)
-    .get();
-  const candidates = snap.docs.map((doc) => requestFromDoc(doc.id, doc.data()));
+  const phones = phoneLookupVariants(input.phone);
+  const candidates: OfficeRequest[] = [];
+  for (const phone of phones) {
+    const snap = await getAdminDb()
+      .collection(REQUESTS)
+      .where("officeId", "==", input.officeId)
+      .where("preferredDate", "==", input.preferredDate)
+      .where("type", "==", "booking")
+      .where("phone", "==", phone)
+      .get();
+    candidates.push(...snap.docs.map((doc) => requestFromDoc(doc.id, doc.data())));
+  }
   return findMatchingDuplicateBooking(candidates, input) as OfficeRequest | null;
 }
 
@@ -923,7 +930,7 @@ export async function createOfficeRequest(input: {
         : {}),
       status: "new",
       name: input.name.trim(),
-      phone: normalizePhone(input.phone),
+      phone: normalizePhoneForStorage(input.phone),
       details: input.details.trim(),
       notes: "",
       passToken,
@@ -998,8 +1005,8 @@ export async function getPublicRequestStatus(args: {
   if (!isFirebaseAdminConfigured()) return null;
 
   const id = args.id.trim();
-  const phone = normalizePhone(args.phone);
-  if (!id || !phone) return null;
+  const phones = phoneLookupVariants(args.phone);
+  if (!id || phones.length === 0) return null;
 
   let doc: FirebaseFirestore.DocumentSnapshot;
 
@@ -1011,7 +1018,12 @@ export async function getPublicRequestStatus(args: {
   }
 
   const request = requestFromDoc(doc.id, doc.data() ?? {});
-  if (normalizePhone(request.phone) !== phone) return null;
+  if (
+    !phones.includes(request.phone) &&
+    !phones.includes(normalizePhone(request.phone))
+  ) {
+    return null;
+  }
 
   return publicRequestStatus(request);
 }

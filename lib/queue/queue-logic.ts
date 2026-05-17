@@ -1,5 +1,8 @@
 import type { QueueTicketStatus } from "@/lib/queue/types";
 
+/** Notify citizen when exactly this many people are ahead in the queue. */
+export const AHEAD_NOTIFY_AT = 5;
+
 /** Next queue number after `lastQueueNumber` (0 → first ticket is 1). */
 export function nextQueueNumber(lastQueueNumber: number): number {
   return lastQueueNumber + 1;

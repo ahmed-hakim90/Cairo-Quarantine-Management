@@ -1,13 +1,14 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect, useRef } from "react";
 import {
   completeTicketAction,
   searchTicketAction,
   type QueuePanelState,
 } from "@/app/[locale]/office-dashboard/[officeId]/queue/actions";
-import type { DailyStats } from "@/lib/queue/types";
-import type { QueueTicketWithRequest } from "@/lib/queue/types";
+import { QueueTicketSearchResult } from "@/components/queue/QueueTicketSearchResult";
+import type { DailyStats, QueueTicketWithRequest } from "@/lib/queue/types";
+import { feedbackToast } from "@/lib/ui/feedback-toast";
 
 const initial: QueuePanelState = { ok: false };
 
@@ -17,6 +18,7 @@ type OfficeQueuePanelProps = {
   officeNameAr: string;
   queueDate: string;
   stats: DailyStats;
+  tickets: QueueTicketWithRequest[];
 };
 
 const STATUS_LABELS = {
@@ -30,6 +32,7 @@ export function OfficeQueuePanel({
   officeNameAr,
   queueDate,
   stats,
+  tickets,
 }: OfficeQueuePanelProps) {
   const [searchState, searchAction, searchPending] = useActionState(
     searchTicketAction,
@@ -47,16 +50,36 @@ export function OfficeQueuePanel({
         ? searchState.ticket
         : null;
 
-  const error =
-    (!completeState.ok ? completeState.error : undefined) ??
-    (!searchState.ok ? searchState.error : undefined) ??
-    null;
+  const wasSearchPending = useRef(false);
+  const wasCompletePending = useRef(false);
+
+  useEffect(() => {
+    if (wasSearchPending.current && !searchPending) {
+      if (!searchState.ok) {
+        const message = searchState.error?.trim();
+        if (message) feedbackToast.error(message);
+      }
+    }
+    wasSearchPending.current = searchPending;
+  }, [searchPending, searchState]);
+
+  useEffect(() => {
+    if (wasCompletePending.current && !completePending) {
+      if (!completeState.ok) {
+        const message = completeState.error?.trim();
+        if (message) feedbackToast.error(message);
+      } else {
+        feedbackToast.success("تم تحديث حالة الدور.");
+      }
+    }
+    wasCompletePending.current = completePending;
+  }, [completePending, completeState]);
 
   const pending = searchPending || completePending;
   const noShow = Math.max(0, stats.totalCheckedIn - stats.totalCompleted);
 
   return (
-    <div className="mx-auto max-w-3xl space-y-8">
+    <div className="mx-auto max-w-6xl space-y-8">
       <header>
         <p className="text-xs font-bold uppercase text-gov-gray-600">
           طابور اليوم
@@ -74,15 +97,6 @@ export function OfficeQueuePanel({
         <StatCard label="آخر رقم دور" value={stats.lastQueueNumber} />
       </div>
 
-      {error ? (
-        <p
-          role="alert"
-          className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-900"
-        >
-          {error}
-        </p>
-      ) : null}
-
       <form
         action={searchAction}
         className="space-y-4 rounded-lg border border-gov-gray-200 bg-white p-5 shadow-sm"
@@ -92,14 +106,15 @@ export function OfficeQueuePanel({
         <input type="hidden" name="queueDate" value={queueDate} />
         <div>
           <label htmlFor="search" className="block text-sm font-bold text-gov-navy">
-            بحث برقم الدور أو رقم الطلب
+            بحث برقم الدور أو رقم الطلب أو الهاتف
           </label>
           <input
             id="search"
             name="search"
             required
             className="mt-2 w-full rounded-md border border-gov-gray-200 px-3 py-2.5 text-sm"
-            placeholder="مثال: 12 أو CQM-000123"
+            placeholder="مثال: 12 أو CQM-000123 أو 01552900017"
+            dir="rtl"
           />
         </div>
         <button
@@ -112,32 +127,88 @@ export function OfficeQueuePanel({
       </form>
 
       {ticket ? (
-        <div className="rounded-lg border border-gov-gray-200 bg-white p-5 shadow-sm">
-          <dl className="grid gap-3 text-sm">
-            {ticket.request?.name ? (
-              <Row label="الاسم" value={ticket.request.name} />
-            ) : null}
-            <Row label="رقم الطلب" value={ticket.requestNumber} />
-            <Row label="رقم الدور" value={String(ticket.queueNumber)} />
-            <Row label="الحالة" value={STATUS_LABELS[ticket.status]} />
-          </dl>
-
-          {ticket.status === "waiting" ? (
-            <form action={completeAction} className="mt-5">
-              <input type="hidden" name="locale" value={locale} />
-              <input type="hidden" name="ticketId" value={ticket.id} />
-              <input type="hidden" name="officeId" value={officeId} />
-              <button
-                type="submit"
-                disabled={completePending}
-                className="w-full rounded-md bg-emerald-700 px-4 py-3 text-sm font-bold text-white hover:bg-emerald-800 disabled:opacity-60"
-              >
-                {completePending ? "جاري التحديث…" : "تم الانتهاء"}
-              </button>
-            </form>
-          ) : null}
-        </div>
+        <QueueTicketSearchResult
+          locale={locale}
+          officeId={officeId}
+          ticket={ticket}
+          completeAction={completeAction}
+          completePending={completePending}
+        />
       ) : null}
+
+      <section className="rounded-lg border border-gov-gray-200 bg-white shadow-sm">
+        <div className="border-b border-gov-gray-100 px-5 py-4">
+          <h2 className="font-heading text-lg font-extrabold text-gov-navy">
+            قائمة الحضور اليوم
+          </h2>
+          <p className="mt-1 text-sm text-gov-gray-600">
+            {tickets.length > 0
+              ? `${tickets.length} دور في الطابور`
+              : stats.totalCheckedIn > 0 && stats.closed
+                ? "تم إغلاق الطابور — التفاصيل محذوفة بعد الإغلاق"
+                : "لا يوجد حضور مسجّل بعد"}
+          </p>
+        </div>
+
+        {tickets.length > 0 ? (
+          <div className="overflow-x-auto">
+            <table className="min-w-full border-collapse text-start text-sm">
+              <caption className="sr-only">قائمة أدوار الطابور لهذا اليوم</caption>
+              <thead className="bg-gov-navy text-white">
+                <tr>
+                  <th scope="col" className="px-4 py-3 font-heading font-semibold">
+                    رقم الدور
+                  </th>
+                  <th scope="col" className="px-4 py-3 font-heading font-semibold">
+                    الاسم
+                  </th>
+                  <th scope="col" className="px-4 py-3 font-heading font-semibold">
+                    رقم الطلب
+                  </th>
+                  <th scope="col" className="px-4 py-3 font-heading font-semibold">
+                    الهاتف
+                  </th>
+                  <th scope="col" className="px-4 py-3 font-heading font-semibold">
+                    الحالة
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {tickets.map((row) => (
+                  <tr
+                    key={row.id}
+                    className="border-t border-gov-gray-100 odd:bg-gov-gray-50/50"
+                  >
+                    <td className="px-4 py-3 font-extrabold text-gov-navy">
+                      {row.queueNumber}
+                    </td>
+                    <td className="px-4 py-3 text-gov-gray-800">
+                      {row.request?.name?.trim() || "—"}
+                    </td>
+                    <td className="px-4 py-3 font-mono text-xs text-gov-gray-800">
+                      {row.requestNumber}
+                    </td>
+                    <td className="px-4 py-3 font-mono text-xs text-gov-gray-800" dir="ltr">
+                      {row.request?.phone?.trim() || "—"}
+                    </td>
+                    <td className="px-4 py-3">
+                      <span
+                        className={
+                          row.status === "completed"
+                            ? "rounded-md bg-emerald-50 px-2 py-1 text-xs font-bold text-emerald-800"
+                            : "rounded-md bg-amber-50 px-2 py-1 text-xs font-bold text-amber-900"
+                        }
+                      >
+                        {STATUS_LABELS[row.status]}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : null}
+      </section>
     </div>
   );
 }
@@ -147,15 +218,6 @@ function StatCard({ label, value }: { label: string; value: number }) {
     <div className="rounded-lg border border-gov-gray-200 bg-white p-4 shadow-sm">
       <p className="text-xs font-bold text-gov-gray-600">{label}</p>
       <p className="mt-1 text-2xl font-extrabold text-gov-navy">{value}</p>
-    </div>
-  );
-}
-
-function Row({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex justify-between gap-4 border-b border-gov-gray-100 pb-2">
-      <dt className="text-gov-gray-600">{label}</dt>
-      <dd className="font-bold text-gov-navy">{value}</dd>
     </div>
   );
 }

@@ -5,7 +5,9 @@ import { adminCanAccessOffice } from "@/lib/office-requests/admin-access";
 import { getAdminSession } from "@/lib/office-requests/session";
 import {
   completeQueueTicket,
+  findOfficeRequestByLookup,
   findQueueTicketForOfficeDay,
+  normalizeRequestLookup,
 } from "@/lib/queue/queue-service";
 import type { QueueTicketWithRequest } from "@/lib/queue/types";
 
@@ -32,13 +34,33 @@ export async function searchTicketAction(
 
   try {
     await assertQueueAccess(officeId);
-    if (!search) return { ok: false, error: "أدخل رقم الدور أو رقم الطلب." };
+    if (!search) {
+      return { ok: false, error: "أدخل رقم الدور أو رقم الطلب أو الهاتف." };
+    }
     const ticket = await findQueueTicketForOfficeDay({
       officeId,
       date: queueDate,
       value: search,
     });
-    if (!ticket) return { ok: false, error: "لا يوجد دور بهذا الرقم اليوم." };
+    if (!ticket) {
+      const lookup = normalizeRequestLookup(search);
+      const hasPhoneLookup = lookup.phoneVariants.some(
+        (phone) => phone.replace(/\D/g, "").length >= 8,
+      );
+      if (hasPhoneLookup) {
+        const request = await findOfficeRequestByLookup(officeId, search);
+        if (request) {
+          return {
+            ok: false,
+            error: "يوجد طلب بهذا الرقم في المكتب لكن لم يسجّل حضوراً في طابور اليوم.",
+          };
+        }
+      }
+      return {
+        ok: false,
+        error: "لا يوجد دور في طابور اليوم بهذا الرقم أو الطلب أو الهاتف.",
+      };
+    }
     return { ok: true, ticket };
   } catch (e) {
     return {

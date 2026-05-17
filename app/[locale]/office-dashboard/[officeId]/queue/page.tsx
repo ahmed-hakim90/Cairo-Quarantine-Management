@@ -31,7 +31,7 @@ export default async function OfficeQueuePage({
   if (!office) notFound();
 
   const queueDate = getTodayKey();
-  const { stats } = await getQueueDashboard(officeId, queueDate);
+  const { stats, tickets } = await getQueueDashboard(officeId, queueDate);
 
   return (
     <AdminDashboardLayout
@@ -48,6 +48,7 @@ export default async function OfficeQueuePage({
         officeNameAr={office.nameAr}
         queueDate={queueDate}
         stats={stats}
+        tickets={tickets}
       />
     </AdminDashboardLayout>
   );

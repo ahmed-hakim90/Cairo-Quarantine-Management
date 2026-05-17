@@ -8,6 +8,8 @@ import {
   findRequestByNumberOrPhone,
   getTodayKey,
 } from "@/lib/queue/queue-service";
+import { getOfficeTravelerStateIds } from "@/lib/office-requests/office-traveler-state";
+import { listTravelerStatesForPublicBooking } from "@/lib/office-requests/store";
 import type { QueueTicket } from "@/lib/queue/types";
 
 export type CheckinState =
@@ -82,18 +84,31 @@ export async function checkinQuickAction(
   const officeId = formValue(formData, "officeId");
   const name = formValue(formData, "name");
   const phone = formValue(formData, "phone") || formValue(formData, "lookup");
+  const travelerStateId = formValue(formData, "travelerStateId");
+  const hasSpecialNeeds = formData.get("hasSpecialNeeds") === "on";
   const details = formValue(formData, "details");
 
-  if (!officeId || !name || !phone) {
-    return { ok: false, error: "يرجى إدخال الاسم ورقم الهاتف." };
+  if (!officeId || !name || !phone || !travelerStateId) {
+    return { ok: false, error: "يرجى إدخال الاسم ورقم الهاتف وحالة المسافر." };
   }
 
   try {
-    await assertActiveOffice(officeId);
+    const office = await assertActiveOffice(officeId);
+    const acceptedIds = new Set(getOfficeTravelerStateIds(office));
+    if (!acceptedIds.has(travelerStateId)) {
+      return { ok: false, error: "حالة المسافر غير متاحة لهذا المكتب." };
+    }
+    const travelerStates = await listTravelerStatesForPublicBooking();
+    const travelerStateLabel =
+      travelerStates.find((s) => s.id === travelerStateId)?.labelAr ??
+      travelerStateId;
     const { request, ticket } = await createQuickRequestAndQueue({
       officeId,
       name,
       phone,
+      travelerStateId,
+      travelerStateLabel,
+      hasSpecialNeeds,
       details,
     });
     return {

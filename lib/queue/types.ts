@@ -30,7 +30,30 @@ export type DailyStats = {
   updatedAt?: string;
 };
 
+export type QueueRequestSummary = Pick<
+  OfficeRequest,
+  | "id"
+  | "requestNumber"
+  | "name"
+  | "phone"
+  | "type"
+  | "status"
+  | "preferredDate"
+  | "details"
+  | "notes"
+  | "createdAt"
+>;
+
 export type QueueTicketWithRequest = QueueTicket & {
-  request: Pick<OfficeRequest, "id" | "requestNumber" | "name" | "phone"> | null;
+  request: QueueRequestSummary | null;
+};
+
+export type QueuePositionPublic = {
+  ticketId: string;
+  queueNumber: number;
+  status: QueueTicketStatus;
+  aheadCount: number;
+  queueClosed: boolean;
+  message: string;
 };
 

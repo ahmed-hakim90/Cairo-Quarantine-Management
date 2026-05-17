@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
+  normalizePhoneForStorage,
+  phoneLookupVariants,
   toWhatsappWaMeDigits,
   whatsappUrl,
 } from "@/lib/office-requests/whatsapp-message";
@@ -29,6 +31,37 @@ describe("toWhatsappWaMeDigits", () => {
     expect(toWhatsappWaMeDigits("")).toBe("");
     expect(toWhatsappWaMeDigits("   ")).toBe("");
     expect(toWhatsappWaMeDigits("abc")).toBe("");
+  });
+});
+
+describe("normalizePhoneForStorage", () => {
+  it("stores Egyptian local numbers in +20 form", () => {
+    expect(normalizePhoneForStorage("01552900017")).toBe("+201552900017");
+  });
+
+  it("keeps Egyptian international numbers in +20 form", () => {
+    expect(normalizePhoneForStorage("201552900017")).toBe("+201552900017");
+    expect(normalizePhoneForStorage("+20 155 290 0017")).toBe("+201552900017");
+  });
+});
+
+describe("phoneLookupVariants", () => {
+  it("matches local input against stored international variants", () => {
+    expect(phoneLookupVariants("01552900017")).toEqual(
+      expect.arrayContaining([
+        "01552900017",
+        "1552900017",
+        "201552900017",
+        "+201552900017",
+        "00201552900017",
+      ]),
+    );
+  });
+
+  it("matches international input against local variants", () => {
+    expect(phoneLookupVariants("+201552900017")).toEqual(
+      expect.arrayContaining(["+201552900017", "201552900017", "01552900017"]),
+    );
   });
 });
 

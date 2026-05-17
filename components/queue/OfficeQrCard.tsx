@@ -47,9 +47,7 @@ export function OfficeQrCard({ locale, office, checkinUrl }: OfficeQrCardProps) 
 
   async function downloadPdf() {
     setBusy(true);
-    let captureEl: HTMLDivElement | null = null;
     try {
-      const { default: html2canvas } = await import("html2canvas");
       const { jsPDF } = await import("jspdf");
       const qrUrl =
         qrDataUrl ??
@@ -59,13 +57,7 @@ export function OfficeQrCard({ locale, office, checkinUrl }: OfficeQrCardProps) 
           errorCorrectionLevel: "M",
           color: { dark: "#0c2340", light: "#ffffff" },
         }));
-      captureEl = buildPdfCaptureCard({ office, checkinUrl, qrDataUrl: qrUrl });
-      document.body.appendChild(captureEl);
-      const canvas = await html2canvas(captureEl, {
-        scale: 2,
-        backgroundColor: "#ffffff",
-        useCORS: true,
-      });
+      const canvas = await composeQrCardCanvas({ office, qrDataUrl: qrUrl });
       const img = canvas.toDataURL("image/png");
       const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
       const pageW = pdf.internal.pageSize.getWidth();
@@ -78,7 +70,6 @@ export function OfficeQrCard({ locale, office, checkinUrl }: OfficeQrCardProps) 
     } catch (error) {
       console.error("Failed to export QR card PDF", error);
     } finally {
-      captureEl?.remove();
       setBusy(false);
     }
   }
@@ -136,9 +127,6 @@ export function OfficeQrCard({ locale, office, checkinUrl }: OfficeQrCardProps) 
                 …
               </div>
             )}
-            <p className="mt-3 break-all text-center text-xs text-gov-gray-600">
-              {checkinUrl}
-            </p>
           </div>
         ) : null}
       </div>
@@ -187,74 +175,145 @@ export function OfficeQrCard({ locale, office, checkinUrl }: OfficeQrCardProps) 
   );
 }
 
-function buildPdfCaptureCard({
+async function composeQrCardCanvas({
   office,
-  checkinUrl,
   qrDataUrl,
 }: {
   office: Office;
-  checkinUrl: string;
   qrDataUrl: string;
-}) {
-  const root = document.createElement("div");
-  root.dir = "rtl";
-  root.style.cssText = [
-    "position:fixed",
-    "left:-10000px",
-    "top:0",
-    "width:560px",
-    "min-height:780px",
-    "box-sizing:border-box",
-    "padding:36px",
-    "background:#ffffff",
-    "color:#0c2340",
-    "border:1px solid #dfe4ea",
-    "font-family:Arial,Tahoma,sans-serif",
-    "text-align:center",
-  ].join(";");
+}): Promise<HTMLCanvasElement> {
+  await document.fonts.ready.catch(() => undefined);
 
-  const title = document.createElement("p");
-  title.textContent = "إدارة الحجر الصحي بالقاهرة";
-  title.style.cssText =
-    "margin:0;color:#0f766e;font-size:18px;font-weight:700;";
-  root.appendChild(title);
+  const canvas = document.createElement("canvas");
+  const W = 1080;
+  const H = 1350;
+  canvas.width = W;
+  canvas.height = H;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("Canvas غير متاح.");
 
-  const officeName = document.createElement("h1");
-  officeName.textContent = office.nameAr;
-  officeName.style.cssText =
-    "margin:18px 0 8px;color:#0c2340;font-size:30px;font-weight:800;line-height:1.35;";
-  root.appendChild(officeName);
+  const grad = ctx.createLinearGradient(0, 0, W, H);
+  grad.addColorStop(0, "#081828");
+  grad.addColorStop(0.45, "#0c2340");
+  grad.addColorStop(1, "#0f766e");
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, W, H);
 
-  const address = document.createElement("p");
-  address.textContent = office.addressAr;
-  address.style.cssText =
-    "margin:0 auto 28px;max-width:460px;color:#374151;font-size:17px;line-height:1.7;";
-  root.appendChild(address);
+  ctx.strokeStyle = "rgba(255,255,255,0.12)";
+  ctx.lineWidth = 2;
+  ctx.strokeRect(36, 36, W - 72, H - 72);
 
-  const qrWrap = document.createElement("div");
-  qrWrap.style.cssText =
-    "display:inline-block;margin:0 auto;padding:16px;background:#ffffff;border:1px solid #dfe4ea;border-radius:12px;";
-  const img = document.createElement("img");
-  img.src = qrDataUrl;
-  img.alt = "";
-  img.width = 300;
-  img.height = 300;
-  img.style.cssText = "display:block;width:300px;height:300px;";
-  qrWrap.appendChild(img);
-  root.appendChild(qrWrap);
+  ctx.direction = "rtl";
+  ctx.textAlign = "center";
+  ctx.fillStyle = "rgba(204,251,241,0.95)";
+  ctx.font = 'bold 34px "IBM Plex Sans Arabic", Almarai, system-ui, sans-serif';
+  ctx.fillText("إدارة الحجر الصحي بالقاهرة", W / 2, 125);
 
-  const message = document.createElement("p");
-  message.textContent =
-    "امسح الكود لتسجيل الحضور وإضافة طلبك إلى طابور اليوم";
-  message.style.cssText =
-    "margin:28px auto 18px;max-width:460px;color:#0c2340;font-size:20px;font-weight:700;line-height:1.7;";
-  root.appendChild(message);
+  ctx.fillStyle = "#ffffff";
+  ctx.font = 'bold 68px "IBM Plex Sans Arabic", Almarai, system-ui, sans-serif';
+  drawCenteredLines(ctx, office.nameAr, W / 2, 225, 820, 78, 2);
 
-  const url = document.createElement("p");
-  url.textContent = checkinUrl;
-  url.style.cssText =
-    "margin:0 auto;max-width:460px;color:#4a5568;font-size:13px;line-height:1.6;word-break:break-all;direction:ltr;";
-  root.appendChild(url);
+  ctx.fillStyle = "rgba(255,255,255,0.86)";
+  ctx.font = '30px "IBM Plex Sans Arabic", Almarai, system-ui, sans-serif';
+  drawCenteredLines(ctx, office.addressAr, W / 2, 375, 820, 44, 2);
 
-  return root;
+  const img = await loadImage(qrDataUrl);
+  const qw = 430;
+  const qh = 430;
+  const qx = (W - qw) / 2;
+  const qy = 515;
+  ctx.fillStyle = "#ffffff";
+  ctx.shadowColor = "rgba(0,0,0,0.28)";
+  ctx.shadowBlur = 26;
+  ctx.beginPath();
+  if (typeof ctx.roundRect === "function") {
+    ctx.roundRect(qx - 18, qy - 18, qw + 36, qh + 36, 24);
+  } else {
+    ctx.rect(qx - 18, qy - 18, qw + 36, qh + 36);
+  }
+  ctx.fill();
+  ctx.shadowBlur = 0;
+  ctx.drawImage(img, qx, qy, qw, qh);
+
+  ctx.fillStyle = "#ffffff";
+  ctx.font = 'bold 42px "IBM Plex Sans Arabic", Almarai, system-ui, sans-serif';
+  drawCenteredLines(
+    ctx,
+    "امسح الكود لتسجيل الحضور وإضافة طلبك إلى طابور اليوم",
+    W / 2,
+    1065,
+    840,
+    58,
+    2,
+  );
+
+  return canvas;
+}
+
+function loadImage(src: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = () => reject(new Error("تعذر تحميل صورة QR."));
+    img.src = src;
+  });
+}
+
+function drawCenteredLines(
+  ctx: CanvasRenderingContext2D,
+  text: string,
+  x: number,
+  y: number,
+  maxWidth: number,
+  lineHeight: number,
+  maxLines: number,
+) {
+  const lines = wrapCanvasText(ctx, text, maxWidth, maxLines);
+  lines.forEach((line, index) => {
+    ctx.fillText(line, x, y + index * lineHeight);
+  });
+}
+
+function wrapCanvasText(
+  ctx: CanvasRenderingContext2D,
+  text: string,
+  maxWidth: number,
+  maxLines: number,
+): string[] {
+  const words = text.split(/\s+/).filter(Boolean);
+  const lines: string[] = [];
+  let line = "";
+
+  for (const word of words) {
+    const next = line ? `${line} ${word}` : word;
+    if (ctx.measureText(next).width <= maxWidth) {
+      line = next;
+      continue;
+    }
+    if (line) lines.push(line);
+    line = word;
+    if (lines.length === maxLines - 1) break;
+  }
+
+  if (line && lines.length < maxLines) lines.push(line);
+  if (lines.length === maxLines && words.length > 0) {
+    const last = lines[maxLines - 1];
+    if (ctx.measureText(text).width > maxWidth * maxLines) {
+      lines[maxLines - 1] = trimCanvasText(ctx, last, maxWidth);
+    }
+  }
+
+  return lines;
+}
+
+function trimCanvasText(
+  ctx: CanvasRenderingContext2D,
+  text: string,
+  maxWidth: number,
+): string {
+  let out = text;
+  while (out.length > 1 && ctx.measureText(`${out}…`).width > maxWidth) {
+    out = out.slice(0, -1);
+  }
+  return `${out}…`;
 }

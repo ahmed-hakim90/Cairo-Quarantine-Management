@@ -94,6 +94,10 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
+    match /queue_watches/{watchId} {
+      allow read, write: if false;
+    }
+
     match /{document=**} {
       allow read, write: if false;
     }

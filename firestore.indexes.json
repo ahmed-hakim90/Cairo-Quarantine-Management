@@ -161,6 +161,15 @@
       ]
     },
     {
+      "collectionGroup": "requests",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "officeId", "order": "ASCENDING" },
+        { "fieldPath": "phone", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
+      ]
+    },
+    {
       "collectionGroup": "today_queue",
       "queryScope": "COLLECTION",
       "fields": [
@@ -184,6 +193,24 @@
       "fields": [
         { "fieldPath": "officeId", "order": "ASCENDING" },
         { "fieldPath": "queueDate", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "today_queue",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "officeId", "order": "ASCENDING" },
+        { "fieldPath": "queueDate", "order": "ASCENDING" },
+        { "fieldPath": "status", "order": "ASCENDING" },
+        { "fieldPath": "queueNumber", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "queue_watches",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "queueDate", "order": "ASCENDING" },
+        { "fieldPath": "officeId", "order": "ASCENDING" }
       ]
     }
   ]

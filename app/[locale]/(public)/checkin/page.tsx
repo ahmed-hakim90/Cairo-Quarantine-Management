@@ -2,7 +2,10 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { CheckinForm } from "@/components/queue/CheckinForm";
 import { isLocale } from "@/lib/i18n/config";
+import { getOfficeTravelerStateIds } from "@/lib/office-requests/office-traveler-state";
+import { listTravelerStatesForPublicBooking } from "@/lib/office-requests/store";
 import { assertActiveOffice } from "@/lib/queue/queue-service";
+import type { TravelerState } from "@/lib/office-requests/types";
 
 export const metadata: Metadata = {
   title: "تسجيل الحضور",
@@ -31,9 +34,14 @@ export default async function CheckinPage({
   }
 
   let officeNameAr: string;
+  let travelerStates: TravelerState[] = [];
   try {
     const office = await assertActiveOffice(officeId);
     officeNameAr = office.nameAr;
+    const acceptedIds = new Set(getOfficeTravelerStateIds(office));
+    travelerStates = (await listTravelerStatesForPublicBooking()).filter((state) =>
+      acceptedIds.has(state.id),
+    );
   } catch {
     return (
       <section className="bg-gov-gray-50 px-4 py-12">
@@ -56,7 +64,11 @@ export default async function CheckinPage({
           </h1>
           <p className="mt-2 text-sm text-gov-gray-700">{officeNameAr}</p>
         </header>
-        <CheckinForm officeId={officeId} officeNameAr={officeNameAr} />
+        <CheckinForm
+          officeId={officeId}
+          officeNameAr={officeNameAr}
+          travelerStates={travelerStates}
+        />
       </div>
     </section>
   );

@@ -1,21 +1,27 @@
 "use client";
 
 import { useActionState } from "react";
-import { QueueTicketCard } from "@/components/queue/QueueTicketCard";
+import { QueueWaitLive } from "@/components/queue/QueueWaitLive";
 import {
   checkinLookupAction,
   checkinQuickAction,
   type CheckinState,
 } from "@/app/[locale]/(public)/checkin/actions";
+import type { TravelerState } from "@/lib/office-requests/types";
 
 const initial: CheckinState = { ok: false };
 
 type CheckinFormProps = {
   officeId: string;
   officeNameAr: string;
+  travelerStates: TravelerState[];
 };
 
-export function CheckinForm({ officeId, officeNameAr }: CheckinFormProps) {
+export function CheckinForm({
+  officeId,
+  officeNameAr,
+  travelerStates,
+}: CheckinFormProps) {
   const [lookupState, lookupAction, lookupPending] = useActionState(
     checkinLookupAction,
     initial,
@@ -45,7 +51,7 @@ export function CheckinForm({ officeId, officeNameAr }: CheckinFormProps) {
 
   if (result?.ok && result.ticket) {
     return (
-      <QueueTicketCard
+      <QueueWaitLive
         ticket={result.ticket}
         officeNameAr={officeNameAr}
         citizenName={result.citizenName}
@@ -125,6 +131,38 @@ export function CheckinForm({ officeId, officeNameAr }: CheckinFormProps) {
               className="mt-2 w-full rounded-md border border-gov-gray-200 px-3 py-2.5 text-sm"
             />
           </div>
+          <div>
+            <label
+              htmlFor="travelerStateId"
+              className="block text-sm font-bold text-gov-navy"
+            >
+              حالة المسافر
+            </label>
+            <select
+              id="travelerStateId"
+              name="travelerStateId"
+              required
+              className="mt-2 w-full rounded-md border border-gov-gray-200 bg-white px-3 py-2.5 text-sm"
+              defaultValue=""
+            >
+              <option value="" disabled>
+                اختر حالة المسافر
+              </option>
+              {travelerStates.map((state) => (
+                <option key={state.id} value={state.id}>
+                  {state.labelAr}
+                </option>
+              ))}
+            </select>
+          </div>
+          <label className="flex items-center gap-2 text-sm font-semibold text-gov-gray-800">
+            <input
+              type="checkbox"
+              name="hasSpecialNeeds"
+              className="size-4 rounded border-gov-gray-300"
+            />
+            <span>ذوي همم</span>
+          </label>
           <div>
             <label htmlFor="details" className="block text-sm font-bold text-gov-navy">
               ملاحظات (اختياري)

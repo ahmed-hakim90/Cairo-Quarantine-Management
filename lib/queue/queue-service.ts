@@ -1,7 +1,7 @@
 import { FieldValue, Timestamp } from "firebase-admin/firestore";
 import { getAdminDb, isFirebaseAdminConfigured } from "@/lib/firebase/admin";
 import { getCairoTodayYmd } from "@/lib/cairo-today-ymd";
-import { normalizePhone } from "@/lib/office-requests/whatsapp-message";
+import { phoneLookupVariants } from "@/lib/office-requests/whatsapp-message";
 import { createOfficeRequest, getOffice } from "@/lib/office-requests/store";
 import type { OfficeRequest } from "@/lib/office-requests/types";
 import {
@@ -22,6 +22,7 @@ import {
 import type {
   DailyStats,
   QueueCreatedFrom,
+  QueueRequestSummary,
   QueueTicket,
   QueueTicketWithRequest,
 } from "@/lib/queue/types";
@@ -55,7 +56,7 @@ export { formatRequestNumber } from "@/lib/office-requests/request-number";
 
 export function normalizeRequestLookup(value: string): {
   raw: string;
-  phone: string;
+  phoneVariants: string[];
   requestNumbers: string[];
 } {
   const raw = value.trim();
@@ -69,7 +70,7 @@ export function normalizeRequestLookup(value: string): {
   }
   return {
     raw,
-    phone: normalizePhone(raw),
+    phoneVariants: phoneLookupVariants(raw),
     requestNumbers: [...numbers],
   };
 }
@@ -168,16 +169,136 @@ export async function findRequestByNumberOrPhone(
     }
   }
 
-  if (lookup.phone) {
+  if (lookup.phoneVariants.length > 0) {
+    const matches: OfficeRequest[] = [];
+    for (const phone of lookup.phoneVariants) {
+      const snap = await db
+        .collection(REQUESTS)
+        .where("phone", "==", phone)
+        .orderBy("createdAt", "desc")
+        .limit(1)
+        .get();
+      if (!snap.empty) {
+        const doc = snap.docs[0];
+        matches.push(requestFromDoc(doc.id, doc.data()));
+      }
+    }
+    matches.sort(
+      (a, b) =>
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+    );
+    if (matches[0]) return matches[0];
+  }
+
+  return null;
+}
+
+export async function findOfficeRequestByLookup(
+  officeId: string,
+  value: string,
+): Promise<OfficeRequest | null> {
+  if (!isFirebaseAdminConfigured()) return null;
+  const lookup = normalizeRequestLookup(value);
+  if (!lookup.raw) return null;
+  const db = getAdminDb();
+
+  for (const requestNumber of lookup.requestNumbers) {
     const snap = await db
       .collection(REQUESTS)
-      .where("phone", "==", lookup.phone)
+      .where("officeId", "==", officeId)
+      .where("requestNumber", "==", requestNumber)
+      .limit(1)
+      .get();
+    if (!snap.empty) {
+      const doc = snap.docs[0];
+      return requestFromDoc(doc.id, doc.data() ?? {});
+    }
+  }
+
+  const triedPhones = new Set<string>();
+  for (const phone of lookup.phoneVariants) {
+    if (!phone || triedPhones.has(phone)) continue;
+    triedPhones.add(phone);
+    const snap = await db
+      .collection(REQUESTS)
+      .where("officeId", "==", officeId)
+      .where("phone", "==", phone)
       .orderBy("createdAt", "desc")
       .limit(1)
       .get();
     if (!snap.empty) {
       const doc = snap.docs[0];
-      return requestFromDoc(doc.id, doc.data());
+      return requestFromDoc(doc.id, doc.data() ?? {});
+    }
+  }
+
+  return null;
+}
+
+export function toQueueRequestSummary(
+  request: OfficeRequest,
+): QueueRequestSummary {
+  return {
+    id: request.id,
+    requestNumber: request.requestNumber,
+    name: request.name,
+    phone: request.phone,
+    type: request.type,
+    status: request.status,
+    preferredDate: request.preferredDate,
+    details: request.details,
+    notes: request.notes,
+    createdAt: request.createdAt,
+  };
+}
+
+function attachRequestToTicket(
+  ticket: QueueTicket,
+  request: OfficeRequest | null | undefined,
+): QueueTicketWithRequest {
+  return {
+    ...ticket,
+    request: request ? toQueueRequestSummary(request) : null,
+  };
+}
+
+async function findTicketByPhoneForOfficeDay(args: {
+  officeId: string;
+  date: string;
+  phoneVariants: string[];
+}): Promise<QueueTicket | null> {
+  if (!isFirebaseAdminConfigured() || args.phoneVariants.length === 0) {
+    return null;
+  }
+  const db = getAdminDb();
+  const triedPhones = new Set<string>();
+
+  for (const phone of args.phoneVariants) {
+    if (!phone || triedPhones.has(phone)) continue;
+    triedPhones.add(phone);
+
+    const reqSnap = await db
+      .collection(REQUESTS)
+      .where("officeId", "==", args.officeId)
+      .where("phone", "==", phone)
+      .orderBy("createdAt", "desc")
+      .limit(10)
+      .get();
+
+    for (const doc of reqSnap.docs) {
+      const ticketRef = db
+        .collection(TODAY_QUEUE)
+        .doc(
+          queueTicketId({
+            requestId: doc.id,
+            officeId: args.officeId,
+            queueDate: args.date,
+          }),
+        );
+      const ticketSnap = await ticketRef.get();
+      if (ticketSnap.exists) {
+        return ticketFromDoc(ticketSnap.id, ticketSnap.data() ?? {});
+      }
     }
   }
 
@@ -263,16 +384,24 @@ export async function createQuickRequestAndQueue(args: {
   officeId: string;
   name: string;
   phone: string;
+  travelerStateId: string;
+  travelerStateLabel?: string;
+  hasSpecialNeeds?: boolean;
   details?: string;
 }): Promise<{ request: OfficeRequest; ticket: QueueTicket }> {
   const date = getTodayKey();
+  const stateLabel = args.travelerStateLabel?.trim() || args.travelerStateId;
   const created = await createOfficeRequest({
     officeId: args.officeId,
     type: "booking",
+    travelerStateId: args.travelerStateId,
     preferredDate: date,
     name: args.name,
     phone: args.phone,
-    details: args.details?.trim() || "طلب حضور سريع من QR",
+    details:
+      args.details?.trim() ||
+      `حالة المسافر: ${stateLabel}\nالتاريخ المطلوب: ${date}`,
+    hasSpecialNeeds: args.hasSpecialNeeds === true,
   });
   const ticket = await createQueueTicket({
     requestId: created.id,
@@ -318,7 +447,16 @@ export async function completeQueueTicket(ticketId: string): Promise<QueueTicket
     );
   });
   const saved = await ticketRef.get();
-  return ticketFromDoc(saved.id, saved.data() ?? {});
+  const completed = ticketFromDoc(saved.id, saved.data() ?? {});
+  void import("@/lib/queue/queue-notify")
+    .then(({ scanAndNotifyQueueWatches }) =>
+      scanAndNotifyQueueWatches({
+        officeId: completed.officeId,
+        date: completed.queueDate,
+      }),
+    )
+    .catch(() => undefined);
+  return completed;
 }
 
 export async function findQueueTicketForOfficeDay(args: {
@@ -347,8 +485,9 @@ export async function findQueueTicketForOfficeDay(args: {
     }
   }
 
+  const lookup = normalizeRequestLookup(raw);
+
   if (!ticket) {
-    const lookup = normalizeRequestLookup(raw);
     for (const requestNumber of lookup.requestNumbers) {
       const snap = await db
         .collection(TODAY_QUEUE)
@@ -365,30 +504,64 @@ export async function findQueueTicketForOfficeDay(args: {
     }
   }
 
+  if (!ticket && lookup.phoneVariants.length > 0) {
+    ticket = await findTicketByPhoneForOfficeDay({
+      officeId: args.officeId,
+      date: args.date,
+      phoneVariants: lookup.phoneVariants,
+    });
+  }
+
   if (!ticket) return null;
   const requestSnap = await db.collection(REQUESTS).doc(ticket.requestId).get();
   const request = requestSnap.exists
     ? requestFromDoc(requestSnap.id, requestSnap.data() ?? {})
     : null;
-  return {
-    ...ticket,
-    request: request
-      ? {
-          id: request.id,
-          requestNumber: request.requestNumber,
-          name: request.name,
-          phone: request.phone,
-        }
-      : null,
-  };
+  return attachRequestToTicket(ticket, request);
+}
+
+export async function listQueueTicketsForOfficeDay(
+  officeId: string,
+  date: string,
+): Promise<QueueTicketWithRequest[]> {
+  if (!isFirebaseAdminConfigured()) return [];
+  const db = getAdminDb();
+  const snap = await db
+    .collection(TODAY_QUEUE)
+    .where("officeId", "==", officeId)
+    .where("queueDate", "==", date)
+    .orderBy("queueNumber", "asc")
+    .get();
+  if (snap.empty) return [];
+
+  const tickets = snap.docs.map((doc) => ticketFromDoc(doc.id, doc.data()));
+  const requestIds = [
+    ...new Set(tickets.map((ticket) => ticket.requestId).filter(Boolean)),
+  ];
+  const requestSnaps =
+    requestIds.length > 0
+      ? await db.getAll(...requestIds.map((id) => db.collection(REQUESTS).doc(id)))
+      : [];
+  const requestById = new Map(
+    requestSnaps
+      .filter((doc) => doc.exists)
+      .map((doc) => [doc.id, requestFromDoc(doc.id, doc.data() ?? {})]),
+  );
+
+  return tickets.map((ticket) =>
+    attachRequestToTicket(ticket, requestById.get(ticket.requestId)),
+  );
 }
 
 export async function getQueueDashboard(officeId: string, date = getTodayKey()): Promise<{
   stats: DailyStats;
+  tickets: QueueTicketWithRequest[];
 }> {
-  return {
-    stats: await getDailyStats(officeId, date),
-  };
+  const [stats, tickets] = await Promise.all([
+    getDailyStats(officeId, date),
+    listQueueTicketsForOfficeDay(officeId, date),
+  ]);
+  return { stats, tickets };
 }
 
 export async function deleteTodayQueueDocs(
