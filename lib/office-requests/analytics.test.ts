@@ -24,6 +24,7 @@ function request(
 ): OfficeRequest {
   return {
     id,
+    requestNumber: id,
     officeId,
     officeNameAr: officeId,
     type,

@@ -1,0 +1,76 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+import { adminCanAccessOffice } from "@/lib/office-requests/admin-access";
+import { getAdminSession } from "@/lib/office-requests/session";
+import {
+  completeQueueTicket,
+  findQueueTicketForOfficeDay,
+} from "@/lib/queue/queue-service";
+import type { QueueTicketWithRequest } from "@/lib/queue/types";
+
+export type QueuePanelState =
+  | { ok: true; ticket: QueueTicketWithRequest }
+  | { ok: false; error?: string; ticket?: null };
+
+async function assertQueueAccess(officeId: string) {
+  const session = await getAdminSession();
+  if (!session) throw new Error("يجب تسجيل الدخول.");
+  if (!adminCanAccessOffice(session.profile, officeId)) {
+    throw new Error("غير مصرح لهذا المكتب.");
+  }
+  return session;
+}
+
+export async function searchTicketAction(
+  _prev: QueuePanelState,
+  formData: FormData,
+): Promise<QueuePanelState> {
+  const officeId = String(formData.get("officeId") ?? "").trim();
+  const queueDate = String(formData.get("queueDate") ?? "").trim();
+  const search = String(formData.get("search") ?? "").trim();
+
+  try {
+    await assertQueueAccess(officeId);
+    if (!search) return { ok: false, error: "أدخل رقم الدور أو رقم الطلب." };
+    const ticket = await findQueueTicketForOfficeDay({
+      officeId,
+      date: queueDate,
+      value: search,
+    });
+    if (!ticket) return { ok: false, error: "لا يوجد دور بهذا الرقم اليوم." };
+    return { ok: true, ticket };
+  } catch (e) {
+    return {
+      ok: false,
+      error: e instanceof Error ? e.message : "تعذر البحث.",
+    };
+  }
+}
+
+export async function completeTicketAction(
+  _prev: QueuePanelState,
+  formData: FormData,
+): Promise<QueuePanelState> {
+  const officeId = String(formData.get("officeId") ?? "").trim();
+  const ticketId = String(formData.get("ticketId") ?? "").trim();
+
+  try {
+    await assertQueueAccess(officeId);
+    const updated = await completeQueueTicket(ticketId);
+    const ticket = await findQueueTicketForOfficeDay({
+      officeId,
+      date: updated.queueDate,
+      value: String(updated.queueNumber),
+    });
+    const locale = String(formData.get("locale") ?? "ar").trim() || "ar";
+    revalidatePath(`/${locale}/office-dashboard/${officeId}/queue`);
+    if (!ticket) return { ok: false, error: "تعذر قراءة التذكرة بعد التحديث." };
+    return { ok: true, ticket };
+  } catch (e) {
+    return {
+      ok: false,
+      error: e instanceof Error ? e.message : "تعذر إتمام الدور.",
+    };
+  }
+}

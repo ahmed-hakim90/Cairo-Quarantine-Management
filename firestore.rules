@@ -76,6 +76,24 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
+    match /today_queue/{ticketId} {
+      allow read: if superAdmin() ||
+        officeAdminFor(resource.data.officeId) ||
+        officeUserFor(resource.data.officeId);
+      allow write: if false;
+    }
+
+    match /daily_stats/{statId} {
+      allow read: if superAdmin() ||
+        officeAdminFor(resource.data.officeId) ||
+        officeUserFor(resource.data.officeId);
+      allow write: if false;
+    }
+
+    match /settings/{docId} {
+      allow read, write: if false;
+    }
+
     match /{document=**} {
       allow read, write: if false;
     }

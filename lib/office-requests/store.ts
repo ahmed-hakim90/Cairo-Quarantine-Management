@@ -21,6 +21,7 @@ import {
   effectiveTravelerStateIdOnRequest,
   officeAcceptsTravelerState,
 } from "@/lib/office-requests/office-traveler-state";
+import { formatRequestNumber } from "@/lib/office-requests/request-number";
 import { normalizePhone } from "@/lib/office-requests/whatsapp-message";
 import {
   DEFAULT_MESSAGE_TEMPLATE,
@@ -75,6 +76,7 @@ const OFFICES = "offices";
 const TRAVELER_STATES = "traveler_states";
 const VACCINES = "vaccines";
 const REQUESTS = "requests";
+const REQUEST_NUMBERS_SETTINGS = "request_numbers";
 const SETTINGS = "settings";
 const USERS = "users";
 const TEMPLATES = "messageTemplates";
@@ -177,6 +179,7 @@ function publicRequestStatus(
 ): PublicOfficeRequestStatus {
   return {
     id: request.id,
+    requestNumber: request.requestNumber,
     officeNameAr: request.officeNameAr,
     type: request.type,
     ...(request.travelerStateId
@@ -606,8 +609,14 @@ function requestFromDoc(
   id: string,
   data: FirebaseFirestore.DocumentData,
 ): OfficeRequest {
+  const sequence =
+    typeof data.requestSequence === "number" && Number.isFinite(data.requestSequence)
+      ? data.requestSequence
+      : undefined;
   return {
     id,
+    requestNumber: String(data.requestNumber ?? id),
+    ...(sequence ? { requestSequence: sequence } : {}),
     officeId: String(data.officeId ?? ""),
     officeNameAr: String(data.officeNameAr ?? ""),
     type: (data.type ?? "booking") as OfficeRequestType,
@@ -880,31 +889,52 @@ export async function createOfficeRequest(input: {
   );
   const now = FieldValue.serverTimestamp();
   const travelerStateId = input.travelerStateId?.trim();
-  const doc = await getAdminDb().collection(REQUESTS).add({
-    officeId: office.id,
-    officeNameAr: office.nameAr,
-    type: input.type,
-    ...(travelerStateId ? { travelerStateId } : {}),
-    ...(input.travelerCategory && !travelerStateId
-      ? { travelerCategory: input.travelerCategory }
-      : {}),
-    ...(input.preferredDate ? { preferredDate: input.preferredDate } : {}),
-    ...(input.type === "booking" && input.hasSpecialNeeds
-      ? { hasSpecialNeeds: true }
-      : {}),
-    status: "new",
-    name: input.name.trim(),
-    phone: normalizePhone(input.phone),
-    details: input.details.trim(),
-    notes: "",
-    passToken,
-    passTokenExpiresAt,
-    createdAt: now,
-    updatedAt: now,
+  const db = getAdminDb();
+  const docRef = db.collection(REQUESTS).doc();
+  const counterRef = db.collection(SETTINGS).doc(REQUEST_NUMBERS_SETTINGS);
+
+  await db.runTransaction(async (tx) => {
+    const counterSnap = await tx.get(counterRef);
+    const last =
+      typeof counterSnap.data()?.lastRequestSequence === "number" &&
+      Number.isFinite(counterSnap.data()?.lastRequestSequence)
+        ? counterSnap.data()!.lastRequestSequence
+        : 0;
+    const requestSequence = last + 1;
+    const requestNumber = formatRequestNumber(requestSequence);
+    tx.set(
+      counterRef,
+      { lastRequestSequence: requestSequence },
+      { merge: true },
+    );
+    tx.set(docRef, {
+      requestNumber,
+      requestSequence,
+      officeId: office.id,
+      officeNameAr: office.nameAr,
+      type: input.type,
+      ...(travelerStateId ? { travelerStateId } : {}),
+      ...(input.travelerCategory && !travelerStateId
+        ? { travelerCategory: input.travelerCategory }
+        : {}),
+      ...(input.preferredDate ? { preferredDate: input.preferredDate } : {}),
+      ...(input.type === "booking" && input.hasSpecialNeeds
+        ? { hasSpecialNeeds: true }
+        : {}),
+      status: "new",
+      name: input.name.trim(),
+      phone: normalizePhone(input.phone),
+      details: input.details.trim(),
+      notes: "",
+      passToken,
+      passTokenExpiresAt,
+      createdAt: now,
+      updatedAt: now,
+    });
   });
 
-  const saved = await doc.get();
-  const full = requestFromDoc(doc.id, saved.data() ?? {});
+  const saved = await docRef.get();
+  const full = requestFromDoc(docRef.id, saved.data() ?? {});
   return {
     ...publicRequestStatus(full, { includePassToken: true }),
     passToken,
@@ -944,6 +974,7 @@ export async function getBookingPassPublic(args: {
   const request = requestFromDoc(doc.id, data);
   return {
     id: request.id,
+    requestNumber: request.requestNumber,
     officeNameAr: request.officeNameAr,
     type: request.type,
     ...(request.travelerStateId

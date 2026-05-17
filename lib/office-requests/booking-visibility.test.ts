@@ -10,6 +10,7 @@ function request(
   const createdAt = opts?.createdAt ?? "2026-05-15T12:00:00.000Z";
   return {
     id,
+    requestNumber: id,
     officeId: "office-a",
     officeNameAr: "مكتب أ",
     type,

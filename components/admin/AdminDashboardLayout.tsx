@@ -65,6 +65,13 @@ export function AdminDashboardLayout({
       <AdminSidebar
         locale={locale}
         role={role}
+        queueOfficeId={
+          role === "office_user"
+            ? officeId
+            : role === "office_admin" && allowedOfficeIds.length === 1
+              ? allowedOfficeIds[0]
+              : null
+        }
         mobileOpen={mobileOpen}
         onClose={() => setMobileOpen(false)}
       />

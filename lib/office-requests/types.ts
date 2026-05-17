@@ -50,6 +50,8 @@ export const DEFAULT_BOOKING_SAME_DAY_CUTOFF_HOUR = 14;
 
 export type OfficeRequest = {
   id: string;
+  requestNumber: string;
+  requestSequence?: number;
   officeId: string;
   officeNameAr: string;
   type: OfficeRequestType;
@@ -77,6 +79,7 @@ export type OfficeRequest = {
 /** Read-only payload for `/booking/pass/[id]?t=…` after token verification. */
 export type BookingPassPublic = {
   id: string;
+  requestNumber: string;
   officeNameAr: string;
   type: OfficeRequestType;
   travelerStateId?: string;
@@ -97,6 +100,7 @@ export type CreatedOfficeRequestPublic = PublicOfficeRequestStatus & {
 export type PublicOfficeRequestStatus = Pick<
   OfficeRequest,
   | "id"
+  | "requestNumber"
   | "officeNameAr"
   | "type"
   | "travelerStateId"

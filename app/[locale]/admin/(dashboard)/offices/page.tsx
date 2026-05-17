@@ -1,11 +1,16 @@
+import Link from "next/link";
+import { headers } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 import { OfficeFormDialog } from "@/components/admin/OfficeFormDialog";
 import { SetOfficeActiveForm } from "@/components/admin/SetOfficeActiveForm";
+import { OfficeQrCard } from "@/components/queue/OfficeQrCard";
+import { inferredSiteOriginFromHeaders } from "@/lib/booking-pass-url";
 import { isLocale } from "@/lib/i18n/config";
 import { getAdminSession } from "@/lib/office-requests/session";
 import { effectiveOfficeService } from "@/lib/office-requests/office-traveler-state";
 import { listOffices, listTravelerStates } from "@/lib/office-requests/store";
 import type { Office } from "@/lib/office-requests/types";
+import { getOfficeCheckinUrl } from "@/lib/queue/queue-service";
 
 const SERVICE_LABELS: Record<Office["service"], string> = {
   hajj_umrah_travelers: "حج وعمرة ومسافرين دوليين",
@@ -26,10 +31,12 @@ export default async function AdminOfficesPage({
     redirect(`/${locale}/admin`);
   }
 
-  const [offices, travelerStates] = await Promise.all([
+  const [offices, travelerStates, headerList] = await Promise.all([
     listOffices({ includeInactive: true }),
     listTravelerStates({ includeInactive: true }),
+    headers(),
   ]);
+  const siteOrigin = inferredSiteOriginFromHeaders(headerList);
 
   return (
     <div className="mx-auto max-w-7xl">
@@ -57,7 +64,28 @@ export default async function AdminOfficesPage({
           </div>
         </div>
 
-        <div className="mt-6 overflow-x-auto rounded-lg border border-gov-gray-200 bg-white shadow-sm">
+        <section className="mt-10">
+          <h2 className="font-heading text-lg font-extrabold text-gov-navy">
+            أكواد QR للحضور
+          </h2>
+          <p className="mt-1 text-sm text-gov-gray-600">
+            اطبع أو شارك رابط الحضور اليومي لكل مكتب نشط.
+          </p>
+          <div className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            {offices
+              .filter((office) => office.active)
+              .map((office) => (
+                <OfficeQrCard
+                  key={`qr-${office.id}`}
+                  locale={locale}
+                  office={office}
+                  checkinUrl={getOfficeCheckinUrl(office.id, siteOrigin)}
+                />
+              ))}
+          </div>
+        </section>
+
+        <div className="mt-10 overflow-x-auto rounded-lg border border-gov-gray-200 bg-white shadow-sm">
           <table className="min-w-full divide-y divide-gov-gray-200 text-sm">
             <thead className="bg-gov-gray-50 text-gov-navy">
               <tr>
@@ -108,6 +136,14 @@ export default async function AdminOfficesPage({
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex flex-wrap items-center gap-2">
+                      {office.active ? (
+                        <Link
+                          href={`/${locale}/office-dashboard/${office.id}/queue`}
+                          className="inline-flex min-h-9 items-center justify-center rounded-md bg-gov-accent px-3 text-xs font-extrabold text-white transition hover:bg-gov-navy"
+                        >
+                          فتح الطابور
+                        </Link>
+                      ) : null}
                       <OfficeFormDialog
                         locale={locale}
                         office={office}

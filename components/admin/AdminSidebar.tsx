@@ -8,6 +8,8 @@ import type { AdminRole } from "@/lib/office-requests/types";
 type AdminSidebarProps = {
   locale: string;
   role: AdminRole;
+  /** First office for queue link (office user / single-office admin). */
+  queueOfficeId?: string | null;
   mobileOpen: boolean;
   onClose: () => void;
 };
@@ -30,10 +32,12 @@ function isActive(normalized: string, item: NavItem): boolean {
 function NavLinks({
   locale,
   role,
+  queueOfficeId,
   onNavigate,
 }: {
   locale: string;
   role: AdminRole;
+  queueOfficeId?: string | null;
   onNavigate: () => void;
 }) {
   const pathname = usePathname();
@@ -42,9 +46,22 @@ function NavLinks({
   const baseItems: NavItem[] = [
     { href: "/admin", label: "الرئيسية", exact: true },
     { href: "/admin/requests", label: "الطلبات" },
+    ...(queueOfficeId
+      ? [
+          {
+            href: `/office-dashboard/${queueOfficeId}/queue`,
+            label: "طابور اليوم",
+          },
+        ]
+      : []),
   ];
 
   const superItems: NavItem[] = [
+    {
+      href: "/admin/queue",
+      label: "طوابير المكاتب",
+      roles: ["super_admin", "office_admin"],
+    },
     { href: "/admin/offices", label: "المكاتب", roles: ["super_admin"] },
     {
       href: "/admin/traveler-states",
@@ -93,7 +110,13 @@ function NavLinks({
   );
 }
 
-export function AdminSidebar({ locale, role, mobileOpen, onClose }: AdminSidebarProps) {
+export function AdminSidebar({
+  locale,
+  role,
+  queueOfficeId = null,
+  mobileOpen,
+  onClose,
+}: AdminSidebarProps) {
   return (
     <>
       {mobileOpen ? (
@@ -124,7 +147,12 @@ export function AdminSidebar({ locale, role, mobileOpen, onClose }: AdminSidebar
           <p className="mt-1 text-xs text-gov-gray-600">متابعة الطلبات والحجوزات</p>
         </div>
         <div className="flex-1 overflow-y-auto">
-          <NavLinks locale={locale} role={role} onNavigate={onClose} />
+          <NavLinks
+            locale={locale}
+            role={role}
+            queueOfficeId={queueOfficeId}
+            onNavigate={onClose}
+          />
         </div>
       </aside>
     </>

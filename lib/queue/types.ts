@@ -1,0 +1,36 @@
+import type { OfficeRequest } from "@/lib/office-requests/types";
+
+export type QueueTicketStatus = "waiting" | "completed";
+export type QueueCreatedFrom = "existing_request" | "new_request";
+
+export type QueueTicket = {
+  id: string;
+  requestId: string;
+  requestNumber: string;
+  officeId: string;
+  queueDate: string;
+  queueNumber: number;
+  status: QueueTicketStatus;
+  checkedInAt: string;
+  completedAt?: string;
+  createdFrom: QueueCreatedFrom;
+};
+
+export type DailyStats = {
+  id: string;
+  date: string;
+  officeId: string;
+  totalCheckedIn: number;
+  totalCompleted: number;
+  totalNoShow: number;
+  totalNewRequests: number;
+  lastQueueNumber: number;
+  closed: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
+export type QueueTicketWithRequest = QueueTicket & {
+  request: Pick<OfficeRequest, "id" | "requestNumber" | "name" | "phone"> | null;
+};
+
