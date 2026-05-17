@@ -103,6 +103,7 @@ export type Messages = {
     heading: string;
     intro: string;
     caption: string;
+    siteVisitorsTitle: string;
     pendingValue: string;
     viewDetails: string;
     footnote: string;
@@ -313,13 +314,14 @@ const ar: Messages = {
     intro:
       "عرض توجيهي يقابل مسارات الخدمات الثلاثة على البوابة. تُحدَّث الأرقام عند توفر بيانات منشورة رسميًا من الجهات المختصة.",
     caption:
-      "بطاقات تعرض العدد المرجعي أو حالة التحديث لكل فئة مع رابط للتفاصيل",
+      "بطاقات تعرض العدد المرجعي أو حالة التحديث لكل فئة مع رابط للتفاصيل، وبطاقة زوار الموقع",
+    siteVisitorsTitle: "زوار الموقع",
     pendingValue: "قيد التحديث",
     viewDetails: "عرض الصفحة",
     footnote:
       "الأرقام المعروضة لا تغني عن النشر الرسمي؛ يُرجى اعتماد المصدر المحدّد من الجهة صاحبة الشأن.",
     periodLabel: "المرجع:",
-    sourceLink: "المصدر الرسمي",
+    sourceLink: "إدارة الحجر الصحي بالقاهرة",
     sourcePending: "سيُذكر رابط المصدر عند اعتماد الرقم من جهة رسمية.",
   },
   hajjTable: {
@@ -554,13 +556,14 @@ const en: Messages = {
     intro:
       "Indicative figures matching the three service routes on this portal. Numbers are updated when competent authorities publish official statistics.",
     caption:
-      "Cards showing reference counts or update status per category with detail links",
+      "Cards showing reference counts or update status per category with detail links, plus site visitors",
+    siteVisitorsTitle: "Site visitors",
     pendingValue: "Pending update",
     viewDetails: "Open page",
     footnote:
       "Displayed figures do not replace official publications; defer to the cited source from the responsible authority.",
     periodLabel: "Reference:",
-    sourceLink: "Official source",
+    sourceLink: "Cairo Quarantine Administration",
     sourcePending:
       "A source link will appear once figures are adopted from an official body.",
   },
@@ -788,13 +791,14 @@ const zh: Messages = {
     heading: "与检疫服务路径对应的旅客规模（参考）",
     intro:
       "与本门户三类服务路径相对应的参考数据。主管部门正式发布统计数据后将予以更新。",
-    caption: "各类参考人数或更新状态及详情链接",
+    caption: "各类参考人数或更新状态及详情链接，以及网站访问量",
+    siteVisitorsTitle: "网站访问量",
     pendingValue: "待更新",
     viewDetails: "打开页面",
     footnote:
       "所示数字不能替代正式发布；请以主管部门公布的来源为准。",
     periodLabel: "参考：",
-    sourceLink: "官方来源",
+    sourceLink: "开罗检疫管理处",
     sourcePending: "待主管部门采纳数字后将附上来源链接。",
   },
   hajjTable: {

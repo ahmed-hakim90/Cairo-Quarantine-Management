@@ -1,9 +1,12 @@
 "use client";
 
+import { useId, useState } from "react";
 import type { VaccineRecord } from "@/data/vaccines";
 import type { Locale } from "@/lib/i18n/config";
 import type { Messages } from "@/lib/i18n/messages";
 import { getVaccinationBookingFormUrl } from "@/lib/site-booking";
+
+type TripKind = "hajj" | "umrah";
 
 type HajjUmrahTripPricingProps = {
   locale: Locale;
@@ -62,45 +65,6 @@ function VaccinePriceRow({
   );
 }
 
-function VaccineGroup({
-  title,
-  vaccines,
-  locale,
-  currencyLabel,
-  freeLabel,
-  numberLocale,
-  langAttr,
-}: {
-  title: string;
-  vaccines: VaccineRecord[];
-  locale: Locale;
-  currencyLabel: string;
-  freeLabel: string;
-  numberLocale: string;
-  langAttr: string;
-}) {
-  if (vaccines.length === 0) return null;
-
-  return (
-    <div className="space-y-4">
-      <h3 className="font-heading text-lg font-bold text-gov-navy">{title}</h3>
-      <ul className="space-y-4">
-        {vaccines.map((v) => (
-          <VaccinePriceRow
-            key={v.id}
-            vaccine={v}
-            locale={locale}
-            currencyLabel={currencyLabel}
-            freeLabel={freeLabel}
-            numberLocale={numberLocale}
-            langAttr={langAttr}
-          />
-        ))}
-      </ul>
-    </div>
-  );
-}
-
 export function HajjUmrahTripPricing({
   locale,
   pricing,
@@ -109,14 +73,18 @@ export function HajjUmrahTripPricing({
   freeLabel,
   bookingNav,
 }: HajjUmrahTripPricingProps) {
+  const selectId = useId();
+  const [trip, setTrip] = useState<TripKind>("hajj");
   const bookingUrl = getVaccinationBookingFormUrl(locale);
+
+  const activeVaccines = vaccinesByCategory[trip];
 
   const numberLocale =
     locale === "ar" ? "ar-EG" : locale === "zh" ? "zh-CN" : "en-US";
   const langAttr =
     locale === "ar" ? "ar" : locale === "zh" ? "zh-CN" : "en";
 
-  const groupProps = {
+  const rowProps = {
     locale,
     currencyLabel,
     freeLabel,
@@ -138,25 +106,44 @@ export function HajjUmrahTripPricing({
         </h2>
 
         <div className="mt-8 rounded-lg border border-gov-gray-200 bg-gov-gray-50 p-6 shadow-sm md:p-8">
-          <div
-            className="rounded-lg border border-gov-gray-200 bg-white p-6 shadow-sm md:p-8"
-            aria-live="polite"
-          >
-            <p className="text-sm font-semibold text-gov-gray-600">
-              {pricing.guidancePrice}
-            </p>
+          <div className="grid gap-8 lg:grid-cols-2 lg:items-start">
+            <div>
+              <label
+                htmlFor={selectId}
+                className="block text-sm font-semibold text-gov-navy"
+              >
+                {pricing.tripTypeLabel}
+              </label>
+              <select
+                id={selectId}
+                value={trip}
+                onChange={(e) => setTrip(e.target.value as TripKind)}
+                className="mt-2 min-h-14 w-full rounded-md border border-gov-gray-200 bg-white px-4 py-3 text-lg text-gov-gray-900 shadow-sm focus:border-gov-accent focus:outline-none focus:ring-2 focus:ring-gov-accent/30"
+              >
+                <option value="hajj">{pricing.tripHajj}</option>
+                <option value="umrah">{pricing.tripUmrah}</option>
+              </select>
+            </div>
 
-            <div className="mt-6 space-y-8">
-              <VaccineGroup
-                title={pricing.tripHajj}
-                vaccines={vaccinesByCategory.hajj}
-                {...groupProps}
-              />
-              <VaccineGroup
-                title={pricing.tripUmrah}
-                vaccines={vaccinesByCategory.umrah}
-                {...groupProps}
-              />
+            <div
+              className="rounded-lg border border-gov-gray-200 bg-white p-6 shadow-sm md:p-8"
+              aria-live="polite"
+            >
+              <p className="text-sm font-semibold text-gov-gray-600">
+                {pricing.guidancePrice}
+              </p>
+
+              {activeVaccines.length === 0 ? (
+                <p className="mt-4 text-base leading-relaxed text-gov-gray-700">
+                  —
+                </p>
+              ) : (
+                <ul className="mt-4 space-y-4">
+                  {activeVaccines.map((v) => (
+                    <VaccinePriceRow key={v.id} vaccine={v} {...rowProps} />
+                  ))}
+                </ul>
+              )}
             </div>
           </div>
 

@@ -8,6 +8,7 @@ type TravelerStatCountUpProps = {
   locale: Locale;
   durationMs?: number;
   className?: string;
+  suffix?: string;
 };
 
 function storageKey(locale: Locale, value: number): string {
@@ -45,14 +46,16 @@ export function TravelerStatCountUp({
   locale,
   durationMs = 2200,
   className,
+  suffix = "",
 }: TravelerStatCountUpProps) {
   const containerRef = useRef<HTMLSpanElement>(null);
   const [inView, setInView] = useState(false);
   const [display, setDisplay] = useState(0);
 
-  const formatted = new Intl.NumberFormat(intlLocale(locale), {
+  const formattedNumber = new Intl.NumberFormat(intlLocale(locale), {
     maximumFractionDigits: 0,
   }).format(Math.round(display));
+  const formatted = `${formattedNumber}${suffix}`;
 
   /** زائر عاد في نفس الجلسة: اعرض الرقم النهائي فورًا بدون انتظار السكرول */
   useEffect(() => {
@@ -136,7 +139,8 @@ export function TravelerStatCountUp({
 
   return (
     <span ref={containerRef} className={className} aria-label={formatted}>
-      {formatted}
+      {formattedNumber}
+      {suffix}
     </span>
   );
 }

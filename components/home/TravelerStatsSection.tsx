@@ -1,4 +1,5 @@
 import { LocaleLink } from "@/components/i18n/LocaleLink";
+import { SiteVisitorStatCard } from "@/components/home/SiteVisitorStatCard";
 import { TravelerStatCountUp } from "@/components/home/TravelerStatCountUp";
 import {
   TRAVELER_STATS_COUNTS,
@@ -25,6 +26,7 @@ const ROWS: {
 type TravelerStatsSectionProps = {
   locale: Locale;
   content: Messages["travelerStats"];
+  initialSiteVisitorCount: number;
   serviceTitles: Pick<
     Messages["services"],
     "internationalTitle" | "hajjTitle" | "citizenTitle"
@@ -34,6 +36,7 @@ type TravelerStatsSectionProps = {
 export function TravelerStatsSection({
   locale,
   content,
+  initialSiteVisitorCount,
   serviceTitles,
 }: TravelerStatsSectionProps) {
   return (
@@ -51,7 +54,7 @@ export function TravelerStatsSection({
         <p className="mt-2 max-w-3xl text-gov-gray-600">{content.intro}</p>
 
         <ul
-          className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3"
+          className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-4"
           aria-label={content.caption}
         >
           {ROWS.map((row) => {
@@ -82,26 +85,31 @@ export function TravelerStatsSection({
               </li>
             );
           })}
+          <li>
+            <SiteVisitorStatCard
+              locale={locale}
+              title={content.siteVisitorsTitle}
+              initialCount={initialSiteVisitorCount}
+            />
+          </li>
         </ul>
 
         <p className="mt-8 text-sm text-gov-gray-600">{content.footnote}</p>
 
         <p className="mt-2 text-sm text-gov-gray-600">
           <span className="font-medium text-gov-navy">{content.periodLabel}</span>
+          {" "}
           {TRAVELER_STATS_SOURCE_URL ? (
-            <>
-              {" "}
-              <a
-                href={TRAVELER_STATS_SOURCE_URL}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-gov-accent underline decoration-gov-gray-300 underline-offset-2 hover:decoration-gov-navy"
-              >
-                {content.sourceLink}
-              </a>
-            </>
+            <a
+              href={TRAVELER_STATS_SOURCE_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-gov-accent underline decoration-gov-gray-300 underline-offset-2 hover:decoration-gov-navy"
+            >
+              {content.sourceLink}
+            </a>
           ) : (
-            <> {content.sourcePending}</>
+            <span>{content.sourceLink}</span>
           )}
         </p>
       </div>

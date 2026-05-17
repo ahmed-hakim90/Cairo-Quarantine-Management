@@ -10,6 +10,7 @@ import { notFound } from "next/navigation";
 import { isLocale, type Locale } from "@/lib/i18n/config";
 import { getMessages } from "@/lib/i18n/messages";
 import { listVaccinesByCategoryForPublic } from "@/lib/office-requests/store";
+import { getSiteVisitorCount } from "@/lib/site-stats/store";
 
 export default async function HomePage({
   params,
@@ -20,7 +21,10 @@ export default async function HomePage({
   if (!isLocale(localeParam)) notFound();
   const locale = localeParam as Locale;
   const m = getMessages(locale);
-  const vaccinesByCategory = await listVaccinesByCategoryForPublic();
+  const [vaccinesByCategory, siteVisitorCount] = await Promise.all([
+    listVaccinesByCategoryForPublic(),
+    getSiteVisitorCount(),
+  ]);
 
   return (
     <>
@@ -35,6 +39,7 @@ export default async function HomePage({
         <TravelerStatsSection
           locale={locale}
           content={m.travelerStats}
+          initialSiteVisitorCount={siteVisitorCount}
           serviceTitles={{
             internationalTitle: m.services.internationalTitle,
             hajjTitle: m.services.hajjTitle,
