@@ -35,10 +35,10 @@ export function getTodayKey(date = new Date()): string {
 }
 
 export function getOfficeCheckinUrl(officeId: string, origin?: string): string {
-  const path = `/checkin?officeId=${encodeURIComponent(officeId)}`;
+  const path = `/ar/checkin?officeId=${encodeURIComponent(officeId)}`;
   const base =
-    origin?.replace(/\/+$/, "") ||
     process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/+$/, "") ||
+    origin?.replace(/\/+$/, "") ||
     "";
   return base ? `${base}${path}` : path;
 }
@@ -467,4 +467,3 @@ export async function assertActiveOffice(officeId: string) {
   if (!office?.active) throw new Error("المكتب غير متاح.");
   return office;
 }
-

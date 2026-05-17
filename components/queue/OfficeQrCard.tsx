@@ -46,13 +46,22 @@ export function OfficeQrCard({ locale, office, checkinUrl }: OfficeQrCardProps) 
   }
 
   async function downloadPdf() {
-    const el = cardRef.current;
-    if (!el) return;
     setBusy(true);
+    let captureEl: HTMLDivElement | null = null;
     try {
       const { default: html2canvas } = await import("html2canvas");
       const { jsPDF } = await import("jspdf");
-      const canvas = await html2canvas(el, {
+      const qrUrl =
+        qrDataUrl ??
+        (await QRCode.toDataURL(checkinUrl, {
+          margin: 1,
+          width: 320,
+          errorCorrectionLevel: "M",
+          color: { dark: "#0c2340", light: "#ffffff" },
+        }));
+      captureEl = buildPdfCaptureCard({ office, checkinUrl, qrDataUrl: qrUrl });
+      document.body.appendChild(captureEl);
+      const canvas = await html2canvas(captureEl, {
         scale: 2,
         backgroundColor: "#ffffff",
         useCORS: true,
@@ -66,7 +75,10 @@ export function OfficeQrCard({ locale, office, checkinUrl }: OfficeQrCardProps) 
       const h = canvas.height * ratio;
       pdf.addImage(img, "PNG", (pageW - w) / 2, (pageH - h) / 2, w, h);
       pdf.save(`checkin-${office.id}.pdf`);
+    } catch (error) {
+      console.error("Failed to export QR card PDF", error);
     } finally {
+      captureEl?.remove();
       setBusy(false);
     }
   }
@@ -173,4 +185,76 @@ export function OfficeQrCard({ locale, office, checkinUrl }: OfficeQrCardProps) 
       </div>
     </article>
   );
+}
+
+function buildPdfCaptureCard({
+  office,
+  checkinUrl,
+  qrDataUrl,
+}: {
+  office: Office;
+  checkinUrl: string;
+  qrDataUrl: string;
+}) {
+  const root = document.createElement("div");
+  root.dir = "rtl";
+  root.style.cssText = [
+    "position:fixed",
+    "left:-10000px",
+    "top:0",
+    "width:560px",
+    "min-height:780px",
+    "box-sizing:border-box",
+    "padding:36px",
+    "background:#ffffff",
+    "color:#0c2340",
+    "border:1px solid #dfe4ea",
+    "font-family:Arial,Tahoma,sans-serif",
+    "text-align:center",
+  ].join(";");
+
+  const title = document.createElement("p");
+  title.textContent = "إدارة الحجر الصحي بالقاهرة";
+  title.style.cssText =
+    "margin:0;color:#0f766e;font-size:18px;font-weight:700;";
+  root.appendChild(title);
+
+  const officeName = document.createElement("h1");
+  officeName.textContent = office.nameAr;
+  officeName.style.cssText =
+    "margin:18px 0 8px;color:#0c2340;font-size:30px;font-weight:800;line-height:1.35;";
+  root.appendChild(officeName);
+
+  const address = document.createElement("p");
+  address.textContent = office.addressAr;
+  address.style.cssText =
+    "margin:0 auto 28px;max-width:460px;color:#374151;font-size:17px;line-height:1.7;";
+  root.appendChild(address);
+
+  const qrWrap = document.createElement("div");
+  qrWrap.style.cssText =
+    "display:inline-block;margin:0 auto;padding:16px;background:#ffffff;border:1px solid #dfe4ea;border-radius:12px;";
+  const img = document.createElement("img");
+  img.src = qrDataUrl;
+  img.alt = "";
+  img.width = 300;
+  img.height = 300;
+  img.style.cssText = "display:block;width:300px;height:300px;";
+  qrWrap.appendChild(img);
+  root.appendChild(qrWrap);
+
+  const message = document.createElement("p");
+  message.textContent =
+    "امسح الكود لتسجيل الحضور وإضافة طلبك إلى طابور اليوم";
+  message.style.cssText =
+    "margin:28px auto 18px;max-width:460px;color:#0c2340;font-size:20px;font-weight:700;line-height:1.7;";
+  root.appendChild(message);
+
+  const url = document.createElement("p");
+  url.textContent = checkinUrl;
+  url.style.cssText =
+    "margin:0 auto;max-width:460px;color:#4a5568;font-size:13px;line-height:1.6;word-break:break-all;direction:ltr;";
+  root.appendChild(url);
+
+  return root;
 }
