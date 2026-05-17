@@ -18,6 +18,7 @@ function storageKey(locale: Locale, value: number): string {
 function intlLocale(locale: Locale): string {
   if (locale === "ar") return "ar-EG";
   if (locale === "zh") return "zh-CN";
+  if (locale === "fr") return "fr-FR";
   return "en-EG";
 }
 

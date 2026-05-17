@@ -88,7 +88,13 @@ export default async function LocaleLayout({
   const locale = localeParam as Locale;
   const dir = locale === "ar" ? "rtl" : "ltr";
   const lang =
-    locale === "ar" ? "ar" : locale === "zh" ? "zh-CN" : "en";
+    locale === "ar"
+      ? "ar"
+      : locale === "zh"
+        ? "zh-CN"
+        : locale === "fr"
+          ? "fr"
+          : "en";
   const htmlClass =
     locale === "zh"
       ? `${notoSansSc.variable} zh-site h-full`

@@ -19,9 +19,32 @@ export function LocationsSection({
   sectionTitle,
   tableCaption,
 }: LocationsSectionProps) {
-  const useEnFields = locale !== "ar";
   const headingText = sectionTitle ?? content.heading;
   const captionText = tableCaption ?? content.caption;
+  const localizedFields = (row: (typeof VACCINATION_CENTERS)[number]) => {
+    if (locale === "ar") {
+      return {
+        office: row.centerNameAr,
+        admin: row.administrationAr,
+        gov: row.governorateAr,
+        address: row.addressAr,
+      };
+    }
+    if (locale === "fr") {
+      return {
+        office: row.centerNameFr,
+        admin: row.administrationFr,
+        gov: row.governorateFr,
+        address: row.addressFr,
+      };
+    }
+    return {
+      office: row.centerNameEn,
+      admin: row.administrationEn,
+      gov: row.governorateEn,
+      address: row.addressEn,
+    };
+  };
 
   return (
     <section
@@ -44,12 +67,7 @@ export function LocationsSection({
 
         <ul className="mt-8 flex flex-col gap-3 md:hidden" aria-label={captionText}>
           {VACCINATION_CENTERS.map((row) => {
-            const office = useEnFields ? row.centerNameEn : row.centerNameAr;
-            const admin = useEnFields
-              ? row.administrationEn
-              : row.administrationAr;
-            const gov = useEnFields ? row.governorateEn : row.governorateAr;
-            const address = useEnFields ? row.addressEn : row.addressAr;
+            const { office, admin, gov, address } = localizedFields(row);
             const mapsUrl = resolveOfficeMapUrl({
               mapsUrl: row.mapsUrl,
               placeTitle: office,
@@ -111,8 +129,7 @@ export function LocationsSection({
             </thead>
             <tbody className="divide-y divide-gov-gray-200 bg-white">
               {VACCINATION_CENTERS.map((row, i) => {
-                const office = useEnFields ? row.centerNameEn : row.centerNameAr;
-                const address = useEnFields ? row.addressEn : row.addressAr;
+                const { office, admin, gov, address } = localizedFields(row);
                 const mapsUrl = resolveOfficeMapUrl({
                   mapsUrl: row.mapsUrl,
                   placeTitle: office,
@@ -131,10 +148,10 @@ export function LocationsSection({
                     {office}
                   </th>
                   <td className="whitespace-nowrap px-4 py-4 text-gov-gray-700">
-                    {useEnFields ? row.administrationEn : row.administrationAr}
+                    {admin}
                   </td>
                   <td className="whitespace-nowrap px-4 py-4 text-gov-gray-700">
-                    {useEnFields ? row.governorateEn : row.governorateAr}
+                    {gov}
                   </td>
                   <td className="min-w-[200px] px-4 py-4 text-gov-gray-700">
                     {address}

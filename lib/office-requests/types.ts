@@ -144,6 +144,7 @@ export type VaccineCatalogEntry = {
   category: VaccineUserCategory;
   nameAr: string;
   nameEn: string;
+  nameFr?: string;
   priceEgp: number | null;
   free: boolean;
   sortOrder: number;

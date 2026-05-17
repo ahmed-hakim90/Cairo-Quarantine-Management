@@ -42,13 +42,15 @@ export function renderTemplate(args: {
   office: Office;
   /** e.g. https://example.com — required for `{bookingPassUrl}` */
   siteOrigin?: string;
-  /** Path segment locale for the pass link: `ar` | `en` | `zh` */
+  /** Path segment locale for the pass link: `ar` | `en` | `zh` | `fr` */
   locale?: string;
   /** تسميات حالات المسافرين من لوحة الإدارة؛ تُستخدم مع `travelerStateId`. */
   travelerStateLabelById?: Record<string, string>;
 }) {
   const locale =
-    args.locale === "en" || args.locale === "zh" ? args.locale : "ar";
+    args.locale === "en" || args.locale === "zh" || args.locale === "fr"
+      ? args.locale
+      : "ar";
   const origin = args.siteOrigin?.trim() ?? "";
   const bookingPassUrl =
     origin && args.request.passToken

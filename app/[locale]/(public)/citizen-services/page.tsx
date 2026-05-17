@@ -110,7 +110,11 @@ export default async function CitizenServicesPage({
         </section>
       </ScrollReveal>
       <ScrollReveal>
-        <HajjTravelerOfficesTable content={m.hajjTable} offices={offices} />
+        <HajjTravelerOfficesTable
+          content={m.hajjTable}
+          locale={locale}
+          offices={offices}
+        />
       </ScrollReveal>
     </>
   );

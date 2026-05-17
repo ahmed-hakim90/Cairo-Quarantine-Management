@@ -21,6 +21,7 @@ type HajjUmrahTripPricingProps = {
 };
 
 function vaccineName(record: VaccineRecord, locale: Locale): string {
+  if (locale === "fr") return record.nameFr;
   return locale === "ar" ? record.nameAr : record.nameEn;
 }
 
@@ -80,9 +81,21 @@ export function HajjUmrahTripPricing({
   const activeVaccines = vaccinesByCategory[trip];
 
   const numberLocale =
-    locale === "ar" ? "ar-EG" : locale === "zh" ? "zh-CN" : "en-US";
+    locale === "ar"
+      ? "ar-EG"
+      : locale === "zh"
+        ? "zh-CN"
+        : locale === "fr"
+          ? "fr-FR"
+          : "en-US";
   const langAttr =
-    locale === "ar" ? "ar" : locale === "zh" ? "zh-CN" : "en";
+    locale === "ar"
+      ? "ar"
+      : locale === "zh"
+        ? "zh-CN"
+        : locale === "fr"
+          ? "fr"
+          : "en";
 
   const rowProps = {
     locale,

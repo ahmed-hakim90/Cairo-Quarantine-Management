@@ -2,17 +2,20 @@
 
 import { useCallback, useMemo, useState } from "react";
 import { BookingPassQrImage } from "@/components/booking/BookingPassQrImage";
+import { bookingRequestCopy } from "@/lib/i18n/booking-request-copy";
 import { bookingPassFormCopy } from "@/lib/i18n/booking-pass-copy";
 import type { Locale } from "@/lib/i18n/config";
+import {
+  publicRequestStatusLabels,
+  publicRequestTypeLabels,
+  publicTravelerCategoryLabels,
+} from "@/lib/i18n/office-request-copy";
 import {
   defaultTravelerStatesFromLegacyLabels,
   effectiveTravelerStateIdOnRequest,
   mergeTravelerStateLabelsWithLegacy,
 } from "@/lib/office-requests/office-traveler-state";
 import {
-  REQUEST_STATUS_LABELS,
-  REQUEST_TYPE_LABELS,
-  TRAVELER_CATEGORY_LABELS,
   type PublicOfficeRequestStatus,
 } from "@/lib/office-requests/types";
 import { feedbackToast } from "@/lib/ui/feedback-toast";
@@ -92,6 +95,26 @@ const copy = {
     loadError: "目前无法刷新申请。",
     qrSectionTitle: "预约凭证二维码",
   },
+  fr: {
+    title: "Mes demandes",
+    intro:
+      "Les demandes enregistrees sur cet appareil apparaissent ici. Appuyez sur Actualiser pour synchroniser le dernier statut depuis le serveur.",
+    empty: "Aucune demande n'est encore enregistree sur cet appareil.",
+    refresh: "Actualiser",
+    refreshing: "Actualisation...",
+    remove: "Supprimer de l'appareil",
+    status: "Statut",
+    notes: "Notes de suivi",
+    noNotes: "Aucune note de suivi pour le moment.",
+    office: "Bureau",
+    travelerState: "Statut du voyageur",
+    preferredDate: "Date souhaitee",
+    createdAt: "Envoyee",
+    updatedAt: "Derniere mise a jour",
+    missing: "Aucune demande n'a ete trouvee pour ce numero et ce telephone.",
+    loadError: "Les demandes ne peuvent pas etre actualisees maintenant.",
+    qrSectionTitle: "QR du pass de reservation",
+  },
 } satisfies Record<Locale, Record<string, string>>;
 
 function readStoredRequests(): StoredRequest[] {
@@ -136,7 +159,15 @@ function mergeRequests(
 function formatDate(value: string, locale: Locale) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
-  return new Intl.DateTimeFormat(locale === "ar" ? "ar-EG" : locale, {
+  const intlLocale =
+    locale === "ar"
+      ? "ar-EG"
+      : locale === "zh"
+        ? "zh-CN"
+        : locale === "fr"
+          ? "fr-FR"
+          : "en";
+  return new Intl.DateTimeFormat(intlLocale, {
     dateStyle: "medium",
     timeStyle: "short",
   }).format(date);
@@ -179,11 +210,7 @@ export function MyRequestsPanel({ locale }: MyRequestsPanelProps) {
       writeStoredRequests(next);
       setRequests(next);
       feedbackToast.success(
-        locale === "ar"
-          ? "تم تحديث الحالات."
-          : locale === "zh"
-            ? "状态已更新。"
-            : "Statuses updated.",
+        bookingRequestCopy[locale].statusesUpdated,
       );
     } catch {
       setError(t.loadError);
@@ -250,7 +277,7 @@ export function MyRequestsPanel({ locale }: MyRequestsPanelProps) {
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                   <div>
                     <p className="text-sm font-bold text-gov-accent">
-                      {REQUEST_TYPE_LABELS[request.type]}
+                      {publicRequestTypeLabels[locale][request.type]}
                     </p>
                     <h2 className="mt-1 font-heading text-xl font-extrabold text-gov-navy">
                       #{request.id}
@@ -262,7 +289,7 @@ export function MyRequestsPanel({ locale }: MyRequestsPanelProps) {
                   <span className="inline-flex w-fit rounded-md bg-gov-accent-muted px-3 py-2 text-sm font-bold text-gov-navy">
                     {request.missing
                       ? t.missing
-                      : REQUEST_STATUS_LABELS[request.status]}
+                      : publicRequestStatusLabels[locale][request.status]}
                   </span>
                 </div>
 
@@ -278,10 +305,15 @@ export function MyRequestsPanel({ locale }: MyRequestsPanelProps) {
                             const id =
                               effectiveTravelerStateIdOnRequest(request);
                             if (!id) return "-";
+                            if (id in publicTravelerCategoryLabels[locale]) {
+                              return publicTravelerCategoryLabels[locale][
+                                id as keyof (typeof publicTravelerCategoryLabels)[typeof locale]
+                              ];
+                            }
                             return (
                               TRAVELER_LABEL_BY_ID[id] ??
                               (request.travelerCategory
-                                ? TRAVELER_CATEGORY_LABELS[
+                                ? publicTravelerCategoryLabels[locale][
                                     request.travelerCategory
                                   ]
                                 : id)
@@ -302,7 +334,7 @@ export function MyRequestsPanel({ locale }: MyRequestsPanelProps) {
                   <div>
                     <dt className="font-bold text-gov-navy">{t.status}</dt>
                     <dd className="mt-1 text-gov-gray-700">
-                      {REQUEST_STATUS_LABELS[request.status]}
+                      {publicRequestStatusLabels[locale][request.status]}
                     </dd>
                   </div>
                   <div>

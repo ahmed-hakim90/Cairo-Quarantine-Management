@@ -56,6 +56,25 @@ export const bookingPassPageCopy = {
     noNotes: "暂无备注。",
     siteLine: "开罗检疫管理",
   },
+  fr: {
+    title: "Pass de demande",
+    subtitle: "Pour le bureau — presentez cette page a votre arrivee",
+    subtitleComplaint: "Suivi de la plainte en cours",
+    invalidTitle: "Lien invalide",
+    invalidBody:
+      "Scannez le QR code complet ou ouvrez le lien depuis votre message de confirmation.",
+    requestId: "Numero de demande",
+    office: "Bureau",
+    travelerType: "Type de voyageur",
+    preferredDate: "Date souhaitee",
+    status: "Statut",
+    type: "Type de demande",
+    name: "Nom",
+    details: "Details",
+    notes: "Notes de suivi",
+    noNotes: "Aucune note pour le moment.",
+    siteLine: "Administration de la quarantaine du Caire",
+  },
 } satisfies Record<
   Locale,
   Record<
@@ -110,6 +129,17 @@ export const bookingPassFormCopy = {
     qrAlt: "预约凭证二维码",
     siteUrlHint:
       "请在部署环境中设置 NEXT_PUBLIC_SITE_URL（例如 https://example.com），以便完整链接可在分享后使用。",
+  },
+  fr: {
+    cardTitle: "Votre pass de demande",
+    cardSubtitle: "Presentez ce code au bureau ou enregistrez l'image",
+    cardSubtitleComplaint:
+      "Suivi de la plainte en cours — enregistrez le code ou partagez l'image",
+    downloadPng: "Telecharger l'image du pass",
+    shareCard: "Partager l'image",
+    qrAlt: "QR code de votre pass de demande",
+    siteUrlHint:
+      "Definissez NEXT_PUBLIC_SITE_URL dans l'environnement de deploiement (ex. https://example.com) pour que le lien complet fonctionne apres partage.",
   },
 } satisfies Record<
   Locale,

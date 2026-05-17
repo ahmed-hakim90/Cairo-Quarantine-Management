@@ -92,7 +92,11 @@ export default async function HajjUmrahPage({
         />
       </ScrollReveal>
       <ScrollReveal>
-        <HajjTravelerOfficesTable content={m.hajjTable} offices={offices} />
+        <HajjTravelerOfficesTable
+          content={m.hajjTable}
+          locale={locale}
+          offices={offices}
+        />
       </ScrollReveal>
     </>
   );

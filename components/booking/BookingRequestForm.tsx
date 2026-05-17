@@ -9,7 +9,9 @@ import {
 import { BookingPassSuccessBlock } from "@/components/booking/BookingPassSuccessBlock";
 import { LocaleLink } from "@/components/i18n/LocaleLink";
 import { getCairoMinBookingYmd } from "@/lib/cairo-today-ymd";
+import { bookingRequestCopy } from "@/lib/i18n/booking-request-copy";
 import type { Locale } from "@/lib/i18n/config";
+import { publicTravelerCategoryLabels } from "@/lib/i18n/office-request-copy";
 import {
   defaultTravelerStatesFromLegacyLabels,
   filterOfficesForTravelerState,
@@ -81,6 +83,7 @@ export function BookingRequestForm({
   serverSiteOrigin,
 }: BookingRequestFormProps) {
   const router = useRouter();
+  const t = bookingRequestCopy[locale];
   const bookingStates = useMemo(
     () =>
       travelerStates.length > 0
@@ -142,6 +145,15 @@ export function BookingRequestForm({
 
   const bookingNoMatchingOffices =
     mode === "booking" && travelerChosen && filteredOffices.length === 0;
+
+  function travelerStateLabel(state: TravelerState): string {
+    if (state.id in publicTravelerCategoryLabels[locale]) {
+      return publicTravelerCategoryLabels[locale][
+        state.id as keyof (typeof publicTravelerCategoryLabels)[typeof locale]
+      ];
+    }
+    return state.labelAr;
+  }
 
   useEffect(() => {
     if (mode !== "booking") return;
@@ -262,12 +274,7 @@ export function BookingRequestForm({
         if (ac.signal.aborted) return;
         const full = res.ok && data.available === false;
         setDayFull(full);
-        setAvailabilityHint(
-          full
-            ? (data.fullMessage ??
-              "لا يمكن الحجز في هذا اليوم؛ تم بلوغ العدد المسموح لهذا المكتب.")
-            : null,
-        );
+        setAvailabilityHint(full ? t.dayFull : null);
       } catch {
         if (!ac.signal.aborted) {
           setDayFull(false);
@@ -283,7 +290,7 @@ export function BookingRequestForm({
       ac.abort();
       window.clearTimeout(timer);
     };
-  }, [mode, officeId, preferredDate]);
+  }, [mode, officeId, preferredDate, t.dayFull]);
 
   const bookingBlocked =
     mode === "booking" && (dayFull || availabilityPending);
@@ -293,6 +300,7 @@ export function BookingRequestForm({
 
   return (
     <form action={action} className="space-y-0">
+      <input type="hidden" name="locale" value={locale} />
       {mode === "booking" ? (
         <input type="hidden" name="type" value="booking" />
       ) : null}
@@ -303,12 +311,12 @@ export function BookingRequestForm({
           </span>
           <div>
             <h2 className="font-heading text-lg font-extrabold text-gov-navy">
-              {mode === "booking" ? "بيانات الحجز" : "بيانات الشكوى"}
+              {mode === "booking" ? t.bookingTitle : t.complaintTitle}
             </h2>
             <p className="mt-1 text-sm text-gov-gray-600">
               {mode === "booking"
-                ? "اختار حالة المسافر ثم المكتب المناسب والتاريخ المطلوب."
-                : "الشكوى أو المقترح يذهب للمكتب الذي تختاره فقط."}
+                ? t.bookingIntro
+                : t.complaintIntro}
             </p>
           </div>
         </div>
@@ -330,13 +338,13 @@ export function BookingRequestForm({
               href="/my-requests"
               className="mt-3 inline-flex min-h-10 items-center rounded-md bg-gov-accent px-4 text-sm font-bold text-white transition hover:bg-gov-navy"
             >
-              صفحة طلباتي
+              {t.duplicateLink}
             </LocaleLink>
           ) : null}
           {state.ok && state.request ? (
             <div className="mt-3 rounded-md bg-white/70 p-3 text-gov-navy">
               <p>
-                رقم الطلب:{" "}
+                {t.requestId}:{" "}
                 <span className="font-extrabold">#{state.request.id}</span>
               </p>
               <LocaleLink
@@ -344,7 +352,7 @@ export function BookingRequestForm({
                 href="/my-requests"
                 className="mt-2 inline-flex min-h-10 items-center rounded-md bg-gov-accent px-4 text-sm font-bold text-white transition hover:bg-gov-navy"
               >
-                متابعة طلباتي
+                {t.followRequests}
               </LocaleLink>
               <BookingPassSuccessBlock
                 locale={locale}
@@ -359,7 +367,7 @@ export function BookingRequestForm({
       <div className="space-y-6 px-5 py-5 md:px-7">
         {offices.length === 0 ? (
           <div className="rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-bold text-amber-900">
-            لم يتم تحميل المكاتب بعد. تأكد من إعداد Firebase أو بيانات fallback.
+            {t.officesNotLoaded}
           </div>
         ) : null}
 
@@ -367,7 +375,7 @@ export function BookingRequestForm({
           {mode === "booking" ? (
             <>
               <label className={labelClass}>
-                حالة المسافر
+                {t.travelerState}
                 <select
                   ref={travelerStateRef}
                   name="travelerStateId"
@@ -377,18 +385,18 @@ export function BookingRequestForm({
                   onChange={(e) => setTravelerStateId(e.target.value)}
                 >
                   <option value="" disabled>
-                    اختر حالة المسافر
+                    {t.chooseTravelerState}
                   </option>
                   {bookingStates.map((s) => (
                     <option key={s.id} value={s.id}>
-                      {s.labelAr}
+                      {travelerStateLabel(s)}
                     </option>
                   ))}
                 </select>
                 <FieldError message={state.errors?.travelerStateId} />
               </label>
               <label className={labelClass}>
-                اسم المكتب
+                {t.officeName}
                 <select
                   ref={officeRef}
                   name="officeId"
@@ -400,8 +408,8 @@ export function BookingRequestForm({
                 >
                   <option value="" disabled>
                     {!travelerChosen
-                      ? "اختر حالة المسافر أولاً"
-                      : "اختر المكتب"}
+                      ? t.chooseTravelerFirst
+                      : t.chooseOffice}
                   </option>
                   {filteredOffices.map((office) => (
                     <option key={office.id} value={office.id}>
@@ -411,7 +419,7 @@ export function BookingRequestForm({
                 </select>
                 {bookingNoMatchingOffices ? (
                   <p className="mt-2 text-sm font-semibold text-amber-800">
-                    لا يوجد مكتب مسجل يخدم هذه الحالة حالياً.
+                    {t.noMatchingOffices}
                   </p>
                 ) : null}
                 <FieldError message={state.errors?.officeId} />
@@ -420,7 +428,7 @@ export function BookingRequestForm({
           ) : (
             <>
               <label className={labelClass}>
-                اسم المكتب
+                {t.officeName}
                 <select
                   ref={officeRef}
                   name="officeId"
@@ -431,7 +439,7 @@ export function BookingRequestForm({
                   disabled={offices.length === 0}
                 >
                   <option value="" disabled>
-                    اختر المكتب
+                    {t.chooseOffice}
                   </option>
                   {offices.map((office) => (
                     <option key={office.id} value={office.id}>
@@ -442,7 +450,7 @@ export function BookingRequestForm({
                 <FieldError message={state.errors?.officeId} />
               </label>
               <label className={labelClass}>
-                نوع المتابعة
+                {t.followUpType}
                 <select
                   ref={typeRef}
                   name="type"
@@ -450,8 +458,8 @@ export function BookingRequestForm({
                   className={inputClass}
                   defaultValue={state.values?.type ?? "complaint"}
                 >
-                  <option value="complaint">تقديم شكوى</option>
-                  <option value="proposal">تقديم مقترح</option>
+                  <option value="complaint">{t.complaintOption}</option>
+                  <option value="proposal">{t.proposalOption}</option>
                 </select>
                 <FieldError message={state.errors?.type} />
               </label>
@@ -461,7 +469,7 @@ export function BookingRequestForm({
 
         {mode === "booking" ? (
           <label className={labelClass}>
-            التاريخ المطلوب
+            {t.preferredDate}
             <input
               ref={preferredDateRef}
               name="preferredDate"
@@ -474,7 +482,7 @@ export function BookingRequestForm({
             />
             {availabilityPending ? (
               <p className="mt-1 text-xs text-gov-gray-600">
-                جاري التحقق من التوفر…
+                {t.checkingAvailability}
               </p>
             ) : null}
             <FieldError message={preferredDateError} />
@@ -483,7 +491,7 @@ export function BookingRequestForm({
 
         <div className="grid gap-5 md:grid-cols-2">
           <label className={labelClass}>
-            الاسم
+            {t.name}
             <input
               ref={nameRef}
               name="name"
@@ -491,14 +499,14 @@ export function BookingRequestForm({
               minLength={2}
               autoComplete="name"
               className={inputClass}
-              placeholder="اكتب اسمك"
+              placeholder={t.namePlaceholder}
               defaultValue={state.values?.name ?? ""}
             />
             <FieldError message={state.errors?.name} />
           </label>
 
           <label className={labelClass}>
-            رقم الهاتف
+            {t.phone}
             <input
               ref={phoneRef}
               name="phone"
@@ -506,7 +514,7 @@ export function BookingRequestForm({
               inputMode="tel"
               autoComplete="tel"
               className={inputClass}
-              placeholder="مثال: 01012345678"
+              placeholder={t.phonePlaceholder}
               defaultValue={state.values?.phone ?? ""}
             />
             <FieldError message={state.errors?.phone} />
@@ -521,12 +529,12 @@ export function BookingRequestForm({
               defaultChecked={state.values?.hasSpecialNeeds ?? false}
               className="size-4 rounded border-gov-gray-300"
             />
-            <span>أنا من ذوي الهمم</span>
+            <span>{t.specialNeeds}</span>
           </label>
         ) : null}
 
         <label className={labelClass}>
-          {mode === "booking" ? "ملاحظات إضافية" : "تفاصيل الشكوى أو المقترح"}
+          {mode === "booking" ? t.bookingDetails : t.complaintDetails}
           <textarea
             ref={detailsRef}
             name="details"
@@ -536,8 +544,8 @@ export function BookingRequestForm({
             className={`${inputClass} resize-y leading-relaxed`}
             placeholder={
               mode === "booking"
-                ? " اذا كنت من اصحاب الهمم او من كبار السن لا تتردد في اخبارنا"
-                : "اكتب تفاصيل الشكوى أو المقترح"
+                ? t.bookingDetailsPlaceholder
+                : t.complaintDetailsPlaceholder
             }
             defaultValue={state.values?.details ?? ""}
           />
@@ -548,8 +556,8 @@ export function BookingRequestForm({
       <div className="flex flex-col gap-3 border-t border-gov-gray-200 bg-gov-gray-50 px-5 py-4 sm:flex-row sm:items-center sm:justify-between md:px-7">
         <p className="text-sm leading-relaxed text-gov-gray-600">
           {mode === "booking"
-            ? "سيتم إرسال الحجز للمكتب المختار لمتابعته من لوحة التحكم."
-            : "سيتم إرسال المتابعة للمكتب المختار لمراجعتها من لوحة التحكم."}
+            ? t.bookingSubmitHint
+            : t.complaintSubmitHint}
         </p>
         <button
           type="submit"
@@ -562,10 +570,10 @@ export function BookingRequestForm({
           className="inline-flex min-h-11 items-center justify-center rounded-md bg-gov-accent px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-gov-navy disabled:cursor-not-allowed disabled:opacity-60"
         >
           {pending
-            ? "جاري الإرسال..."
+            ? t.sending
             : mode === "booking"
-              ? "إرسال الحجز"
-              : "إرسال المتابعة"}
+              ? t.sendBooking
+              : t.sendFollowUp}
         </button>
       </div>
     </form>

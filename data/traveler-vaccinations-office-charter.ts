@@ -335,10 +335,104 @@ const travelerVaccinationsOfficeCharterZh: TravelerVaccinationsOfficeCharter = {
   closing: "携手共建安全健康服务",
 };
 
+const travelerVaccinationsOfficeCharterFr: TravelerVaccinationsOfficeCharter = {
+  title: "Charte des usagers",
+  subtitle: "Bureau de vaccination des voyageurs",
+  introduction: {
+    heading: "I. Introduction",
+    body:
+      "Le bureau de vaccination des voyageurs s'engage a fournir aux citoyens et voyageurs des services de sante surs et de qualite, avec rapidite, precision et respect des droits des usagers.",
+  },
+  vision: {
+    heading: "Notre vision",
+    text:
+      "Etre leader dans la prestation de services de vaccination des voyageurs avec efficacite et haute qualite, afin de garantir des voyages surs et sains.",
+  },
+  mission: {
+    heading: "Notre mission",
+    text:
+      "Fournir des services de vaccination et de conseil preventif aux voyageurs de maniere sure, en assurant la satisfaction des usagers et le soutien a la sante publique.",
+  },
+  values: {
+    heading: "Nos valeurs",
+    items: [
+      "Respect et consideration",
+      "Integrite et transparence",
+      "Rapidite du service",
+      "Protection de la vie privee",
+      "Qualite et securite",
+      "Esprit d'equipe",
+    ],
+  },
+  officeCommitments: {
+    heading: "Engagements du bureau envers les usagers",
+    intro: "Le bureau de vaccination des voyageurs s'engage a :",
+    items: [
+      "Accueillir les usagers de maniere convenable et respectueuse.",
+      "Fournir les services avec equite et sans discrimination.",
+      "Respecter les horaires de travail annonces.",
+      "Reduire autant que possible les temps d'attente.",
+      "Fournir des informations claires sur les vaccinations requises pour chaque pays.",
+      "Preserver la confidentialite des donnees et informations medicales.",
+      "Appliquer les normes de prevention des infections et de securite des patients.",
+      "Assurer un environnement propre et sur au sein du bureau.",
+      "Recevoir les plaintes et suggestions et travailler a les resoudre.",
+      "Ameliorer continuellement la qualite du service.",
+    ],
+  },
+  rights: {
+    heading: "Droits des usagers",
+    intro: "Chaque usager a le droit de :",
+    items: [
+      "Recevoir un service sur et de qualite.",
+      "Connaitre les vaccinations requises, leurs benefices et leurs effets secondaires possibles.",
+      "Etre traite avec respect et dignite.",
+      "Deposer une plainte ou une suggestion et suivre la reponse.",
+      "Voir ses donnees personnelles et medicales protegees.",
+      "Recevoir le service selon l'ordre et les procedures approuves.",
+    ],
+  },
+  duties: {
+    heading: "Devoirs des usagers",
+    intro: "Nous demandons aux usagers de :",
+    items: [
+      "Apporter tous les documents requis.",
+      "Respecter l'ordre de passage et les consignes d'organisation.",
+      "Declarer toute maladie ou allergie aux vaccins.",
+      "Suivre les instructions medicales apres la vaccination.",
+      "Contribuer a la proprete des lieux et au respect des biens publics.",
+      "Traiter le personnel et les autres visiteurs avec respect.",
+    ],
+  },
+  complaints: {
+    heading: "Plaintes et suggestions",
+    intro: "Les plaintes ou suggestions peuvent etre deposees via :",
+    channels: [
+      "La boite des plaintes et suggestions.",
+      "La direction directe du bureau.",
+      "Le numero de telephone dedie aux plaintes.",
+    ],
+    responseWithin:
+      "Les plaintes sont examinees et une reponse est fournie dans les 24 heures.",
+  },
+  workingHours: {
+    heading: "Horaires de travail",
+    dailyFromLabel: "Tous les jours de :",
+    dailyToLabel: "Jusqu'a :",
+    exceptLabel: "Sauf :",
+    from: "8 h",
+    to: "17 h",
+    except: "vendredis et jours feries officiels",
+    note: "Note : le centre de vaccination de l'aeroport international du Caire fonctionne 24 h/24, tous les jours de la semaine.",
+  },
+  closing: "Ensemble vers des services de sante surs",
+};
+
 const charterByLocale: Record<Locale, TravelerVaccinationsOfficeCharter> = {
   ar: travelerVaccinationsOfficeCharterAr,
   en: travelerVaccinationsOfficeCharterEn,
   zh: travelerVaccinationsOfficeCharterZh,
+  fr: travelerVaccinationsOfficeCharterFr,
 };
 
 /** @deprecated Prefer getTravelerVaccinationsOfficeCharter("ar") for clarity */

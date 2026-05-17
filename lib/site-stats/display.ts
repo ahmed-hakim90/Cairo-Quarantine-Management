@@ -5,6 +5,7 @@ export const SITE_VISITOR_MIN_DISPLAY = 100;
 function intlLocale(locale: Locale): string {
   if (locale === "ar") return "ar-EG";
   if (locale === "zh") return "zh-CN";
+  if (locale === "fr") return "fr-FR";
   return "en-EG";
 }
 

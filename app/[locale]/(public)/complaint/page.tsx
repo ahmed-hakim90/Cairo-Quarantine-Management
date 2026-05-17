@@ -4,12 +4,19 @@ import { notFound } from "next/navigation";
 import { BookingRequestForm } from "@/components/booking/BookingRequestForm";
 import { RequestModeSwitcher } from "@/components/booking/RequestModeSwitcher";
 import { inferredSiteOriginFromHeaders } from "@/lib/booking-pass-url";
-import { isLocale } from "@/lib/i18n/config";
+import { bookingPageCopy } from "@/lib/i18n/booking-request-copy";
+import { isLocale, type Locale } from "@/lib/i18n/config";
 import { listOffices } from "@/lib/office-requests/store";
 
-export const metadata: Metadata = {
-  title: "تقديم شكوى أو مقترح",
-};
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}): Promise<Metadata> {
+  const { locale } = await params;
+  const resolvedLocale = isLocale(locale) ? locale : "ar";
+  return { title: bookingPageCopy[resolvedLocale].complaintMetaTitle };
+}
 
 export default async function ComplaintPage({
   params,
@@ -18,6 +25,8 @@ export default async function ComplaintPage({
 }) {
   const { locale } = await params;
   if (!isLocale(locale)) notFound();
+  const resolvedLocale = locale as Locale;
+  const copy = bookingPageCopy[resolvedLocale];
 
   const offices = await listOffices();
   const headerList = await headers();
@@ -28,35 +37,35 @@ export default async function ComplaintPage({
       <div className="mx-auto grid max-w-6xl grid-cols-1 gap-8 px-4 py-8 lg:grid-cols-[0.78fr_1.22fr] lg:py-12">
         <aside className="order-2 self-start lg:order-none">
           <p className="text-sm font-bold text-gov-accent">
-            إدارة الحجر الصحي بالقاهرة
+            {copy.siteName}
           </p>
           <h1 className="mt-3 font-heading text-3xl font-extrabold leading-tight text-gov-navy md:text-4xl">
-            تقديم شكوى أو مقترح للمكتب المختص
+            {copy.complaintHeading}
           </h1>
           <p className="mt-4 leading-relaxed text-gov-gray-700">
-            اختار المكتب واكتب تفاصيل الشكوى أو المقترح، وسيظهر الطلب فوراً في لوحة المكتب لمراجعته.
+            {copy.complaintIntro}
           </p>
           <dl className="mt-6 grid gap-3 text-sm">
             <div className="rounded-md border border-gov-gray-200 bg-white p-4">
-              <dt className="font-bold text-gov-navy">عدد المكاتب المتاحة</dt>
+              <dt className="font-bold text-gov-navy">{copy.officesCount}</dt>
               <dd className="mt-1 text-2xl font-extrabold text-gov-accent">
                 {offices.length}
               </dd>
             </div>
             <div className="rounded-md border border-gov-gray-200 bg-white p-4">
-              <dt className="font-bold text-gov-navy">بيانات مطلوبة</dt>
+              <dt className="font-bold text-gov-navy">{copy.requiredData}</dt>
               <dd className="mt-1 text-gov-gray-600">
-                الاسم، رقم الهاتف، المكتب، ونوع المتابعة، وتفاصيل الرسالة.
+                {copy.complaintRequiredData}
               </dd>
             </div>
           </dl>
         </aside>
         <div className="order-1 space-y-4 lg:order-none">
-          <RequestModeSwitcher locale={locale} activeMode="complaint" />
+          <RequestModeSwitcher locale={resolvedLocale} activeMode="complaint" />
           <div className="rounded-lg border border-gov-gray-200 bg-white shadow-sm">
             <BookingRequestForm
               offices={offices}
-              locale={locale}
+              locale={resolvedLocale}
               mode="complaint"
               serverSiteOrigin={serverSiteOrigin}
             />

@@ -416,3 +416,137 @@ export const healthGuidesZh: HealthGuidesMessages = {
     ],
   },
 };
+
+export const healthGuidesFr: HealthGuidesMessages = {
+  vaccination: {
+    title: "Pourquoi les vaccinations comptent pour le Hajj et la Omra",
+    subtitle:
+      "La vaccination vous protege, ainsi que les autres, pour un pelerinage plus sur et plus sain.",
+    sections: [
+      {
+        heading: "Pourquoi les vaccins sont-ils importants pour le Hajj et la Omra ?",
+        items: [
+          {
+            icon: "heartPulse",
+            body: "Ils soutiennent votre sante generale, renforcent l'immunite et aident votre corps a resister aux maladies.",
+          },
+          {
+            icon: "kaabaRitual",
+            body: "Ils vous aident a accomplir les rites en bonne sante et limitent les complications qui pourraient perturber votre voyage.",
+          },
+          {
+            icon: "peopleShield",
+            body: "Ils protegent les autres en contribuant a limiter la propagation des maladies entre pelerins.",
+          },
+          {
+            icon: "virusShield",
+            body: "Ils reduisent le risque de maladies infectieuses comme la grippe, la meningite et la COVID-19.",
+          },
+        ],
+      },
+      {
+        heading: "Vaccins recommandes pour les pelerins",
+        items: [
+          {
+            icon: "otherVaccines",
+            body: "Autres vaccins : un medecin peut recommander des doses supplementaires selon votre etat de sante (hepatite virale, pneumonie, etc.).",
+          },
+          {
+            icon: "covid",
+            body: "Vaccin COVID-19 : pour aider a prevenir les complications graves liees au coronavirus.",
+          },
+          {
+            icon: "lungs",
+            body: "Vaccin contre la grippe : pour se proteger des complications de la grippe saisonniere.",
+          },
+          {
+            icon: "syringeVial",
+            body: "Vaccin meningococcique quadrivalent (ACYW) : protege contre quatre souches de meningite.",
+          },
+        ],
+      },
+      {
+        heading: "Conseils importants",
+        items: [
+          {
+            icon: "handWash",
+            body: "Continuez les mesures preventives comme le lavage des mains et le port du masque si necessaire.",
+          },
+          {
+            icon: "clipboard",
+            body: "Conservez votre carnet de vaccination et emportez-le pendant le voyage.",
+          },
+          {
+            icon: "doctor",
+            body: "Consultez un medecin ou un centre de sante agree pour connaitre les vaccins adaptes a votre situation.",
+          },
+          {
+            icon: "calendar",
+            body: "Recevez les vaccins requis suffisamment tot avant votre date de voyage.",
+          },
+        ],
+      },
+    ],
+    footer: {
+      primary: "Le vaccin d'aujourd'hui, une sante pour vous et les autres",
+      secondary: "Que votre Hajj soit accepte",
+    },
+  },
+  generalTips: {
+    heading: "Conseils generaux de sante pour les voyageurs",
+    intro:
+      "Des recommandations preventives pour rester en bonne sante pendant le voyage et accomplir les rites en securite.",
+    items: [
+      {
+        icon: "water",
+        title: "Buvez de l'eau",
+        body: "En quantite suffisante toute la journee pour eviter la deshydratation, surtout par temps chaud.",
+      },
+      {
+        icon: "handWash",
+        title: "Lavez-vous les mains",
+        body: "Regulierement avec de l'eau et du savon, surtout avant de manger et apres les toilettes.",
+      },
+      {
+        icon: "mask",
+        title: "Portez un masque",
+        body: "Dans les lieux bondes et en cas de symptomes respiratoires.",
+      },
+      {
+        icon: "syringeVial",
+        title: "Faites vos vaccins",
+        body: "Verifiez que les vaccins approuves, comme la meningite et la grippe saisonniere, sont a jour.",
+      },
+      {
+        icon: "crowd",
+        title: "Evitez la foule",
+        body: "Autant que possible, et evitez les bousculades et les attroupements denses.",
+      },
+      {
+        icon: "walk",
+        title: "Marchez moderement",
+        body: "Evitez l'epuisement et les marches excessives ; prevoyez des pauses suffisantes.",
+      },
+      {
+        icon: "sun",
+        title: "Protegez-vous du soleil",
+        body: "Utilisez un parapluie ou un chapeau et portez des vetements legers et amples.",
+      },
+      {
+        icon: "tissue",
+        title: "Toux et eternuements",
+        body: "Couvrez votre bouche et votre nez avec un mouchoir ou votre manche, puis jetez les mouchoirs correctement.",
+      },
+      {
+        icon: "personalItems",
+        title: "Utilisez vos effets personnels",
+        body: "Comme votre propre bouteille d'eau et vos articles d'hygiene.",
+      },
+      {
+        icon: "chronicCare",
+        title: "Suivez vos maladies chroniques",
+        body: "Si vous avez une maladie chronique, prenez vos medicaments regulierement.",
+      },
+    ],
+  },
+};

@@ -35,7 +35,7 @@ export function RequestWhatsAppPanel({
   }, [siteOriginFromServer]);
 
   const templateLocale =
-    locale === "en" || locale === "zh" ? locale : "ar";
+    locale === "en" || locale === "zh" || locale === "fr" ? locale : "ar";
 
   const [pickId, setPickId] = useState<string | null>(null);
   const [editedOverride, setEditedOverride] = useState<string | null>(null);

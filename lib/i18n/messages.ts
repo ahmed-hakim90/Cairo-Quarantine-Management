@@ -2,6 +2,7 @@ import type { HealthGuidesMessages } from "@/lib/i18n/health-guides-content";
 import {
   healthGuidesAr,
   healthGuidesEn,
+  healthGuidesFr,
   healthGuidesZh,
 } from "@/lib/i18n/health-guides-content";
 
@@ -21,6 +22,7 @@ export type Messages = {
     switchToAr: string;
     switchToEn: string;
     switchToZh: string;
+    switchToFr: string;
     switchLangAria: string;
     bookVaccination: string;
     bookVaccinationAria: string;
@@ -217,6 +219,7 @@ const ar: Messages = {
     switchToAr: "العربية",
     switchToEn: "English",
     switchToZh: "中文",
+    switchToFr: "Français",
     switchLangAria: "تغيير اللغة",
     bookVaccination: "حجز موعد تطعيم / شكوى",
     bookVaccinationAria:
@@ -458,6 +461,7 @@ const en: Messages = {
     switchToAr: "العربية",
     switchToEn: "English",
     switchToZh: "中文",
+    switchToFr: "Français",
     switchLangAria: "Change language",
     bookVaccination: "Book vaccination",
     bookVaccinationAria:
@@ -702,6 +706,7 @@ const zh: Messages = {
     switchToAr: "العربية",
     switchToEn: "English",
     switchToZh: "中文",
+    switchToFr: "Français",
     switchLangAria: "切换语言",
     bookVaccination: "预约接种",
     bookVaccinationAria: "打开开罗检疫管理处疫苗预约页面",
@@ -914,8 +919,253 @@ const zh: Messages = {
   },
 };
 
+const fr: Messages = {
+  meta: {
+    siteName: "Administration de la quarantaine du Caire",
+    siteDescription:
+      "Portail officiel des services de quarantaine et de vaccination des voyageurs au gouvernorat du Caire et dans les structures affiliees.",
+  },
+  skipLink: "Aller au contenu principal",
+  nav: {
+    subtitle: "Autorite de sante publique — Republique arabe d'Egypte",
+    title: "Administration de la quarantaine du Caire",
+    aria: "Navigation principale",
+    home: "Accueil",
+    international: "Voyageur international",
+    hajjUmrah: "Hajj et Omra",
+    citizen: "Services aux citoyens",
+    charter: "Charte",
+    myRequests: "Mes demandes",
+    switchToAr: "العربية",
+    switchToEn: "English",
+    switchToZh: "中文",
+    switchToFr: "Français",
+    switchLangAria: "Changer de langue",
+    bookVaccination: "Reserver un vaccin",
+    bookVaccinationAria:
+      "Ouvrir l'ecran de reservation de vaccination de l'Administration de la quarantaine du Caire",
+    mainMenuHeading: "Menu",
+    openMenuAria: "Ouvrir le menu principal",
+    closeMenuAria: "Fermer le menu",
+  },
+  footer: {
+    title: "Administration de la quarantaine du Caire",
+    blurb:
+      "Portail officiel d'information pour les voyageurs et les citoyens. Pour les urgences, utilisez les lignes approuvees ou visitez le centre de vaccination agree le plus proche.",
+    contactTitle: "Coordonnees (exemple)",
+    hotline: "Ligne directe : 16528 — 24 h/24",
+    email: "E-mail : info@cqm.gov.eg",
+    address: "Adresse : Le Caire, Republique arabe d'Egypte",
+    copyright:
+      "Tous droits reserves. Le contenu est informatif et ne remplace pas un avis medical direct.",
+    creditLinkLabel: "Realise avec soin par Hakim",
+  },
+  hero: {
+    title: "Administration de la quarantaine du Caire",
+    visionLabel: "Notre vision :",
+    vision:
+      "Etre leader dans la prestation de services de vaccination des voyageurs avec efficacite et haute qualite, pour des voyages surs et sains.",
+    missionLabel: "Notre mission :",
+    mission:
+      "Fournir aux voyageurs des services de vaccination et de conseil preventif de maniere sure, avec satisfaction des usagers et soutien a la sante publique.",
+  },
+  services: {
+    heading: "Services principaux",
+    intro:
+      "Choisissez le parcours qui vous correspond pour consulter les exigences et les prix indicatifs des vaccins.",
+    viewDetails: "Voir les details",
+    internationalTitle: "Voyageur international",
+    internationalDesc:
+      "Vaccinations et mesures sanitaires pour les voyages a l'etranger ou le retour en Egypte.",
+    hajjTitle: "Voyageur Hajj / Omra",
+    hajjDesc:
+      "Exigences sanitaires approuvees pour le Hajj et la Omra, avec calendriers indicatifs.",
+    citizenTitle: "Citoyen",
+    citizenDesc:
+      "Services de vaccination et sensibilisation sanitaire pour les residents en Egypte.",
+  },
+  vaccineSelector: {
+    heading: "Recherche de vaccins et cout indicatif",
+    intro:
+      "Choisissez un public, ouvrez la liste des vaccins et selectionnez un ou plusieurs vaccins pour voir les prix par ligne et le total indicatif. Le cout reel peut varier selon les politiques actualisees ou la couverture d'assurance.",
+    userType: "Public",
+    vaccine: "Vaccins",
+    vaccinesDropdownHint: "Ouvrez la liste et cochez un ou plusieurs vaccins.",
+    vaccinesSummaryNone: "Choisir des vaccins...",
+    vaccinesSummaryCount: "{count} vaccins selectionnes",
+    vaccinesTotal: "Total indicatif",
+    vaccinesEmptySelection:
+      "Aucun vaccin selectionne — ouvrez la liste ci-dessus et choisissez un ou plusieurs vaccins.",
+    guidancePrice: "Cout indicatif",
+    free: "Gratuit",
+    currency: "EGP",
+    footnote:
+      "Pour la reservation et le paiement, rendez-vous dans un centre agree ou utilisez les canaux officiels lorsque les services electroniques seront connectes.",
+    categories: {
+      international: "Voyageur international",
+      hajj: "Hajj",
+      umrah: "Omra",
+      citizen: "Citoyen",
+    },
+  },
+  importantLinks: {
+    heading: "Liens importants",
+    pdf: "Guide de sante (PDF)",
+    hajjInstructions: "Instructions Hajj et Omra",
+    mosquitoPrevention:
+      "Prevention des piqures de moustiques et des maladies vectorielles",
+  },
+  healthGuides: healthGuidesFr,
+  locations: {
+    heading: "Centres de vaccination agrees",
+    introLead:
+      "Bureaux de vaccination des voyageurs au Caire pour 2026 — services pour",
+    introHighlight: "Hajj, Omra et voyageurs internationaux",
+    caption:
+      "Tableau des bureaux de vaccination agrees au Caire : nom du bureau, administration, gouvernorat, adresse, telephone, lien carte",
+    colOffice: "Nom du bureau",
+    colAdmin: "Administration",
+    colGov: "Gouvernorat",
+    colAddress: "Adresse",
+    colPhone: "Telephone",
+    colMaps: "Carte",
+    mapsLink: "Google Maps",
+    a11yPhone: "Appeler ce bureau par telephone",
+    a11yMap: "Ouvrir l'emplacement de ce bureau sur la carte",
+  },
+  travelerStats: {
+    heading: "Volumes de voyageurs alignes sur les services du portail",
+    intro:
+      "Chiffres indicatifs correspondant aux trois parcours de service de ce portail. Les chiffres sont mis a jour lorsque les autorites competentes publient des statistiques officielles.",
+    caption:
+      "Cartes affichant les effectifs de reference ou l'etat de mise a jour par categorie, avec liens de detail et visiteurs du site",
+    siteVisitorsTitle: "Visiteurs du site",
+    pendingValue: "Mise a jour en attente",
+    viewDetails: "Ouvrir la page",
+    footnote:
+      "Les chiffres affiches ne remplacent pas les publications officielles ; reportez-vous a la source citee par l'autorite responsable.",
+    periodLabel: "Reference :",
+    sourceLink: "Administration de la quarantaine du Caire",
+    sourcePending:
+      "Un lien source apparaitra lorsque les chiffres seront adoptes par un organisme officiel.",
+  },
+  hajjTable: {
+    heading:
+      "Bureaux de vaccination des voyageurs au Caire — 2026 (liste de reference)",
+    intro:
+      "Les donnees sont fournies a titre indicatif ; confirmez les horaires et services via les canaux officiels du ministere de la Sante avant votre visite.",
+    caption:
+      "Bureaux de vaccination des voyageurs au gouvernorat du Caire avec administration, adresse, telephone, carte et type de service",
+    colGov: "Gouvernorat",
+    colAdmin: "Administration",
+    colSerial: "No. dans le gouvernorat",
+    colOffice: "Nom du bureau",
+    colAddress: "Adresse du bureau",
+    colPhone: "Telephone",
+    colMaps: "Carte",
+    colService: "Type de service",
+    mapsLink: "Google Maps",
+    governorate: "Le Caire",
+    phoneMissing: "—",
+    serviceTravelers: "Hajj, Omra et voyageurs",
+    serviceUmrahOnly: "Hajj et Omra uniquement",
+    a11yPhone: "Appeler ce bureau par telephone",
+    a11yMap: "Ouvrir l'emplacement de ce bureau sur la carte",
+    a11yPhoneUnavailable: "Aucun numero de telephone enregistre pour ce bureau",
+  },
+  pages: {
+    international: {
+      metaTitle: "Voyageur international",
+      heading: "Services aux voyageurs internationaux",
+      description:
+        "Conseils officiels sur les vaccins et tests requis selon la destination et les regles d'entree en Egypte. Confirmez toujours les dernieres mises a jour aupres des autorites competentes avant de voyager.",
+      beforeTravel: "Avant de voyager",
+      bullets: [
+        "Passeport valide — voyageurs internationaux",
+        "Carte nationale d'identite valide",
+        "Photo d'identite recente",
+      ],
+      destinationVaccinesWhatsapp:
+        "Pour connaitre les vaccins necessaires a votre destination, contactez-nous sur WhatsApp.",
+      destinationVaccinesWhatsappAria:
+        "Ouvrir WhatsApp pour demander les vaccins de destination",
+    },
+    hajj: {
+      metaTitle: "Hajj et Omra",
+      heading: "Hajj et Omra — exigences sanitaires",
+      description:
+        "Cette page resume les recommandations sur les vaccinations approuvees pour le Hajj et la Omra. Suivez les decisions officielles du ministere egyptien de la Sante et des autres autorites.",
+      beforeTravel: "Avant de voyager",
+      documentBullets: [
+        "Passeport valide pour votre voyage Hajj ou Omra",
+        "Carte nationale d'identite valide",
+        "Photo d'identite recente",
+      ],
+      basicsTitle: "Vaccinations essentielles",
+      basicsBody:
+        "La vaccination contre la meningite est souvent requise avec un certificat approuve pour voyager. La liste peut changer selon la saison — suivez les annonces officielles.",
+      pricing: {
+        sectionTitle: "Cout indicatif par type de voyage",
+        tripTypeLabel: "Type de voyage",
+        tripHajj: "Hajj",
+        tripUmrah: "Omra",
+        guidancePrice: "Cout indicatif",
+        fluDisclaimer:
+          "Ces prix n'incluent pas le vaccin contre la grippe saisonniere, qui est facultatif.",
+        locationsTitle: "Ou les services sont fournis",
+        locationsBody: "Les services sont disponibles dans tous les sites agrees.",
+      },
+    },
+    citizen: {
+      metaTitle: "Services aux citoyens",
+      heading: "Services aux citoyens",
+      description:
+        "Informations pour les residents sur les vaccins disponibles et les prix indicatifs. Les services et rendez-vous effectifs sont fixes par les centres agrees et les canaux officiels.",
+      vaccineTitle: "Vaccination pour les citoyens",
+      vaccineBody:
+        "Pour les citoyens : vaccin meningococcique bivalent 200 EGP ; grippe saisonniere 260 EGP ; vaccins contre l'hepatite selon le type — Egyptien 100 EGP, etranger 200 EGP, Egyptien voyageant a l'etranger 150 EGP, voyageur etranger 300 EGP (prix indicatifs ; utilisez l'outil de recherche en page d'accueil pour les details).",
+      docsTitle: "Documents a apporter",
+      docsBullets: [
+        "Carte nationale d'identite valide",
+        "Passeport valide — uniquement si la vaccination ou le service est lie a un voyage international",
+        "Photo d'identite recente",
+      ],
+      notesTitle: "Notes generales",
+      notesBody:
+        "Confirmez les horaires de rendez-vous et les services disponibles aupres de votre centre agree ou des canaux officiels du ministere de la Sante.",
+      splenectomyNote:
+        "Si vous avez subi une splenectomie ou une intervention necessitant une revaccination, n'hesitez pas a vous renseigner via WhatsApp ou a visiter le bureau de vaccination des voyageurs le plus proche pour obtenir toutes les informations.\nN'oubliez pas d'apporter votre rapport medical.\nPrenez soin de vous",
+    },
+    charter: {
+      metaTitle: "Charte des usagers — Bureau de vaccination des voyageurs",
+      heading: "Charte des usagers",
+      description:
+        "Charte du bureau de vaccination des voyageurs : engagements envers le public, droits et devoirs des usagers, et traitement des plaintes et suggestions.",
+      tocTitle: "Dans ce document",
+    },
+  },
+  tts: {
+    read: "Lire la page a voix haute",
+    pause: "Mettre la lecture en pause",
+    resume: "Reprendre la lecture",
+    stop: "Arreter la lecture",
+    unsupported: "La synthese vocale n'est pas prise en charge par ce navigateur",
+  },
+  pwa: {
+    installTitle: "Installer l'application Quarantaine",
+    installBody:
+      "Ajoutez-la a votre ecran d'accueil pour acceder plus vite aux vaccinations, a la charte et aux informations des bureaux.",
+    installButton: "Installer l'application",
+    installDismiss: "Pas maintenant",
+    iosHelp:
+      "Pour installer sur iPhone : touchez le bouton Partager dans Safari, puis choisissez Ajouter a l'ecran d'accueil.",
+    installAria: "Suggestion d'installation de l'application",
+  },
+};
+
 export function getMessages(locale: string): Messages {
   if (locale === "en") return en;
   if (locale === "zh") return zh;
+  if (locale === "fr") return fr;
   return ar;
 }

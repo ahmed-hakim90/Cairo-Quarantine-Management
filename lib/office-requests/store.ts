@@ -294,6 +294,7 @@ function vaccineFromDoc(
     category,
     nameAr: String(data.nameAr ?? ""),
     nameEn: String(data.nameEn ?? ""),
+    nameFr: String(data.nameFr ?? data.nameEn ?? ""),
     priceEgp: Number.isFinite(priceEgp) ? priceEgp : null,
     free: data.free === true,
     sortOrder:
@@ -311,6 +312,7 @@ function toVaccineRecord(entry: VaccineCatalogEntry): VaccineRecord {
     id: entry.id,
     nameAr: entry.nameAr,
     nameEn: entry.nameEn,
+    nameFr: entry.nameFr?.trim() || entry.nameEn,
     priceEgp: entry.free ? null : entry.priceEgp,
     free: entry.free,
   };

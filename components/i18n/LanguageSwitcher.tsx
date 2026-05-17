@@ -15,24 +15,28 @@ const flagForLocale: Record<Locale, string> = {
   ar: "🇪🇬",
   en: "🇬🇧",
   zh: "🇨🇳",
+  fr: "🇫🇷",
 };
 
 const codeForLocale: Record<Locale, string> = {
   ar: "AR",
   en: "EN",
   zh: "ZH",
+  fr: "FR",
 };
 
 const hrefLangForLocale: Record<Locale, string> = {
   ar: "ar",
   en: "en",
   zh: "zh-CN",
+  fr: "fr",
 };
 
 function navLabel(nav: Messages["nav"], target: Locale): string {
   if (target === "ar") return nav.switchToAr;
   if (target === "en") return nav.switchToEn;
-  return nav.switchToZh;
+  if (target === "zh") return nav.switchToZh;
+  return nav.switchToFr;
 }
 
 /** يبني لاحقة الرابط مع الحفاظ على معلمات الاستعلام والتجزئة حيثما أمكن. */

@@ -9,7 +9,12 @@ export function googleMapsOfficeSearchUrl(args: {
   address: string;
   locale: Locale;
 }): string {
-  const region = args.locale === "ar" ? "القاهرة، مصر" : "Cairo, Egypt";
+  const region =
+    args.locale === "ar"
+      ? "القاهرة، مصر"
+      : args.locale === "fr"
+        ? "Le Caire, Egypte"
+        : "Cairo, Egypt";
   const query = `${args.placeTitle}, ${args.address}, ${region}`;
   return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
 }

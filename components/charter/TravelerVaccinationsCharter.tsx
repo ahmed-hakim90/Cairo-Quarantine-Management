@@ -12,6 +12,7 @@ type TravelerVaccinationsCharterProps = {
 
 function articleLang(locale: Locale): string {
   if (locale === "zh") return "zh-CN";
+  if (locale === "fr") return "fr";
   return locale;
 }
 

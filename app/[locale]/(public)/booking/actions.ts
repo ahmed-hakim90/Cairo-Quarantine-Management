@@ -5,6 +5,11 @@ import {
   getCairoMinBookingYmd,
   getCairoTodayYmd,
 } from "@/lib/cairo-today-ymd";
+import {
+  bookingActionCopy,
+  duplicateBookingMessageByLocale,
+} from "@/lib/i18n/booking-request-copy";
+import { defaultLocale, isLocale, type Locale } from "@/lib/i18n/config";
 import { checkRateLimit, rateLimitKeyFromHeaders } from "@/lib/rate-limit";
 import { officeAcceptsTravelerState } from "@/lib/office-requests/office-traveler-state";
 import { DUPLICATE_BOOKING_MESSAGE } from "@/lib/office-requests/booking-duplicate";
@@ -50,10 +55,17 @@ function value(formData: FormData, key: string) {
   return String(formData.get(key) ?? "").trim();
 }
 
+function localeFromForm(formData: FormData): Locale {
+  const raw = value(formData, "locale");
+  return isLocale(raw) ? raw : defaultLocale;
+}
+
 export async function submitOfficeRequest(
   _state: BookingFormState,
   formData: FormData,
 ): Promise<BookingFormState> {
+  const locale = localeFromForm(formData);
+  const t = bookingActionCopy[locale];
   const headerList = await headers();
   const rateLimit = checkRateLimit({
     key: rateLimitKeyFromHeaders(headerList, "submit-office-request"),
@@ -63,7 +75,7 @@ export async function submitOfficeRequest(
   if (!rateLimit.allowed) {
     return {
       ok: false,
-      message: "تم إرسال طلبات كثيرة خلال وقت قصير. حاول مرة أخرى بعد قليل.",
+      message: t.rateLimited,
     };
   }
 
@@ -87,13 +99,13 @@ export async function submitOfficeRequest(
     details,
     ...(type === "booking" ? { hasSpecialNeeds } : {}),
   };
-  if (!officeId) errors.officeId = "اختر المكتب.";
+  if (!officeId) errors.officeId = t.chooseOffice;
   if (officeId.length > MAX_OFFICE_ID_LENGTH) {
-    errors.officeId = "اختيار المكتب غير صالح.";
+    errors.officeId = t.invalidOffice;
   }
-  if (!requestTypes.includes(type)) errors.type = "اختر نوع الطلب.";
+  if (!requestTypes.includes(type)) errors.type = t.chooseType;
   if (travelerStateId.length > MAX_TRAVELER_STATE_ID_LENGTH) {
-    errors.travelerStateId = "حالة المسافر غير صالحة.";
+    errors.travelerStateId = t.invalidTravelerState;
   }
 
   const activeStates = await listTravelerStatesForPublicBooking();
@@ -106,10 +118,10 @@ export async function submitOfficeRequest(
     const { bookingSameDayCutoffHour } = await getBookingSettings();
 
     if (!travelerStateId || !allowedIds.has(travelerStateId)) {
-      errors.travelerStateId = "اختر حالة المسافر.";
+      errors.travelerStateId = t.chooseTravelerState;
     }
     if (!/^\d{4}-\d{2}-\d{2}$/.test(preferredDate)) {
-      errors.preferredDate = "اختر التاريخ المطلوب.";
+      errors.preferredDate = t.chooseDate;
     } else {
       const minYmd = getCairoMinBookingYmd(new Date(), {
         sameDayCutoffHour: bookingSameDayCutoffHour,
@@ -119,8 +131,8 @@ export async function submitOfficeRequest(
         const hh = String(bookingSameDayCutoffHour).padStart(2, "0");
         errors.preferredDate =
           preferredDate < todayYmd
-            ? "لا يمكن اختيار تاريخ في الماضي. اختر اليوم أو تاريخاً لاحقاً."
-            : `من الساعة ${hh}:00 بتوقيت القاهرة لا يُسمح بحجز موعد في نفس اليوم. اختر غداً أو تاريخاً لاحقاً.`;
+            ? t.pastDate
+            : t.sameDayClosed.replace("{hour}", hh);
       }
     }
 
@@ -133,10 +145,9 @@ export async function submitOfficeRequest(
     ) {
       bookingOffice = await getOffice(officeId);
       if (!bookingOffice) {
-        errors.officeId = "المكتب غير موجود.";
+        errors.officeId = t.officeMissing;
       } else if (!officeAcceptsTravelerState(bookingOffice, travelerStateId)) {
-        errors.officeId =
-          "هذا المكتب لا يخدم حالة المسافر المختارة. اختر مكتباً آخر.";
+        errors.officeId = t.officeMismatch;
       }
     }
 
@@ -154,30 +165,29 @@ export async function submitOfficeRequest(
           preferredDate,
         );
         if (used >= cap) {
-          errors.preferredDate =
-            "لا يمكن الحجز في هذا اليوم؛ تم بلوغ العدد المسموح لهذا المكتب.";
+          errors.preferredDate = t.dayFull;
         }
       }
     }
   }
 
   if (name.length < 2 || name.length > MAX_NAME_LENGTH) {
-    errors.name = "اكتب الاسم بشكل صحيح.";
+    errors.name = t.invalidName;
   }
   if (phone.length > MAX_PHONE_LENGTH || !/^[+\d\s()-]{9,20}$/.test(phone)) {
-    errors.phone = "اكتب رقم هاتف صحيح.";
+    errors.phone = t.invalidPhone;
   }
   if (details.length > MAX_DETAILS_LENGTH) {
-    errors.details = "التفاصيل طويلة أكثر من المسموح.";
+    errors.details = t.detailsTooLong;
   }
   if (type !== "booking" && details.length < 5) {
-    errors.details = "اكتب تفاصيل الطلب.";
+    errors.details = t.detailsRequired;
   }
 
   if (Object.keys(errors).length > 0) {
     return {
       ok: false,
-      message: "راجع البيانات المطلوبة.",
+      message: t.reviewRequired,
       errors,
       values,
     };
@@ -195,7 +205,7 @@ export async function submitOfficeRequest(
       return {
         ok: false,
         duplicate: true,
-        message: DUPLICATE_BOOKING_MESSAGE,
+        message: duplicateBookingMessageByLocale[locale],
         values,
       };
     }
@@ -221,21 +231,28 @@ export async function submitOfficeRequest(
     });
     return {
       ok: true,
-      message: "تم إرسال الطلب بنجاح. سيتابع المكتب المختار معك قريباً.",
+      message: t.success,
       request: {
         ...created,
         phone,
       },
     };
   } catch (error) {
+    const rawMessage = error instanceof Error ? error.message : "";
     const message =
-      error instanceof Error
-        ? error.message
-        : "تعذر حفظ الطلب حالياً، حاول مرة أخرى.";
+      rawMessage === DUPLICATE_BOOKING_MESSAGE
+        ? duplicateBookingMessageByLocale[locale]
+        : rawMessage === bookingActionCopy.ar.firebaseMissing
+          ? t.firebaseMissing
+          : rawMessage === bookingActionCopy.ar.dayFull
+            ? t.dayFull
+            : rawMessage === bookingActionCopy.ar.officeMismatch
+              ? t.officeMismatch
+              : rawMessage || t.saveFailed;
     return {
       ok: false,
       message,
-      ...(message === DUPLICATE_BOOKING_MESSAGE
+      ...(rawMessage === DUPLICATE_BOOKING_MESSAGE
         ? { duplicate: true, values }
         : {}),
     };

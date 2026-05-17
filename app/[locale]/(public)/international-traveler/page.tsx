@@ -93,6 +93,7 @@ export default async function InternationalTravelerPage({
       <ScrollReveal>
         <HajjTravelerOfficesTable
           content={m.hajjTable}
+          locale={locale}
           offices={offices}
           serviceFilter="hajj_umrah_travelers"
         />

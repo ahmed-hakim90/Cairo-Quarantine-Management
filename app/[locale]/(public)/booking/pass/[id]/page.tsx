@@ -2,13 +2,13 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { bookingPassPageCopy } from "@/lib/i18n/booking-pass-copy";
 import { isLocale, type Locale } from "@/lib/i18n/config";
+import {
+  publicRequestStatusLabels,
+  publicRequestTypeLabels,
+  publicTravelerCategoryLabels,
+} from "@/lib/i18n/office-request-copy";
 import { mergeTravelerStateLabelsWithLegacy } from "@/lib/office-requests/office-traveler-state";
 import { getBookingPassPublic, listTravelerStates } from "@/lib/office-requests/store";
-import {
-  REQUEST_STATUS_LABELS,
-  REQUEST_TYPE_LABELS,
-  TRAVELER_CATEGORY_LABELS,
-} from "@/lib/office-requests/types";
 
 export const metadata: Metadata = {
   robots: { index: false, follow: false },
@@ -19,7 +19,13 @@ function formatIsoDate(iso: string, locale: Locale): string {
     const d = new Date(iso);
     if (Number.isNaN(d.getTime())) return iso;
     return new Intl.DateTimeFormat(
-      locale === "ar" ? "ar-EG" : locale === "zh" ? "zh-CN" : "en-GB",
+      locale === "ar"
+        ? "ar-EG"
+        : locale === "zh"
+          ? "zh-CN"
+          : locale === "fr"
+            ? "fr-FR"
+            : "en-GB",
       { dateStyle: "medium" },
     ).format(d);
   } catch {
@@ -54,9 +60,13 @@ export default async function BookingPassPage({
     ? mergeTravelerStateLabelsWithLegacy(await listTravelerStates())
     : {};
   const traveler = pass.travelerStateId
-    ? travelerLabels[pass.travelerStateId] ?? pass.travelerStateId
+    ? pass.travelerStateId in publicTravelerCategoryLabels[locale]
+      ? publicTravelerCategoryLabels[locale][
+          pass.travelerStateId as keyof (typeof publicTravelerCategoryLabels)[typeof locale]
+        ]
+      : travelerLabels[pass.travelerStateId] ?? pass.travelerStateId
     : pass.travelerCategory
-      ? TRAVELER_CATEGORY_LABELS[pass.travelerCategory]
+      ? publicTravelerCategoryLabels[locale][pass.travelerCategory]
       : "—";
 
   const c = bookingPassPageCopy[locale];
@@ -88,11 +98,11 @@ export default async function BookingPassPage({
             </div>
             <div>
               <dt className="text-xs font-bold text-teal-200/80">{c.type}</dt>
-              <dd className="mt-1">{REQUEST_TYPE_LABELS[pass.type]}</dd>
+              <dd className="mt-1">{publicRequestTypeLabels[locale][pass.type]}</dd>
             </div>
             <div>
               <dt className="text-xs font-bold text-teal-200/80">{c.status}</dt>
-              <dd className="mt-1">{REQUEST_STATUS_LABELS[pass.status]}</dd>
+              <dd className="mt-1">{publicRequestStatusLabels[locale][pass.status]}</dd>
             </div>
             <div>
               <dt className="text-xs font-bold text-teal-200/80">{c.name}</dt>

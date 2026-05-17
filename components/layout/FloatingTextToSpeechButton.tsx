@@ -1,14 +1,21 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import {
+  getSpeechLanguage,
+  selectSpeechVoice,
+  splitSpeechText,
+} from "@/lib/ui/text-to-speech";
 
 type TtsState = "idle" | "speaking" | "paused";
 
-const LANG_MAP: Record<string, string> = {
-  ar: "ar-EG",
-  en: "en-US",
-  zh: "zh-CN",
-};
+function canUseSpeechSynthesis(): boolean {
+  return (
+    typeof window !== "undefined" &&
+    "speechSynthesis" in window &&
+    "SpeechSynthesisUtterance" in window
+  );
+}
 
 function SpeakerIcon() {
   return (
@@ -56,26 +63,102 @@ type Props = {
 export function FloatingTextToSpeechButton({ locale, labels }: Props) {
   const [state, setState] = useState<TtsState>("idle");
   const [supported] = useState(
-    () => typeof window === "undefined" || "speechSynthesis" in window,
+    () => typeof window === "undefined" || canUseSpeechSynthesis(),
   );
+  const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
+  const [liveMessage, setLiveMessage] = useState("");
+  const chunksRef = useRef<string[]>([]);
+  const chunkIndexRef = useRef(0);
+  const cancelledRef = useRef(false);
+  const speechRunIdRef = useRef(0);
   const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
+  const voicesRef = useRef<SpeechSynthesisVoice[]>([]);
+
+  useEffect(() => {
+    voicesRef.current = voices;
+  }, [voices]);
+
+  useEffect(() => {
+    if (!supported) {
+      return;
+    }
+
+    function refreshVoices() {
+      setVoices(window.speechSynthesis.getVoices());
+    }
+
+    refreshVoices();
+    window.speechSynthesis.addEventListener("voiceschanged", refreshVoices);
+
+    return () => {
+      window.speechSynthesis.removeEventListener("voiceschanged", refreshVoices);
+    };
+  }, [supported]);
 
   useEffect(() => {
     return () => {
+      cancelledRef.current = true;
+      speechRunIdRef.current += 1;
       window.speechSynthesis?.cancel();
     };
   }, []);
 
-  if (!supported) return null;
-
   function getPageText(): string {
     const el = document.getElementById("main-content");
     if (!el) return "";
-    return (el as HTMLElement).innerText?.replace(/\s+/g, " ").trim() ?? "";
+    return (el as HTMLElement).innerText ?? "";
+  }
+
+  function resetSpeech() {
+    chunksRef.current = [];
+    chunkIndexRef.current = 0;
+    utteranceRef.current = null;
+    setState("idle");
+  }
+
+  function speakCurrentChunk(runId: number) {
+    const synthesis = window.speechSynthesis;
+    const text = chunksRef.current[chunkIndexRef.current];
+
+    if (!text || cancelledRef.current || runId !== speechRunIdRef.current) {
+      resetSpeech();
+      return;
+    }
+
+    const language = getSpeechLanguage(locale);
+    const voice = selectSpeechVoice(
+      voicesRef.current.length > 0 ? voicesRef.current : synthesis.getVoices(),
+      language,
+    );
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = language;
+    utterance.rate = 0.9;
+    if (voice) utterance.voice = voice;
+    utterance.onend = () => {
+      if (cancelledRef.current || runId !== speechRunIdRef.current) return;
+      chunkIndexRef.current += 1;
+      if (chunkIndexRef.current >= chunksRef.current.length) {
+        resetSpeech();
+        return;
+      }
+      speakCurrentChunk(runId);
+    };
+    utterance.onerror = () => {
+      if (cancelledRef.current || runId !== speechRunIdRef.current) return;
+      setLiveMessage(labels.unsupported);
+      resetSpeech();
+    };
+
+    utteranceRef.current = utterance;
+    synthesis.speak(utterance);
   }
 
   function handleMainClick() {
-    if (!("speechSynthesis" in window)) return;
+    if (!canUseSpeechSynthesis()) {
+      setLiveMessage(labels.unsupported);
+      return;
+    }
+    setLiveMessage("");
 
     if (state === "speaking") {
       window.speechSynthesis.pause();
@@ -89,23 +172,25 @@ export function FloatingTextToSpeechButton({ locale, labels }: Props) {
       return;
     }
 
+    cancelledRef.current = true;
+    speechRunIdRef.current += 1;
     window.speechSynthesis.cancel();
-    const text = getPageText();
-    if (!text) return;
+    const chunks = splitSpeechText(getPageText());
+    if (chunks.length === 0) return;
 
-    const utt = new SpeechSynthesisUtterance(text);
-    utt.lang = LANG_MAP[locale] ?? "ar-EG";
-    utt.rate = 0.9;
-    utt.onend = () => setState("idle");
-    utt.onerror = () => setState("idle");
-    utteranceRef.current = utt;
-    window.speechSynthesis.speak(utt);
+    cancelledRef.current = false;
+    chunksRef.current = chunks;
+    chunkIndexRef.current = 0;
+    setVoices(window.speechSynthesis.getVoices());
+    speakCurrentChunk(speechRunIdRef.current);
     setState("speaking");
   }
 
   function handleStop() {
+    cancelledRef.current = true;
+    speechRunIdRef.current += 1;
     window.speechSynthesis?.cancel();
-    setState("idle");
+    resetSpeech();
   }
 
   const mainLabel =
@@ -115,8 +200,19 @@ export function FloatingTextToSpeechButton({ locale, labels }: Props) {
         ? labels.resume
         : labels.read;
 
+  if (!supported) {
+    return (
+      <span className="sr-only" aria-live="polite">
+        {labels.unsupported}
+      </span>
+    );
+  }
+
   return (
     <div className="flex flex-col items-center gap-2">
+      <span className="sr-only" aria-live="polite">
+        {liveMessage}
+      </span>
       <button
         type="button"
         onClick={handleMainClick}
