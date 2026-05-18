@@ -2,7 +2,11 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useMemo, useState } from "react";
+import { useActionState, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  addRequestToQueueAction,
+  type AddRequestToQueueState,
+} from "@/app/[locale]/admin/actions";
 import {
   defaultTravelerStatesFromLegacyLabels,
   effectiveTravelerStateIdOnRequest,
@@ -33,6 +37,7 @@ import {
   type OfficeRequestStatus,
   type TravelerState,
 } from "@/lib/office-requests/types";
+import { feedbackToast } from "@/lib/ui/feedback-toast";
 
 export type AdminRequestsDateRange = AdminBookingDateRange;
 
@@ -82,6 +87,7 @@ type AdminRequestsTableProps = {
   requestsListHref: string;
   statusFilter: AdminRequestsStatusFilter;
   sort: AdminRequestsSort;
+  searchQuery?: string;
   dateRange?: AdminRequestsDateRange;
   customDateFrom?: string;
   customDateTo?: string;
@@ -104,6 +110,78 @@ function StatusBadge({ status }: { status: OfficeRequest["status"] }) {
     >
       {REQUEST_STATUS_LABELS[status]}
     </span>
+  );
+}
+
+type QueueActionDispatch = (payload: FormData) => void;
+
+function RequestQueueAction({
+  locale,
+  request,
+  queueAction,
+  queuePending,
+  queueState,
+}: {
+  locale: string;
+  request: OfficeRequest;
+  queueAction: QueueActionDispatch;
+  queuePending: boolean;
+  queueState: AddRequestToQueueState;
+}) {
+  const result =
+    queueState.ok && queueState.requestId === request.id ? queueState : null;
+  const rowError =
+    !queueState.ok && queueState.requestId === request.id
+      ? queueState.error
+      : null;
+
+  if (request.status === "completed" || request.status === "cancelled") {
+    return (
+      <p className="text-xs font-semibold text-gov-gray-500">
+        لا يمكن إضافة طلب مكتمل أو ملغي للطابور.
+      </p>
+    );
+  }
+
+  return (
+    <div className="space-y-2">
+      {result ? (
+        <div className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-950">
+          <p className="font-extrabold">
+            رقم الدور{" "}
+            <span className="font-heading text-lg tabular-nums">
+              {result.queueNumber}
+            </span>
+          </p>
+          <p className="mt-0.5 font-semibold">{result.message}</p>
+          {result.alreadyInQueue ? (
+            <p className="mt-0.5 text-[11px] text-emerald-800">
+              كان موجودًا في طابور اليوم.
+            </p>
+          ) : null}
+        </div>
+      ) : null}
+      {rowError ? (
+        <p className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold text-red-900">
+          {rowError}
+        </p>
+      ) : null}
+      <form action={queueAction}>
+        <input type="hidden" name="locale" value={locale} />
+        <input type="hidden" name="requestId" value={request.id} />
+        <button
+          type="submit"
+          disabled={queuePending}
+          className="inline-flex min-h-9 items-center rounded-md bg-gov-navy px-3 text-xs font-extrabold text-white transition hover:bg-gov-accent disabled:opacity-60"
+        >
+          {queuePending
+            ? "جاري الإضافة…"
+            : result
+              ? "تحديث رقم الطابور"
+              : "أضف للطابور"}
+        </button>
+      </form>
+    </div>
   );
 }
 
@@ -180,6 +258,7 @@ export function AdminRequestsTable({
   requestsListHref,
   statusFilter,
   sort,
+  searchQuery = "",
   dateRange = "all",
   customDateFrom,
   customDateTo,
@@ -191,6 +270,11 @@ export function AdminRequestsTable({
   const [activeTravelerStateId, setActiveTravelerStateId] = useState<
     string | null
   >(null);
+  const [queueState, queueAction, queuePending] = useActionState<
+    AddRequestToQueueState,
+    FormData
+  >(addRequestToQueueAction, { ok: false });
+  const wasQueuePending = useRef(false);
 
   const filterStates = useMemo(
     () =>
@@ -302,13 +386,14 @@ export function AdminRequestsTable({
         : dateHrefParams;
 
       return buildAdminRequestsHref(requestsListHref, {
+        q: overrides.q !== undefined ? overrides.q : searchQuery,
         status: overrides.status ?? statusFilter,
         sort: overrides.sort ?? sort,
         ...dateParams,
         ...(overrides.cursor ? { cursor: overrides.cursor } : {}),
       });
     },
-    [dateHrefParams, requestsListHref, sort, statusFilter],
+    [dateHrefParams, requestsListHref, searchQuery, sort, statusFilter],
   );
 
   const nextHref = useMemo(
@@ -321,9 +406,27 @@ export function AdminRequestsTable({
 
   const showClearDateFilter = explicitDateFilter;
   const clearDateFilterHref = buildAdminRequestsHref(requestsListHref, {
+    q: searchQuery,
     status: statusFilter,
     sort,
   });
+  const clearSearchHref = listHref({ q: null });
+
+  useEffect(() => {
+    if (wasQueuePending.current && !queuePending) {
+      if (queueState.ok) {
+        feedbackToast.success(
+          queueState.alreadyInQueue
+            ? `الطلب موجود بالفعل في الطابور: رقم ${queueState.queueNumber}`
+            : `تمت إضافة الطلب للطابور: رقم ${queueState.queueNumber}`,
+        );
+      } else {
+        const message = queueState.error?.trim();
+        if (message) feedbackToast.error(message);
+      }
+    }
+    wasQueuePending.current = queuePending;
+  }, [queuePending, queueState]);
 
   return (
     <div className="rounded-lg border border-gov-gray-200 bg-white shadow-sm">
@@ -354,6 +457,54 @@ export function AdminRequestsTable({
             dir="rtl"
             className="flex w-full flex-col gap-4 text-right sm:gap-3 lg:flex-row lg:flex-wrap lg:items-end lg:justify-start lg:gap-x-4 lg:gap-y-3"
           >
+            <form
+              action={requestsListHref}
+              className="w-full min-w-0 basis-full space-y-1.5"
+            >
+              {statusFilter !== "all" ? (
+                <input type="hidden" name="status" value={statusFilter} />
+              ) : null}
+              {sort !== "created_desc" ? (
+                <input type="hidden" name="sort" value={sort} />
+              ) : null}
+              {customDateFrom ? (
+                <input type="hidden" name="from" value={customDateFrom} />
+              ) : null}
+              {customDateTo ? (
+                <input type="hidden" name="to" value={customDateTo} />
+              ) : null}
+              {!customDateFrom && !customDateTo && dateRange !== "all" ? (
+                <input type="hidden" name="range" value={dateRange} />
+              ) : null}
+              <label htmlFor="requests-search" className="text-xs font-extrabold text-gov-navy">
+                بحث في الطلبات
+              </label>
+              <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto_auto]">
+                <input
+                  id="requests-search"
+                  name="q"
+                  type="search"
+                  defaultValue={searchQuery}
+                  className="min-h-10 w-full rounded-md border border-gov-gray-200 bg-white px-3 text-sm font-semibold text-gov-navy outline-none transition focus:border-gov-accent focus:ring-2 focus:ring-gov-accent/20"
+                  placeholder="رقم الطلب أو الهاتف أو الاسم"
+                />
+                <button
+                  type="submit"
+                  className="inline-flex min-h-10 items-center justify-center rounded-md bg-gov-navy px-4 text-sm font-extrabold text-white transition hover:bg-gov-navy/90"
+                >
+                  بحث
+                </button>
+                {searchQuery ? (
+                  <Link
+                    href={clearSearchHref}
+                    className="inline-flex min-h-10 items-center justify-center rounded-md border border-gov-gray-200 bg-white px-4 text-sm font-extrabold text-gov-navy transition hover:bg-gov-gray-50"
+                  >
+                    مسح البحث
+                  </Link>
+                ) : null}
+              </div>
+            </form>
+
             <fieldset className="w-full min-w-0 shrink-0 space-y-1.5 lg:w-auto">
               <legend className="whitespace-nowrap text-xs font-extrabold text-gov-navy">
                 نوع الطلب
@@ -453,6 +604,9 @@ export function AdminRequestsTable({
                   action={listHref()}
                   className="grid w-full grid-cols-1 gap-2 min-[400px]:grid-cols-[1fr_1fr_auto_auto] sm:gap-1.5 lg:flex lg:w-auto lg:flex-nowrap lg:items-center"
                 >
+                  {searchQuery ? (
+                    <input type="hidden" name="q" value={searchQuery} />
+                  ) : null}
                   {statusFilter !== "all" ? (
                     <input type="hidden" name="status" value={statusFilter} />
                   ) : null}
@@ -696,9 +850,13 @@ export function AdminRequestsTable({
                     </td>
                     <td className="max-w-[min(18rem,40vw)] px-4 py-3 align-top">
                       {request.type === "booking" ? (
-                        <p className="text-xs font-semibold text-gov-gray-500">
-                          الحجز ظاهر للمتابعة اليومية فقط؛ لا يوجد إجراء مطلوب.
-                        </p>
+                        <RequestQueueAction
+                          locale={locale}
+                          request={request}
+                          queueAction={queueAction}
+                          queuePending={queuePending}
+                          queueState={queueState}
+                        />
                       ) : latest ? (
                         <div className="space-y-1.5">
                           <p className="text-xs leading-relaxed text-gov-gray-800">

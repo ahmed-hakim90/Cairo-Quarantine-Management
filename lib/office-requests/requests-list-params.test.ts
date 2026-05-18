@@ -57,13 +57,14 @@ describe("requests-list-params", () => {
   it("buildAdminRequestsHref preserves non-default params", () => {
     expect(
       buildAdminRequestsHref("/ar/admin/requests", {
+        q: "01552900017",
         status: "new",
         sort: "updated_desc",
         range: "today",
         cursor: "abc",
       }),
     ).toBe(
-      "/ar/admin/requests?status=new&sort=updated_desc&range=today&cursor=abc",
+      "/ar/admin/requests?q=01552900017&status=new&sort=updated_desc&range=today&cursor=abc",
     );
     expect(
       buildAdminRequestsHref("/ar/admin/requests", {

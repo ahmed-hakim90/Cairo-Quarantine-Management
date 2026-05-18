@@ -1339,6 +1339,207 @@ export async function listRequestsForSessionPage(args: {
   };
 }
 
+function requestNumberLookupVariants(value: string): string[] {
+  const compact = value.trim().replace(/\s+/g, "").toUpperCase();
+  const values = new Set<string>();
+  if (compact) values.add(compact);
+  const digits = compact.replace(/\D/g, "");
+  if (digits) {
+    values.add(digits);
+    values.add(`CQM-${digits.padStart(6, "0")}`);
+  }
+  return [...values];
+}
+
+function normalizeSearchText(value: string): string {
+  return value
+    .trim()
+    .toLocaleLowerCase("ar-EG")
+    .replace(/\s+/g, " ");
+}
+
+function requestMatchesAdminSearch(request: OfficeRequest, rawQuery: string): boolean {
+  const query = normalizeSearchText(rawQuery);
+  if (!query) return true;
+  const digits = rawQuery.replace(/\D/g, "");
+  const requestNumbers = requestNumberLookupVariants(rawQuery);
+  const phoneVariants = phoneLookupVariants(rawQuery);
+  const haystack = [
+    request.id,
+    request.requestNumber,
+    request.name,
+    request.phone,
+  ]
+    .map(normalizeSearchText)
+    .filter(Boolean);
+
+  if (requestNumbers.includes(request.requestNumber.toUpperCase())) return true;
+  if (phoneVariants.includes(request.phone)) return true;
+  if (digits && request.phone.replace(/\D/g, "").includes(digits)) return true;
+  return haystack.some((item) => item.includes(query));
+}
+
+function requestMatchesAdminFilters(
+  request: OfficeRequest,
+  args: {
+    status?: OfficeRequestStatus | "all";
+    type?: OfficeRequestType | "all";
+    adminBookingTodayYmd?: string | null;
+    bookingDateFrom?: string | null;
+    bookingDateTo?: string | null;
+  },
+): boolean {
+  if (args.status && args.status !== "all" && request.status !== args.status) {
+    return false;
+  }
+  if (args.type && args.type !== "all" && request.type !== args.type) {
+    return false;
+  }
+  if (args.adminBookingTodayYmd) {
+    return isAdminVisibleBookingRequest(request, {
+      todayYmd: args.adminBookingTodayYmd,
+      bookingDateFrom: args.bookingDateFrom,
+      bookingDateTo: args.bookingDateTo,
+    });
+  }
+  return true;
+}
+
+function adminRequestOfficeScope(args: {
+  role: AdminRole;
+  officeId: string | null;
+  allowedOfficeIds?: string[];
+  officeFilter?: string;
+}): string[] | null {
+  const baseProfile = {
+    uid: "",
+    role: args.role,
+    officeId: args.officeId,
+    allowedOfficeIds: args.allowedOfficeIds,
+  } satisfies Pick<
+    AdminUserProfile,
+    "uid" | "role" | "officeId" | "allowedOfficeIds"
+  >;
+
+  if (args.role === "office_user") {
+    return args.officeId ? [args.officeId] : [];
+  }
+  if (args.role === "office_admin") {
+    if (args.officeFilter) {
+      return adminCanAccessOffice(baseProfile, args.officeFilter)
+        ? [args.officeFilter]
+        : [];
+    }
+    return normalizeOfficeIds(args.allowedOfficeIds ?? []);
+  }
+  return args.officeFilter ? [args.officeFilter] : null;
+}
+
+export async function searchRequestsForSessionPage(args: {
+  q: string;
+  role: AdminRole;
+  officeId: string | null;
+  allowedOfficeIds?: string[];
+  status?: OfficeRequestStatus | "all";
+  type?: OfficeRequestType | "all";
+  officeFilter?: string;
+  sortKey?: "createdAt" | "updatedAt";
+  sortDirection?: "asc" | "desc";
+  pageSize?: number;
+  adminBookingTodayYmd?: string | null;
+  bookingDateFrom?: string | null;
+  bookingDateTo?: string | null;
+}): Promise<PaginatedResult<OfficeRequest>> {
+  if (!isFirebaseAdminConfigured()) return { items: [], nextCursor: null };
+  const q = args.q.trim();
+  if (!q) {
+    return listRequestsForSessionPage(args);
+  }
+
+  const pageSize = Math.min(Math.max(1, args.pageSize ?? ADMIN_REQUESTS_PAGE_SIZE), 200);
+  const sortKey = args.sortKey ?? "createdAt";
+  const sortDirection = args.sortDirection ?? "desc";
+  const officeIds = adminRequestOfficeScope(args);
+  if (officeIds && officeIds.length === 0) return { items: [], nextCursor: null };
+
+  const byId = new Map<string, OfficeRequest>();
+  const addIfVisible = (request: OfficeRequest) => {
+    if (
+      officeIds &&
+      !officeIds.includes(request.officeId)
+    ) {
+      return;
+    }
+    if (!requestMatchesAdminFilters(request, args)) return;
+    if (!requestMatchesAdminSearch(request, q)) return;
+    byId.set(request.id, request);
+  };
+
+  const directSnap = await getAdminDb().collection(REQUESTS).doc(q).get();
+  if (directSnap.exists) {
+    addIfVisible(requestFromDoc(directSnap.id, directSnap.data() ?? {}));
+  }
+
+  const exactLookups = [
+    ...requestNumberLookupVariants(q).map((value) => ({
+      field: "requestNumber",
+      value,
+    })),
+    ...phoneLookupVariants(q).map((value) => ({ field: "phone", value })),
+  ];
+  for (const lookup of exactLookups) {
+    const query: FirebaseFirestore.Query = getAdminDb()
+      .collection(REQUESTS)
+      .where(lookup.field, "==", lookup.value)
+      .limit(20);
+    const snap = await query.get();
+    for (const doc of snap.docs) {
+      addIfVisible(requestFromDoc(doc.id, doc.data()));
+    }
+  }
+
+  const officeBatches =
+    officeIds && officeIds.length > 0
+      ? Array.from(
+          { length: Math.ceil(officeIds.length / FIRESTORE_IN_QUERY_MAX) },
+          (_, i) =>
+            officeIds.slice(
+              i * FIRESTORE_IN_QUERY_MAX,
+              (i + 1) * FIRESTORE_IN_QUERY_MAX,
+            ),
+        )
+      : [null];
+  for (const batch of officeBatches) {
+    let query: FirebaseFirestore.Query = getAdminDb().collection(REQUESTS);
+    if (batch && batch.length === 1) {
+      query = query.where("officeId", "==", batch[0]);
+    } else if (batch && batch.length > 1) {
+      query = query.where("officeId", "in", batch);
+    }
+    if (args.status && args.status !== "all") {
+      query = query.where("status", "==", args.status);
+    }
+    if (args.type && args.type !== "all") {
+      query = query.where("type", "==", args.type);
+    }
+    const snap = await query.orderBy(sortKey, sortDirection).limit(200).get();
+    for (const doc of snap.docs) {
+      addIfVisible(requestFromDoc(doc.id, doc.data()));
+    }
+  }
+
+  const dir = sortDirection === "desc" ? -1 : 1;
+  const items = [...byId.values()]
+    .sort(
+      (a, b) =>
+        dir *
+        (new Date(a[sortKey]).getTime() - new Date(b[sortKey]).getTime()),
+    )
+    .slice(0, pageSize);
+
+  return { items, nextCursor: null };
+}
+
 const EXPORT_PAGE_SIZE = SUPER_ADMIN_EXPORT_PAGE_SIZE;
 
 const ALL_REQUEST_TYPES: readonly OfficeRequestType[] = [

@@ -76,6 +76,7 @@ export function coerceSortForUpdatedWindow(
 }
 
 export type AdminRequestsHrefParams = {
+  q?: string | null;
   status?: AdminRequestsStatusFilter;
   sort?: AdminRequestsSort;
   range?: string;
@@ -89,6 +90,8 @@ export function buildAdminRequestsHref(
   params: AdminRequestsHrefParams,
 ): string {
   const search = new URLSearchParams();
+  const q = params.q?.trim();
+  if (q) search.set("q", q);
   if (params.status && params.status !== "all") {
     search.set("status", params.status);
   }

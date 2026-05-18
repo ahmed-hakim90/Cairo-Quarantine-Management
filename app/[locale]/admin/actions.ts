@@ -15,6 +15,7 @@ import {
   deleteMessageTemplate,
   deleteOfficeRequestBySuperAdmin,
   getOffice,
+  getRequestForSession,
   getUserProfile,
   markWhatsappSentForSession,
   OFFICE_REQUESTS_CACHE_TAGS,
@@ -29,6 +30,12 @@ import {
   upsertTravelerState,
   upsertVaccine,
 } from "@/lib/office-requests/store";
+import {
+  checkExistingTodayQueue,
+  createQueueTicket,
+  getTodayKey,
+} from "@/lib/queue/queue-service";
+import { getQueuePositionPublic } from "@/lib/queue/queue-position";
 import { inferOfficeServiceFromSelectedTravelerStateIds } from "@/lib/office-requests/office-traveler-state";
 import { runRetentionMaintenance } from "@/lib/office-requests/retention";
 import {
@@ -87,6 +94,25 @@ function revalidatePublicOfficePages() {
 function revalidatePublicVaccineData() {
   revalidateTag(OFFICE_REQUESTS_CACHE_TAGS.publicVaccines, "max");
 }
+
+export type AddRequestToQueueState =
+  | {
+      ok: true;
+      requestId: string;
+      ticketId: string;
+      officeId: string;
+      requestNumber: string;
+      citizenName: string;
+      queueNumber: number;
+      aheadCount: number;
+      alreadyInQueue: boolean;
+      message: string;
+    }
+  | {
+      ok: false;
+      requestId?: string;
+      error?: string;
+    };
 
 async function requireSession() {
   const session = await getAdminSession();
@@ -160,6 +186,83 @@ export async function markWhatsappSentAction(formData: FormData) {
   revalidatePath(`/${locale}/admin`);
   revalidatePath(`/${locale}/admin/requests`);
   revalidatePath(`/${locale}/admin/requests/${id}`);
+}
+
+export async function addRequestToQueueAction(
+  _prev: AddRequestToQueueState,
+  formData: FormData,
+): Promise<AddRequestToQueueState> {
+  const requestId = formValue(formData, "requestId");
+  const locale = formValue(formData, "locale") || "ar";
+  try {
+    const session = await requireSession();
+    if (!requestId) {
+      return { ok: false, error: "رمز الطلب مفقود." };
+    }
+
+    const request = await getRequestForSession({
+      id: requestId,
+      role: session.profile.role,
+      officeId: session.profile.officeId,
+      allowedOfficeIds: session.profile.allowedOfficeIds,
+    });
+    if (!request) {
+      return { ok: false, requestId, error: "الطلب غير موجود أو غير مصرح." };
+    }
+    if (request.type !== "booking") {
+      return { ok: false, requestId, error: "يمكن إضافة الحجوزات فقط للطابور." };
+    }
+    if (request.status === "completed" || request.status === "cancelled") {
+      return {
+        ok: false,
+        requestId,
+        error: "لا يمكن إضافة طلب مكتمل أو ملغي للطابور.",
+      };
+    }
+
+    const date = getTodayKey();
+    const existing = await checkExistingTodayQueue(request.id, request.officeId, date);
+    const ticket =
+      existing ??
+      (await createQueueTicket({
+        requestId: request.id,
+        requestNumber: request.requestNumber,
+        officeId: request.officeId,
+        createdFrom: "existing_request",
+        date,
+      }));
+    const position = await getQueuePositionPublic(ticket.id);
+    const aheadCount = position?.aheadCount ?? 0;
+    const message =
+      aheadCount <= 0
+        ? "دوره الآن"
+        : aheadCount === 1
+          ? "أمام المواطن شخص واحد"
+          : `أمام المواطن ${aheadCount} أشخاص`;
+
+    revalidatePath(`/${locale}/admin/requests`);
+    revalidatePath(`/${locale}/admin/requests/${request.id}`);
+    revalidatePath(`/${locale}/office-dashboard/${request.officeId}/queue`);
+
+    return {
+      ok: true,
+      requestId: request.id,
+      ticketId: ticket.id,
+      officeId: request.officeId,
+      requestNumber: ticket.requestNumber,
+      citizenName: request.name,
+      queueNumber: ticket.queueNumber,
+      aheadCount,
+      alreadyInQueue: Boolean(existing),
+      message,
+    };
+  } catch (e) {
+    return {
+      ok: false,
+      requestId: requestId || undefined,
+      error: e instanceof Error ? e.message : "تعذر إضافة الطلب للطابور.",
+    };
+  }
 }
 
 export async function saveTemplateAction(formData: FormData) {

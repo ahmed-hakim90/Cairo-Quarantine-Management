@@ -15,6 +15,7 @@ import {
   listLatestActivityLogByRequestIds,
   listOffices,
   listRequestsForSessionPage,
+  searchRequestsForSessionPage,
   listTravelerStates,
 } from "@/lib/office-requests/store";
 import type { AdminRequestsDateRange } from "@/components/admin/AdminRequestsTable";
@@ -56,6 +57,7 @@ export default async function AdminRequestsPage({
   }
 
   const cursor = firstSearchParam(sp.cursor);
+  const q = firstSearchParam(sp.q) ?? "";
   const statusFilter = parseAdminRequestsStatus(firstSearchParam(sp.status));
   const sort = parseAdminRequestsSort(firstSearchParam(sp.sort));
   const dateRange = dateParams.dateRange as AdminRequestsDateRange;
@@ -83,14 +85,24 @@ export default async function AdminRequestsPage({
       )
     : allOffices;
 
+  const requestListPromise = q
+    ? searchRequestsForSessionPage({
+        ...listArgs,
+        q,
+        status: statusFilter === "all" ? undefined : statusFilter,
+        sortKey,
+        sortDirection,
+      })
+    : listRequestsForSessionPage({
+        ...listArgs,
+        status: statusFilter === "all" ? undefined : statusFilter,
+        sortKey,
+        sortDirection,
+        cursor,
+      });
+
   const [requestPage, travelerStates] = await Promise.all([
-    listRequestsForSessionPage({
-      ...listArgs,
-      status: statusFilter === "all" ? undefined : statusFilter,
-      sortKey,
-      sortDirection,
-      cursor,
-    }),
+    requestListPromise,
     listTravelerStates({ includeInactive: true }),
   ]);
   const requests = requestPage.items;
@@ -142,6 +154,7 @@ export default async function AdminRequestsPage({
         requestsListHref={requestsHref}
         statusFilter={statusFilter}
         sort={sort}
+        searchQuery={q}
         dateRange={dateRange}
         customDateFrom={dateParams.customDateFrom}
         customDateTo={dateParams.customDateTo}
