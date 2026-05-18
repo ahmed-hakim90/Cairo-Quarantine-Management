@@ -21,24 +21,25 @@ export function InstallPrompt({ pwa }: InstallPromptProps) {
     snoozeKey: SNOOZE_KEY,
     useSnooze: true,
     iosHintDelayMs: 4000,
+    mobileOnly: true,
   });
 
   if (!shouldShow) return null;
 
   return (
     <div
-      role="dialog"
+      role="region"
       aria-label={pwa.installAria}
-      className="fixed inset-x-3 bottom-3 z-[60] mx-auto max-w-md rounded-2xl border border-white/10 bg-gov-navy/95 p-4 text-white shadow-2xl backdrop-blur supports-[backdrop-filter]:bg-gov-navy/85 sm:bottom-4 sm:inset-x-4"
+      className="fixed inset-x-3 bottom-3 z-[60] mx-auto max-w-md rounded-lg border border-white/10 bg-gov-navy/95 p-3 text-white shadow-2xl backdrop-blur supports-[backdrop-filter]:bg-gov-navy/85 sm:hidden"
     >
-      <div className="flex items-start gap-3">
-        <div className="shrink-0 overflow-hidden rounded-xl bg-white/10">
+      <div className="flex items-start gap-2.5">
+        <div className="shrink-0 overflow-hidden rounded-md bg-white/10">
           <Image
             src="/icons/icon-192.png"
             alt=""
             width={48}
             height={48}
-            className="h-12 w-12"
+            className="h-10 w-10"
             unoptimized
           />
         </div>
@@ -52,12 +53,12 @@ export function InstallPrompt({ pwa }: InstallPromptProps) {
               {pwa.iosHelp}
             </p>
           ) : null}
-          <div className="mt-3 flex flex-wrap items-center gap-2">
+          <div className="mt-2 flex flex-wrap items-center gap-2">
             {canPromptInstall ? (
               <button
                 type="button"
                 onClick={() => void promptInstall()}
-                className="inline-flex min-h-10 items-center rounded-md bg-white px-4 text-sm font-semibold text-gov-navy transition-colors hover:bg-white/90"
+                className="inline-flex min-h-9 items-center rounded-md bg-white px-3 text-sm font-semibold text-gov-navy transition-colors hover:bg-white/90"
               >
                 {pwa.installButton}
               </button>
@@ -65,7 +66,7 @@ export function InstallPrompt({ pwa }: InstallPromptProps) {
             <button
               type="button"
               onClick={dismiss}
-              className="inline-flex min-h-10 items-center rounded-md border border-white/30 bg-transparent px-3 text-sm font-medium text-white transition-colors hover:bg-white/10"
+              className="inline-flex min-h-9 items-center rounded-md border border-white/30 bg-transparent px-3 text-sm font-medium text-white transition-colors hover:bg-white/10"
             >
               {pwa.installDismiss}
             </button>

@@ -17,6 +17,8 @@ export type UsePwaInstallOptions = {
   useSnooze?: boolean;
   /** Delay before showing UI on iOS when no deferred prompt (global banner). */
   iosHintDelayMs?: number;
+  /** Limit global install UI to phones/tablets. Other install entry points can opt out. */
+  mobileOnly?: boolean;
 };
 
 function readSnoozed(snoozeKey: string): boolean {
@@ -58,6 +60,18 @@ function detectIos(): boolean {
   );
 }
 
+function detectMobileLike(): boolean {
+  if (typeof window === "undefined") return false;
+  const ua = window.navigator.userAgent;
+  return (
+    /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+      ua,
+    ) ||
+    window.matchMedia("(pointer: coarse)").matches ||
+    window.matchMedia("(max-width: 767px)").matches
+  );
+}
+
 function initialDismissed(
   useSnooze: boolean,
   snoozeKey: string | undefined,
@@ -72,6 +86,7 @@ export function usePwaInstall(options: UsePwaInstallOptions = {}) {
     snoozeMs = DEFAULT_SNOOZE_MS,
     useSnooze = Boolean(snoozeKey),
     iosHintDelayMs = 0,
+    mobileOnly = false,
   } = options;
 
   const [deferred, setDeferred] = useState<BeforeInstallPromptEvent | null>(
@@ -79,6 +94,7 @@ export function usePwaInstall(options: UsePwaInstallOptions = {}) {
   );
   const [isStandalone, setIsStandalone] = useState(detectStandalone);
   const [isIos] = useState(detectIos);
+  const [isMobileLike, setIsMobileLike] = useState(detectMobileLike);
   const [dismissed, setDismissed] = useState(() =>
     initialDismissed(useSnooze, snoozeKey),
   );
@@ -114,11 +130,30 @@ export function usePwaInstall(options: UsePwaInstallOptions = {}) {
     };
   }, [iosHintDelayMs, isIos, isStandalone, snoozeKey, snoozeMs, useSnooze]);
 
+  useEffect(() => {
+    if (typeof window === "undefined" || !mobileOnly) return;
+    const mediaQueries = [
+      window.matchMedia("(pointer: coarse)"),
+      window.matchMedia("(max-width: 767px)"),
+    ];
+    const updateMobileLike = () => setIsMobileLike(detectMobileLike());
+
+    mediaQueries.forEach((query) =>
+      query.addEventListener("change", updateMobileLike),
+    );
+    return () => {
+      mediaQueries.forEach((query) =>
+        query.removeEventListener("change", updateMobileLike),
+      );
+    };
+  }, [mobileOnly]);
+
   const canPromptInstall = Boolean(deferred);
   const showIosHint = isIos && !deferred && iosHintReady;
   const shouldShow =
     !isStandalone &&
     !dismissed &&
+    (!mobileOnly || isMobileLike) &&
     (canPromptInstall || showIosHint);
 
   const promptInstall = useCallback(async () => {
@@ -145,6 +180,7 @@ export function usePwaInstall(options: UsePwaInstallOptions = {}) {
     deferred,
     isStandalone,
     isIos,
+    isMobileLike,
     canPromptInstall,
     showIosHint,
     shouldShow,
