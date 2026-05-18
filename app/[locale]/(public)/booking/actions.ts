@@ -1,7 +1,10 @@
 "use server";
 
 import { headers } from "next/headers";
-import { EGYPT_GOVERNORATES, normalizeGovernorateId } from "@/data/governorates";
+import {
+  DEFAULT_GOVERNORATE_ID,
+  normalizeGovernorateId,
+} from "@/data/governorates";
 import {
   getCairoMinBookingYmd,
   getCairoTodayYmd,
@@ -11,7 +14,8 @@ import {
   duplicateBookingMessageByLocale,
 } from "@/lib/i18n/booking-request-copy";
 import { defaultLocale, isLocale, type Locale } from "@/lib/i18n/config";
-import { checkRateLimit, rateLimitKeyFromHeaders } from "@/lib/rate-limit";
+import { rateLimitKeyFromHeaders } from "@/lib/rate-limit";
+import { checkUnifiedRateLimit } from "@/lib/rate-limit-unified";
 import { officeAcceptsTravelerState } from "@/lib/office-requests/office-traveler-state";
 import { DUPLICATE_BOOKING_MESSAGE } from "@/lib/office-requests/booking-duplicate";
 import {
@@ -49,7 +53,6 @@ export type BookingFormState = {
 
 const requestTypes: OfficeRequestType[] = ["booking", "complaint", "proposal"];
 const MAX_OFFICE_ID_LENGTH = 120;
-const MAX_GOVERNORATE_ID_LENGTH = 80;
 const MAX_TRAVELER_STATE_ID_LENGTH = 80;
 const MAX_NAME_LENGTH = 120;
 const MAX_PHONE_LENGTH = 30;
@@ -71,7 +74,8 @@ export async function submitOfficeRequest(
   const locale = localeFromForm(formData);
   const t = bookingActionCopy[locale];
   const headerList = await headers();
-  const rateLimit = checkRateLimit({
+  const rateLimit = await checkUnifiedRateLimit({
+    scope: "submit-office-request",
     key: rateLimitKeyFromHeaders(headerList, "submit-office-request"),
     limit: 10,
     windowMs: 10 * 60_000,
@@ -84,7 +88,8 @@ export async function submitOfficeRequest(
   }
 
   const officeId = value(formData, "officeId");
-  const governorateId = value(formData, "governorateId");
+  /** مؤقتًا: المحافظة ثابتة على القاهرة في نموذج الحجز العام. */
+  const governorateId = DEFAULT_GOVERNORATE_ID;
   const type = value(formData, "type") as OfficeRequestType;
   const travelerStateId = value(formData, "travelerStateId");
   const preferredDate = value(formData, "preferredDate");
@@ -106,15 +111,6 @@ export async function submitOfficeRequest(
     details,
     ...(type === "booking" ? { hasSpecialNeeds, hasElderly } : {}),
   };
-  const validGovernorateIds = new Set(
-    EGYPT_GOVERNORATES.filter((g) => g.active).map((g) => g.id),
-  );
-  if (!governorateId || !validGovernorateIds.has(governorateId)) {
-    errors.governorateId = t.chooseGovernorate;
-  }
-  if (governorateId.length > MAX_GOVERNORATE_ID_LENGTH) {
-    errors.governorateId = t.invalidGovernorate;
-  }
   if (!officeId) errors.officeId = t.chooseOffice;
   if (officeId.length > MAX_OFFICE_ID_LENGTH) {
     errors.officeId = t.invalidOffice;

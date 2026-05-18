@@ -15,6 +15,15 @@ export function computeAheadCount(
   return waitingNumbersBelow.filter((n) => n < myQueueNumber).length;
 }
 
+/** Fast estimate from daily stats serving pointer (no Firestore count). */
+export function computeAheadApprox(
+  queueNumber: number,
+  currentServingNumber: number,
+): number {
+  if (queueNumber <= 0) return 0;
+  return Math.max(0, queueNumber - currentServingNumber - 1);
+}
+
 function ticketFromDoc(
   id: string,
   data: FirebaseFirestore.DocumentData,
@@ -84,13 +93,16 @@ export async function getQueuePositionPublic(
     };
   }
 
-  const aheadCount = queueClosed
-    ? 0
-    : await countAheadInQueue({
-        officeId: ticket.officeId,
-        queueDate: ticket.queueDate,
-        queueNumber: ticket.queueNumber,
-      });
+  const serving = stats.currentServingNumber ?? 0;
+  let aheadCount = computeAheadApprox(ticket.queueNumber, serving);
+  if (!queueClosed && aheadCount <= 5) {
+    aheadCount = await countAheadInQueue({
+      officeId: ticket.officeId,
+      queueDate: ticket.queueDate,
+      queueNumber: ticket.queueNumber,
+    });
+  }
+  if (queueClosed) aheadCount = 0;
 
   return {
     ticketId: ticket.id,

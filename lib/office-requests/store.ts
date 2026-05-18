@@ -67,6 +67,27 @@ import {
   findMatchingDuplicateBooking,
   type BookingDuplicateLookupInput,
 } from "@/lib/office-requests/booking-duplicate";
+import {
+  applyBookingSlotReservation,
+  bookingDayStatsRef,
+  bookingDuplicateRef,
+  BOOKING_CAPACITY_FULL_MESSAGE,
+  countActiveBookingsForOfficeDay,
+  releaseBookingSlotInTransaction,
+} from "@/lib/office-requests/booking-day-stats";
+import { logEvent } from "@/lib/observability/log-event";
+import {
+  bookingDuplicateDocId,
+  canBuildBookingDuplicateKey,
+  type BookingDuplicateKeyInput,
+} from "@/lib/office-requests/booking-duplicate-key";
+import { getCairoTodayYmd } from "@/lib/cairo-today-ymd";
+import {
+  applyDailyRequestStatsOnCreate,
+  applyDailyRequestStatsOnStatusChange,
+  dailyRequestStatsRef,
+  requestStatsDate,
+} from "@/lib/office-requests/daily-request-stats";
 import { isAdminVisibleBookingRequest } from "@/lib/office-requests/booking-visibility";
 import {
   VACCINES_BY_CATEGORY,
@@ -854,20 +875,15 @@ export async function saveBookingSettings(
   });
 }
 
-/** All booking-type requests for that office/day (includes cancelled). */
+/** Active (non-cancelled) booking requests for that office/day. */
 export async function countBookingRequestsForOfficeDay(
   officeId: string,
   preferredDate: string,
 ): Promise<number> {
-  if (!isFirebaseAdminConfigured()) return 0;
-  const snap = await getAdminDb()
-    .collection(REQUESTS)
-    .where("officeId", "==", officeId)
-    .where("preferredDate", "==", preferredDate)
-    .where("type", "==", "booking")
-    .get();
-  return snap.size;
+  return countActiveBookingsForOfficeDay(officeId, preferredDate);
 }
+
+export { getBookingDayAvailability } from "@/lib/office-requests/booking-day-stats";
 
 export async function findDuplicateBookingRequest(
   input: BookingDuplicateLookupInput,
@@ -921,38 +937,6 @@ export async function createOfficeRequest(input: {
     }
   }
 
-  if (input.type === "booking" && input.preferredDate) {
-    const cap = office.dailyBookingCap;
-    if (typeof cap === "number" && cap > 0) {
-      const used = await countBookingRequestsForOfficeDay(
-        office.id,
-        input.preferredDate,
-      );
-      if (used >= cap) {
-        throw new Error(
-          "لا يمكن الحجز في هذا اليوم؛ تم بلوغ العدد المسموح لهذا المكتب.",
-        );
-      }
-    }
-  }
-
-  if (
-    input.type === "booking" &&
-    input.preferredDate &&
-    input.travelerStateId?.trim()
-  ) {
-    const duplicate = await findDuplicateBookingRequest({
-      officeId: input.officeId,
-      preferredDate: input.preferredDate,
-      travelerStateId: input.travelerStateId.trim(),
-      name: input.name,
-      phone: input.phone,
-    });
-    if (duplicate) {
-      throw new Error(DUPLICATE_BOOKING_MESSAGE);
-    }
-  }
-
   const passToken = randomBytes(24).toString("base64url");
   const passTokenExpiresAt = Timestamp.fromDate(
     bookingPassTokenExpiresAt(new Date()),
@@ -967,8 +951,73 @@ export async function createOfficeRequest(input: {
     .collection("offices")
     .doc(office.id);
 
+  const dailyCap =
+    input.type === "booking" &&
+    input.preferredDate &&
+    typeof office.dailyBookingCap === "number" &&
+    office.dailyBookingCap > 0
+      ? office.dailyBookingCap
+      : null;
+
+  const duplicateKeyCandidate: BookingDuplicateKeyInput = {
+    officeId: office.id,
+    preferredDate: input.preferredDate ?? "",
+    travelerStateId: travelerStateId ?? "",
+    name: input.name,
+    phone: input.phone,
+  };
+  const duplicateKeyInput: BookingDuplicateKeyInput | null =
+    input.type === "booking" &&
+    canBuildBookingDuplicateKey({ ...duplicateKeyCandidate, type: input.type })
+      ? {
+          officeId: office.id,
+          preferredDate: input.preferredDate!,
+          travelerStateId: travelerStateId!,
+          name: input.name,
+          phone: input.phone,
+        }
+      : null;
+
+  const statsRef =
+    dailyCap && input.preferredDate
+      ? bookingDayStatsRef(db, office.id, input.preferredDate)
+      : null;
+  const duplicateDocId = duplicateKeyInput
+    ? bookingDuplicateDocId(duplicateKeyInput)
+    : null;
+  const duplicateRef = duplicateDocId
+    ? bookingDuplicateRef(db, duplicateDocId)
+    : null;
+
+  const requestStatsDay =
+    input.type === "booking" && input.preferredDate
+      ? input.preferredDate
+      : getCairoTodayYmd();
+  const dailyStatsRef = dailyRequestStatsRef(
+    db,
+    requestStatsDay,
+    office.id,
+  );
+
+  try {
   await db.runTransaction(async (tx) => {
     const counterSnap = await tx.get(counterRef);
+    const statsSnap = statsRef ? await tx.get(statsRef) : null;
+    const duplicateSnap = duplicateRef ? await tx.get(duplicateRef) : null;
+    const dailyStatsSnap = await tx.get(dailyStatsRef);
+
+    if (duplicateSnap?.exists) {
+      throw new Error(DUPLICATE_BOOKING_MESSAGE);
+    }
+
+    if (statsRef && statsSnap && dailyCap && input.preferredDate) {
+      applyBookingSlotReservation(tx, statsRef, statsSnap, {
+        officeId: office.id,
+        date: input.preferredDate,
+        cap: dailyCap,
+      });
+    }
+
     const last =
       typeof counterSnap.data()?.lastRequestSequence === "number" &&
       Number.isFinite(counterSnap.data()?.lastRequestSequence)
@@ -976,6 +1025,19 @@ export async function createOfficeRequest(input: {
         : 0;
     const requestSequence = last + 1;
     const requestNumber = formatRequestNumber(office.id, requestSequence);
+
+    if (duplicateRef && duplicateKeyInput) {
+      tx.set(duplicateRef, {
+        officeId: office.id,
+        preferredDate: input.preferredDate,
+        travelerStateId,
+        phone: normalizePhoneForStorage(input.phone),
+        name: input.name.trim(),
+        requestId: docRef.id,
+        createdAt: now,
+      });
+    }
+
     tx.set(
       counterRef,
       { lastRequestSequence: requestSequence },
@@ -993,6 +1055,7 @@ export async function createOfficeRequest(input: {
         ? { travelerCategory: input.travelerCategory }
         : {}),
       ...(input.preferredDate ? { preferredDate: input.preferredDate } : {}),
+      ...(duplicateDocId ? { duplicateKey: duplicateDocId } : {}),
       ...(input.type === "booking" && input.hasSpecialNeeds
         ? { hasSpecialNeeds: true }
         : {}),
@@ -1009,10 +1072,39 @@ export async function createOfficeRequest(input: {
       createdAt: now,
       updatedAt: now,
     });
+
+    applyDailyRequestStatsOnCreate(tx, dailyStatsRef, dailyStatsSnap, {
+      date: requestStatsDay,
+      officeId: office.id,
+      type: input.type,
+      status: "new",
+    });
   });
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : "";
+    if (msg === DUPLICATE_BOOKING_MESSAGE) {
+      logEvent("booking.rejected.duplicate", {
+        officeId: office.id,
+        preferredDate: input.preferredDate,
+      });
+    } else if (msg === BOOKING_CAPACITY_FULL_MESSAGE) {
+      logEvent("booking.rejected.capacity", {
+        officeId: office.id,
+        preferredDate: input.preferredDate,
+      });
+    }
+    throw e;
+  }
 
   const saved = await docRef.get();
   const full = requestFromDoc(docRef.id, saved.data() ?? {});
+  if (input.type === "booking") {
+    logEvent("booking.created", {
+      officeId: office.id,
+      requestId: docRef.id,
+      preferredDate: input.preferredDate,
+    });
+  }
   return {
     ...publicRequestStatus(full, { includePassToken: true }),
     passToken,
@@ -1171,9 +1263,9 @@ export async function listRequestsForSession(args: {
       .where("updatedAt", ">=", updatedFrom!)
       .where("updatedAt", "<=", updatedTo!)
       .orderBy("updatedAt", "desc")
-      .limit(200);
+      .limit(50);
   } else {
-    query = query.orderBy("createdAt", "desc").limit(200);
+    query = query.orderBy("createdAt", "desc").limit(50);
   }
 
   const snap = await query.get();
@@ -1217,9 +1309,9 @@ async function listRequestsForAllowedOffices(args: {
         .where("updatedAt", ">=", args.updatedFrom!)
         .where("updatedAt", "<=", args.updatedTo!)
         .orderBy("updatedAt", "desc")
-        .limit(200);
+        .limit(50);
     } else {
-      query = query.orderBy("createdAt", "desc").limit(200);
+      query = query.orderBy("createdAt", "desc").limit(50);
     }
     const snap = await query.get();
     collected.push(...snap.docs.map((doc) => requestFromDoc(doc.id, doc.data())));
@@ -1791,10 +1883,75 @@ export async function updateRequestForSession(args: {
   const request = await getRequestForSession(args);
   if (!request) throw new Error("الطلب غير موجود أو غير مصرح.");
 
-  await getAdminDb().collection(REQUESTS).doc(args.id).update({
-    status: args.status,
-    notes: args.notes.trim(),
-    updatedAt: FieldValue.serverTimestamp(),
+  const db = getAdminDb();
+  const requestRef = db.collection(REQUESTS).doc(args.id);
+  const releasingBookingSlot =
+    request.type === "booking" &&
+    Boolean(request.preferredDate) &&
+    request.status !== "cancelled" &&
+    args.status === "cancelled";
+  const reclaimingBookingSlot =
+    request.type === "booking" &&
+    Boolean(request.preferredDate) &&
+    request.status === "cancelled" &&
+    args.status !== "cancelled";
+  const statsRef =
+    (releasingBookingSlot || reclaimingBookingSlot) && request.preferredDate
+      ? bookingDayStatsRef(db, request.officeId, request.preferredDate)
+      : null;
+
+  let reclaimCap = 0;
+  if (reclaimingBookingSlot) {
+    const officeForCap = await getOffice(request.officeId);
+    reclaimCap =
+      typeof officeForCap?.dailyBookingCap === "number" &&
+      officeForCap.dailyBookingCap > 0
+        ? officeForCap.dailyBookingCap
+        : 0;
+  }
+
+  const requestStatsDay = requestStatsDate(
+    request.createdAt,
+    request.preferredDate,
+  );
+  const dailyStatsRef = dailyRequestStatsRef(
+    db,
+    requestStatsDay,
+    request.officeId,
+  );
+
+  await db.runTransaction(async (tx) => {
+    const statsSnap = statsRef ? await tx.get(statsRef) : null;
+    const dailyStatsSnap = await tx.get(dailyStatsRef);
+    tx.update(requestRef, {
+      status: args.status,
+      notes: args.notes.trim(),
+      updatedAt: FieldValue.serverTimestamp(),
+    });
+    if (args.status !== request.status) {
+      applyDailyRequestStatsOnStatusChange(tx, dailyStatsRef, dailyStatsSnap, {
+        date: requestStatsDay,
+        officeId: request.officeId,
+        prevStatus: request.status,
+        nextStatus: args.status,
+      });
+    }
+    if (releasingBookingSlot && statsRef && statsSnap) {
+      releaseBookingSlotInTransaction(tx, statsRef, statsSnap);
+    }
+    if (
+      reclaimingBookingSlot &&
+      statsRef &&
+      statsSnap &&
+      reclaimCap > 0 &&
+      request.preferredDate
+    ) {
+      applyBookingSlotReservation(tx, statsRef, statsSnap, {
+        officeId: request.officeId,
+        date: request.preferredDate,
+        cap: reclaimCap,
+      });
+    }
   });
 
   const notesChanged = args.notes.trim() !== request.notes;
@@ -2340,7 +2497,7 @@ export async function listActivityLogsForRequest(args: {
 
 const FIRESTORE_IN_QUERY_MAX = 30;
 const LATEST_ACTIVITY_PER_BATCH_LIMIT = 400;
-const ADMIN_REQUESTS_PAGE_SIZE = 100;
+const ADMIN_REQUESTS_PAGE_SIZE = 50;
 const ACTIVITY_LOG_PAGE_SIZE = 100;
 
 function encodeCursor(value: string): string {

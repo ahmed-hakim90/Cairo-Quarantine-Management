@@ -1,5 +1,8 @@
 "use server";
 
+import { headers } from "next/headers";
+import { rateLimitKeyFromHeaders } from "@/lib/rate-limit";
+import { checkUnifiedRateLimit } from "@/lib/rate-limit-unified";
 import {
   assertActiveOffice,
   checkExistingTodayQueue,
@@ -37,6 +40,20 @@ export type CheckinState =
 
 function formValue(formData: FormData, key: string) {
   return String(formData.get(key) ?? "").trim();
+}
+
+async function assertCheckinRateLimit(scope: string): Promise<string | null> {
+  const headerList = await headers();
+  const rateLimit = await checkUnifiedRateLimit({
+    scope,
+    key: rateLimitKeyFromHeaders(headerList, scope),
+    limit: 20,
+    windowMs: 10 * 60_000,
+  });
+  if (!rateLimit.allowed) {
+    return "تم تجاوز عدد المحاولات. انتظر قليلاً ثم حاول مرة أخرى.";
+  }
+  return null;
 }
 
 async function successFromRequest(
@@ -131,6 +148,9 @@ export async function checkinQuickAction(
   _prev: CheckinState,
   formData: FormData,
 ): Promise<CheckinState> {
+  const rateLimited = await assertCheckinRateLimit("checkin-quick");
+  if (rateLimited) return { ok: false, error: rateLimited };
+
   const officeId = formValue(formData, "officeId");
   const name = formValue(formData, "name");
   const phone = formValue(formData, "phone") || formValue(formData, "lookup");

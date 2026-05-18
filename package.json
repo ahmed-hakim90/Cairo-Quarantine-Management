@@ -11,7 +11,8 @@
     "seed:offices": "node --env-file=.env.local scripts/seed-firestore-offices.mjs",
     "seed:traveler-states": "node --env-file=.env.local scripts/seed-firestore-traveler-states.mjs",
     "seed:vaccines": "node --env-file=.env.local scripts/seed-firestore-vaccines.mjs",
-    "admin:create-profile": "node --env-file=.env.local scripts/create-admin-profile.mjs"
+    "admin:create-profile": "node --env-file=.env.local scripts/create-admin-profile.mjs",
+    "backfill:booking-day-stats": "node --env-file=.env.local scripts/backfill-booking-day-stats.mjs"
   },
   "dependencies": {
     "@types/qrcode": "^1.5.6",

@@ -1,15 +1,18 @@
 import { NextResponse } from "next/server";
+import { isRequestBodyTooLarge } from "@/lib/api/request-body-limit";
 import { checkRateLimit, rateLimitKeyFromHeaders } from "@/lib/rate-limit";
 import { isFirebaseAdminConfigured } from "@/lib/firebase/admin";
-import {
-  countBookingRequestsForOfficeDay,
-  listOffices,
-} from "@/lib/office-requests/store";
+import { listOffices } from "@/lib/office-requests/store";
+import { getBookingDayAvailability } from "@/lib/office-requests/booking-day-stats";
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const MAX_OFFICE_ID_LENGTH = 120;
 
 export async function GET(req: Request) {
+  if (isRequestBodyTooLarge(req)) {
+    return NextResponse.json({ error: "payload_too_large" }, { status: 413 });
+  }
+
   const rateLimit = checkRateLimit({
     key: rateLimitKeyFromHeaders(req.headers, "booking-availability"),
     limit: 60,
@@ -60,11 +63,11 @@ export async function GET(req: Request) {
       });
     }
 
-    const count = await countBookingRequestsForOfficeDay(
+    const { used: count, available } = await getBookingDayAvailability({
       officeId,
       preferredDate,
-    );
-    const available = count < cap;
+      cap,
+    });
 
     return NextResponse.json({
       available,

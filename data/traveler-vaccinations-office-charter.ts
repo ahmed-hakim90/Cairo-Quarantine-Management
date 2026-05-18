@@ -53,6 +53,8 @@ export type TravelerVaccinationsOfficeCharter = {
     from: string;
     to: string;
     except: string;
+    /** سطر مختصر لجدول المكاتب (مركز المطار ٢٤ ساعة). */
+    airportTableLine: string;
     note: string;
   };
   closing: string;
@@ -146,6 +148,7 @@ const travelerVaccinationsOfficeCharterAr: TravelerVaccinationsOfficeCharter =
       from: "٨ صباحًا",
       to: "٥ مساءً",
       except: "الجُمع والعطلات الرسمية",
+      airportTableLine: "٢٤ ساعة — كل أيام الأسبوع",
       note: "ملحوظة: مركز تطعيم مطار القاهرة الدولي يعمل ٢٤ ساعة كل أيام الأسبوع.",
     },
     closing: "معًا نحو خدمة صحية آمنة",
@@ -239,6 +242,7 @@ const travelerVaccinationsOfficeCharterEn: TravelerVaccinationsOfficeCharter = {
     from: "8:00 AM",
     to: "5:00 PM",
     except: "Fridays and official holidays",
+    airportTableLine: "24 hours — every day of the week",
     note: "Note: Cairo International Airport vaccination center operates 24 hours a day, every day of the week.",
   },
   closing: "Together towards safe health services",
@@ -330,6 +334,7 @@ const travelerVaccinationsOfficeCharterZh: TravelerVaccinationsOfficeCharter = {
     from: "上午 8:00",
     to: "下午 5:00",
     except: "星期五及法定节假日",
+    airportTableLine: "24 小时 — 每周全天开放",
     note: "注意：开罗国际机场接种中心每周全天 24 小时开放。",
   },
   closing: "携手共建安全健康服务",
@@ -423,6 +428,7 @@ const travelerVaccinationsOfficeCharterFr: TravelerVaccinationsOfficeCharter = {
     from: "8 h",
     to: "17 h",
     except: "vendredis et jours feries officiels",
+    airportTableLine: "24 h/24 — tous les jours de la semaine",
     note: "Note : le centre de vaccination de l'aeroport international du Caire fonctionne 24 h/24, tous les jours de la semaine.",
   },
   closing: "Ensemble vers des services de sante surs",

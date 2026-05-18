@@ -29,6 +29,7 @@ export function emptyDailyStats(date: string, officeId: string): DailyStats {
     totalNoShow: 0,
     totalNewRequests: 0,
     lastQueueNumber: 0,
+    currentServingNumber: 0,
     closed: false,
   };
 }
@@ -48,6 +49,7 @@ export function dailyStatsFromDoc(
     totalNoShow: num(data.totalNoShow),
     totalNewRequests: num(data.totalNewRequests),
     lastQueueNumber: num(data.lastQueueNumber),
+    currentServingNumber: num(data.currentServingNumber),
     closed: data.closed === true,
     createdAt: iso(data.createdAt),
     updatedAt: iso(data.updatedAt),
@@ -74,6 +76,7 @@ export function dailyStatsCreatePayload(date: string, officeId: string) {
     totalNoShow: 0,
     totalNewRequests: 0,
     lastQueueNumber: 0,
+    currentServingNumber: 0,
     closed: false,
     createdAt: FieldValue.serverTimestamp(),
     updatedAt: FieldValue.serverTimestamp(),

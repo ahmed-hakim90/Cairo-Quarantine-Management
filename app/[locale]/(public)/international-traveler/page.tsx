@@ -1,17 +1,40 @@
 import { HajjTravelerOfficesTable } from "@/components/hajj/HajjTravelerOfficesTable";
 import { VaccineSelector } from "@/components/home/VaccineSelector";
-import { WhatsAppIcon } from "@/components/layout/FloatingWhatsAppButton";
 import { PageHeading } from "@/components/layout/PageHeading";
 import { ScrollReveal } from "@/components/motion/ScrollReveal";
+import { EPIDEMIOLOGICAL_STATUS_DOC_URL } from "@/data/epidemiological-status-doc";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { isLocale, type Locale } from "@/lib/i18n/config";
 import { getMessages } from "@/lib/i18n/messages";
-import { getWhatsappComplaintsDigits } from "@/lib/site-contact";
 import {
   listOffices,
   listVaccinesByCategoryForPublic,
 } from "@/lib/office-requests/store";
+
+function DocumentLinkIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.75}
+      aria-hidden
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6z"
+      />
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M14 2v6h6M16 13H8M16 17H8M10 9H8"
+      />
+    </svg>
+  );
+}
 
 export async function generateMetadata({
   params,
@@ -33,12 +56,6 @@ export default async function InternationalTravelerPage({
   const locale = localeParam as Locale;
   const m = getMessages(locale);
   const p = m.pages.international;
-  const whatsappPhone = getWhatsappComplaintsDigits();
-  const whatsappHref = whatsappPhone
-    ? `https://wa.me/${whatsappPhone}?text=${encodeURIComponent(
-        "السلام عليكم، أود معرفة طعوم الدولة المتجه إليها.",
-      )}`
-    : null;
   const [vaccinesByCategory, offices] = await Promise.all([
     listVaccinesByCategoryForPublic(),
     listOffices(),
@@ -60,21 +77,19 @@ export default async function InternationalTravelerPage({
                 <li key={item}>{item}</li>
               ))}
             </ul>
-            {whatsappHref ? (
-              <p className="mt-5 flex flex-wrap items-center gap-2 rounded-lg bg-gov-gray-50 px-4 py-3 leading-relaxed text-gov-gray-700">
-                <span>{p.destinationVaccinesWhatsapp}</span>
-                <a
-                  href={whatsappHref}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex size-9 shrink-0 items-center justify-center rounded-full bg-[#25D366] text-white transition-transform hover:scale-105 focus-visible:scale-105 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#25D366] active:scale-95"
-                  aria-label={p.destinationVaccinesWhatsappAria}
-                  title={p.destinationVaccinesWhatsappAria}
-                >
-                  <WhatsAppIcon className="size-5" />
-                </a>
-              </p>
-            ) : null}
+            <p className="mt-5 flex flex-wrap items-center gap-2 rounded-lg bg-gov-gray-50 px-4 py-3 leading-relaxed text-gov-gray-700">
+              <span>{p.destinationVaccinesWhatsapp}</span>
+              <a
+                href={EPIDEMIOLOGICAL_STATUS_DOC_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex size-9 shrink-0 items-center justify-center rounded-full bg-gov-accent text-white transition-transform hover:scale-105 focus-visible:scale-105 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gov-accent active:scale-95"
+                aria-label={p.destinationVaccinesWhatsappAria}
+                title={p.destinationVaccinesWhatsappAria}
+              >
+                <DocumentLinkIcon className="size-5" />
+              </a>
+            </p>
           </div>
         </section>
       </ScrollReveal>

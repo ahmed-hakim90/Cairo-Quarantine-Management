@@ -101,18 +101,6 @@ export type Messages = {
     a11yPhone: string;
     a11yMap: string;
   };
-  travelerStats: {
-    heading: string;
-    intro: string;
-    caption: string;
-    siteVisitorsTitle: string;
-    pendingValue: string;
-    viewDetails: string;
-    footnote: string;
-    periodLabel: string;
-    sourceLink: string;
-    sourcePending: string;
-  };
   hajjTable: {
     heading: string;
     intro: string;
@@ -122,6 +110,7 @@ export type Messages = {
     colSerial: string;
     colOffice: string;
     colAddress: string;
+    colHours: string;
     colPhone: string;
     colMaps: string;
     colService: string;
@@ -312,21 +301,6 @@ const ar: Messages = {
     a11yPhone: "اتصال هاتفي بهذا المكتب",
     a11yMap: "فتح موقع المكتب على الخريطة",
   },
-  travelerStats: {
-    heading: "أعداد المسافرين والفئات المرتبطة بخدمات الحجر الصحي",
-    intro:
-      "عرض توجيهي يقابل مسارات الخدمات الثلاثة على البوابة. تُحدَّث الأرقام عند توفر بيانات منشورة رسميًا من الجهات المختصة.",
-    caption:
-      "بطاقات تعرض العدد المرجعي أو حالة التحديث لكل فئة مع رابط للتفاصيل، وبطاقة زوار الموقع",
-    siteVisitorsTitle: "زوار الموقع",
-    pendingValue: "قيد التحديث",
-    viewDetails: "عرض الصفحة",
-    footnote:
-      "الأرقام المعروضة لا تغني عن النشر الرسمي؛ يُرجى اعتماد المصدر المحدّد من الجهة صاحبة الشأن.",
-    periodLabel: "المرجع:",
-    sourceLink: "إدارة الحجر الصحي بالقاهرة",
-    sourcePending: "سيُذكر رابط المصدر عند اعتماد الرقم من جهة رسمية.",
-  },
   hajjTable: {
     heading: "قائمة مكاتب تطعيم المسافرين بالقاهرة لعام 2026",
     intro:
@@ -338,6 +312,7 @@ const ar: Messages = {
     colSerial: "م. المحافظة",
     colOffice: "اسم المكتب",
     colAddress: "عنوان المكتب",
+    colHours: "مواعيد العمل",
     colPhone: "رقم التليفون",
     colMaps: "الموقع",
     colService: "نوع الخدمة",
@@ -363,9 +338,9 @@ const ar: Messages = {
         "صورة شخصية حديثة",
       ],
       destinationVaccinesWhatsapp:
-        "لمعرفة طعوم الدولة المتجه إليها تواصل على واتساب.",
+        "لمعرفة طعوم الدولة المتجه إليها اضغط على الرمز لفتح ملف الوضع الوبائي.",
       destinationVaccinesWhatsappAria:
-        "فتح واتساب لمعرفة طعوم الدولة المتجه إليها",
+        "فتح ملف الوضع الوبائي لمعرفة طعوم الدولة المتجه إليها",
     },
     hajj: {
       metaTitle: "الحج والعمرة",
@@ -555,22 +530,6 @@ const en: Messages = {
     a11yPhone: "Call this office by phone",
     a11yMap: "Open this office location on the map",
   },
-  travelerStats: {
-    heading: "Traveller volumes aligned with portal service paths",
-    intro:
-      "Indicative figures matching the three service routes on this portal. Numbers are updated when competent authorities publish official statistics.",
-    caption:
-      "Cards showing reference counts or update status per category with detail links, plus site visitors",
-    siteVisitorsTitle: "Site visitors",
-    pendingValue: "Pending update",
-    viewDetails: "Open page",
-    footnote:
-      "Displayed figures do not replace official publications; defer to the cited source from the responsible authority.",
-    periodLabel: "Reference:",
-    sourceLink: "Cairo Quarantine Administration",
-    sourcePending:
-      "A source link will appear once figures are adopted from an official body.",
-  },
   hajjTable: {
     heading:
       "Cairo traveller vaccination offices — 2026 (reference list)",
@@ -583,6 +542,7 @@ const en: Messages = {
     colSerial: "No. in governorate",
     colOffice: "Office name",
     colAddress: "Office address",
+    colHours: "Working hours",
     colPhone: "Phone",
     colMaps: "Map",
     colService: "Service type",
@@ -608,9 +568,9 @@ const en: Messages = {
         "Recent passport-style photo",
       ],
       destinationVaccinesWhatsapp:
-        "To learn which vaccines are needed for your destination, contact us on WhatsApp.",
+        "To learn which vaccines are needed for your destination, tap the icon to open the epidemiological status document.",
       destinationVaccinesWhatsappAria:
-        "Open WhatsApp to ask about destination vaccines",
+        "Open epidemiological status document for destination vaccines",
     },
     hajj: {
       metaTitle: "Hajj & Umrah",
@@ -792,20 +752,6 @@ const zh: Messages = {
     a11yPhone: "拨打此门诊电话",
     a11yMap: "在地图上打开此门诊位置",
   },
-  travelerStats: {
-    heading: "与检疫服务路径对应的旅客规模（参考）",
-    intro:
-      "与本门户三类服务路径相对应的参考数据。主管部门正式发布统计数据后将予以更新。",
-    caption: "各类参考人数或更新状态及详情链接，以及网站访问量",
-    siteVisitorsTitle: "网站访问量",
-    pendingValue: "待更新",
-    viewDetails: "打开页面",
-    footnote:
-      "所示数字不能替代正式发布；请以主管部门公布的来源为准。",
-    periodLabel: "参考：",
-    sourceLink: "开罗检疫管理处",
-    sourcePending: "待主管部门采纳数字后将附上来源链接。",
-  },
   hajjTable: {
     heading: "开罗旅客接种门诊 — 2026（参考清单）",
     intro:
@@ -817,6 +763,7 @@ const zh: Messages = {
     colSerial: "省内序号",
     colOffice: "门诊名称",
     colAddress: "门诊地址",
+    colHours: "营业时间",
     colPhone: "电话",
     colMaps: "地图",
     colService: "服务类型",
@@ -842,8 +789,8 @@ const zh: Messages = {
         "近照证件照",
       ],
       destinationVaccinesWhatsapp:
-        "如需了解目的地所需疫苗，请通过 WhatsApp 联系我们。",
-      destinationVaccinesWhatsappAria: "打开 WhatsApp 咨询目的地疫苗",
+        "如需了解目的地所需疫苗，请点击图标打开流行病学状况文件。",
+      destinationVaccinesWhatsappAria: "打开流行病学状况文件以了解目的地疫苗",
     },
     hajj: {
       metaTitle: "朝觐与副朝",
@@ -1033,22 +980,6 @@ const fr: Messages = {
     a11yPhone: "Appeler ce bureau par telephone",
     a11yMap: "Ouvrir l'emplacement de ce bureau sur la carte",
   },
-  travelerStats: {
-    heading: "Volumes de voyageurs alignes sur les services du portail",
-    intro:
-      "Chiffres indicatifs correspondant aux trois parcours de service de ce portail. Les chiffres sont mis a jour lorsque les autorites competentes publient des statistiques officielles.",
-    caption:
-      "Cartes affichant les effectifs de reference ou l'etat de mise a jour par categorie, avec liens de detail et visiteurs du site",
-    siteVisitorsTitle: "Visiteurs du site",
-    pendingValue: "Mise a jour en attente",
-    viewDetails: "Ouvrir la page",
-    footnote:
-      "Les chiffres affiches ne remplacent pas les publications officielles ; reportez-vous a la source citee par l'autorite responsable.",
-    periodLabel: "Reference :",
-    sourceLink: "Administration de la quarantaine du Caire",
-    sourcePending:
-      "Un lien source apparaitra lorsque les chiffres seront adoptes par un organisme officiel.",
-  },
   hajjTable: {
     heading:
       "Bureaux de vaccination des voyageurs au Caire — 2026 (liste de reference)",
@@ -1061,6 +992,7 @@ const fr: Messages = {
     colSerial: "No. dans le gouvernorat",
     colOffice: "Nom du bureau",
     colAddress: "Adresse du bureau",
+    colHours: "Horaires",
     colPhone: "Telephone",
     colMaps: "Carte",
     colService: "Type de service",
@@ -1086,9 +1018,9 @@ const fr: Messages = {
         "Photo d'identite recente",
       ],
       destinationVaccinesWhatsapp:
-        "Pour connaitre les vaccins necessaires a votre destination, contactez-nous sur WhatsApp.",
+        "Pour connaitre les vaccins necessaires a votre destination, appuyez sur l'icone pour ouvrir le document sur la situation epidemiologique.",
       destinationVaccinesWhatsappAria:
-        "Ouvrir WhatsApp pour demander les vaccins de destination",
+        "Ouvrir le document sur la situation epidemiologique pour les vaccins de destination",
     },
     hajj: {
       metaTitle: "Hajj et Omra",

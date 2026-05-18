@@ -9,6 +9,11 @@ import { getCairoTodayYmd } from "@/lib/cairo-today-ymd";
 import { isLocale } from "@/lib/i18n/config";
 import { parseAdminBookingDateParams } from "@/lib/office-requests/admin-booking-date-range";
 import {
+  aggregateDailyRequestStats,
+  listDailyRequestStatsForOffices,
+} from "@/lib/office-requests/daily-request-stats";
+import {
+  buildAdminAnalyticsFromDailyStats,
   buildAdminRequestAnalytics,
   buildOfficePerformanceRatings,
 } from "@/lib/office-requests/analytics";
@@ -84,7 +89,13 @@ export default async function AdminOverviewPage({
   const bookingDateRange = dateParams.bookingDateRange;
   const applyBookingDateFilter = bookingDateRange != null;
 
-  const [requests, travelerStates] = await Promise.all([
+  const statsOfficeIds = officeFilter
+    ? [officeFilter]
+    : offices.map((o) => o.id);
+  const statsFrom = bookingDateRange?.fromYmd ?? "2020-01-01";
+  const statsTo = bookingDateRange?.toYmd ?? getCairoTodayYmd();
+
+  const [requests, dailyStatsRows, travelerStates] = await Promise.all([
     listRequestsForSession({
       role: session.profile.role,
       officeId: session.profile.officeId,
@@ -98,10 +109,23 @@ export default async function AdminOverviewPage({
           }
         : {}),
     }),
+    listDailyRequestStatsForOffices({
+      officeIds: statsOfficeIds,
+      fromDate: statsFrom,
+      toDate: statsTo,
+    }),
     listTravelerStates({ includeInactive: true }),
   ]);
 
-  const analytics = buildAdminRequestAnalytics(requests);
+  const aggregatedStats = aggregateDailyRequestStats(dailyStatsRows);
+  const analytics =
+    aggregatedStats.totalRequests > 0
+      ? {
+          ...buildAdminAnalyticsFromDailyStats(aggregatedStats),
+          ...buildAdminRequestAnalytics(requests),
+          timelineWeeks: buildAdminRequestAnalytics(requests).timelineWeeks,
+        }
+      : buildAdminRequestAnalytics(requests);
   const officeRatings = buildOfficePerformanceRatings(
     requests,
     selectedOfficeId
@@ -188,7 +212,14 @@ export default async function AdminOverviewPage({
       </div>
 
       <div className="grid gap-4 py-6 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7">
-        <AdminStatCard label="إجمالي الطلبات" value={requests.length} />
+        <AdminStatCard
+          label="إجمالي الطلبات"
+          value={
+            aggregatedStats.totalRequests > 0
+              ? aggregatedStats.totalRequests
+              : requests.length
+          }
+        />
         <AdminStatCard label="جديد" value={analytics.byStatus.new} />
         <AdminStatCard
           label="قيد المتابعة"

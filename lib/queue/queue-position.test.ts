@@ -1,10 +1,20 @@
 import { describe, expect, it } from "vitest";
 import { AHEAD_NOTIFY_AT } from "@/lib/queue/queue-logic";
-import { computeAheadCount } from "@/lib/queue/queue-position";
+import {
+  computeAheadApprox,
+  computeAheadCount,
+} from "@/lib/queue/queue-position";
 import {
   shouldVibrateForAhead,
   shouldVibrateForTurn,
 } from "@/lib/queue/queue-vibrate";
+
+describe("computeAheadApprox", () => {
+  it("estimates people ahead from serving number", () => {
+    expect(computeAheadApprox(15, 10)).toBe(4);
+    expect(computeAheadApprox(10, 10)).toBe(0);
+  });
+});
 
 describe("computeAheadCount", () => {
   it("counts waiting tickets with lower queue numbers", () => {

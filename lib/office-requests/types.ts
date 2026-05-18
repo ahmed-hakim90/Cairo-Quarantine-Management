@@ -87,6 +87,8 @@ export type OfficeRequest = {
   /** Public pass links expire after the configured token TTL. */
   passTokenExpiresAt?: string;
   lastWhatsappAt?: string;
+  /** Hash id in `booking_duplicates` for atomic duplicate prevention. */
+  duplicateKey?: string;
   createdAt: string;
   updatedAt: string;
 };

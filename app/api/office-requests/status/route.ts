@@ -1,7 +1,12 @@
 import { NextResponse } from "next/server";
 import { getPublicRequestStatus } from "@/lib/office-requests/store";
 import type { PublicOfficeRequestStatus } from "@/lib/office-requests/types";
-import { checkRateLimit, rateLimitKeyFromHeaders } from "@/lib/rate-limit";
+import { rateLimitKeyFromHeaders } from "@/lib/rate-limit";
+import { checkUnifiedRateLimit } from "@/lib/rate-limit-unified";
+import {
+  bodyTooLargeResponse,
+  isRequestBodyTooLarge,
+} from "@/lib/api/request-body-limit";
 
 type StatusLookup = {
   id: string;
@@ -30,7 +35,12 @@ function isLookup(value: unknown): value is StatusLookup {
 }
 
 export async function POST(request: Request) {
-  const rateLimit = checkRateLimit({
+  if (isRequestBodyTooLarge(request, MAX_BODY_BYTES)) {
+    return bodyTooLargeResponse();
+  }
+
+  const rateLimit = await checkUnifiedRateLimit({
+    scope: "office-request-status",
     key: rateLimitKeyFromHeaders(request.headers, "office-request-status"),
     limit: 30,
     windowMs: 60_000,

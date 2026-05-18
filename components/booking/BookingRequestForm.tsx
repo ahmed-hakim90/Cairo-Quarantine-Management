@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useActionState, useEffect, useMemo, useRef, useState } from "react";
-import { EGYPT_GOVERNORATES } from "@/data/governorates";
+import { DEFAULT_GOVERNORATE_ID } from "@/data/governorates";
 import {
   submitOfficeRequest,
   type BookingFormState,
@@ -104,7 +104,6 @@ export function BookingRequestForm({
   const lastToastKeyRef = useRef("");
   const lastDuplicateRedirectKeyRef = useRef("");
   const officeRef = useRef<HTMLSelectElement>(null);
-  const governorateRef = useRef<HTMLSelectElement>(null);
   const travelerStateRef = useRef<HTMLSelectElement>(null);
   const typeRef = useRef<HTMLSelectElement>(null);
   const preferredDateRef = useRef<HTMLInputElement>(null);
@@ -113,9 +112,7 @@ export function BookingRequestForm({
   const detailsRef = useRef<HTMLTextAreaElement>(null);
 
   const [officeId, setOfficeId] = useState(state.values?.officeId ?? "");
-  const [governorateId, setGovernorateId] = useState(
-    state.values?.governorateId ?? "",
-  );
+  const governorateId = DEFAULT_GOVERNORATE_ID;
   const [preferredDate, setPreferredDate] = useState(
     state.values?.preferredDate ?? "",
   );
@@ -159,8 +156,6 @@ export function BookingRequestForm({
     mode !== "booking" ||
     (Boolean(travelerStateId) && allowedTravelerIds.has(travelerStateId));
 
-  const governorateChosen = Boolean(governorateId);
-
   const bookingNoMatchingOffices =
     mode === "booking" && travelerChosen && filteredOffices.length === 0;
 
@@ -174,13 +169,13 @@ export function BookingRequestForm({
   }
 
   useEffect(() => {
-    if (!governorateChosen || !travelerChosen) return;
+    if (!travelerChosen) return;
     const allowed = new Set(filteredOffices.map((o) => o.id));
     if (officeId && !allowed.has(officeId)) {
       const id = requestAnimationFrame(() => setOfficeId(""));
       return () => cancelAnimationFrame(id);
     }
-  }, [governorateChosen, travelerChosen, filteredOffices, officeId]);
+  }, [travelerChosen, filteredOffices, officeId]);
 
   useEffect(() => {
     if (!state.message) return;
@@ -213,7 +208,6 @@ export function BookingRequestForm({
     if (state.ok || !state.values) return;
     const id = requestAnimationFrame(() => {
       setOfficeId(state.values!.officeId);
-      setGovernorateId(state.values!.governorateId ?? "");
       setPreferredDate(state.values!.preferredDate ?? "");
       setTravelerStateId(state.values!.travelerStateId ?? "");
     });
@@ -237,7 +231,6 @@ export function BookingRequestForm({
     if (!state.errors) return;
 
     const fields = {
-      governorateId: governorateRef,
       officeId: officeRef,
       travelerStateId: travelerStateRef,
       type: typeRef,
@@ -320,6 +313,7 @@ export function BookingRequestForm({
   return (
     <form action={action} className="space-y-0">
       <input type="hidden" name="locale" value={locale} />
+      <input type="hidden" name="governorateId" value={governorateId} />
       {mode === "booking" ? (
         <input type="hidden" name="type" value="booking" />
       ) : null}
@@ -391,27 +385,6 @@ export function BookingRequestForm({
         ) : null}
 
         <div className="grid gap-5 md:grid-cols-2">
-          <label className={labelClass}>
-            {t.governorate}
-            <select
-              ref={governorateRef}
-              name="governorateId"
-              required
-              className={inputClass}
-              value={governorateId}
-              onChange={(e) => setGovernorateId(e.target.value)}
-            >
-              <option value="" disabled>
-                {t.chooseGovernorate}
-              </option>
-              {EGYPT_GOVERNORATES.filter((g) => g.active).map((governorate) => (
-                <option key={governorate.id} value={governorate.id}>
-                  {governorate.labelAr}
-                </option>
-              ))}
-            </select>
-            <FieldError message={state.errors?.governorateId} />
-          </label>
           {mode === "booking" ? (
             <>
               <label className={labelClass}>
@@ -444,16 +417,10 @@ export function BookingRequestForm({
                   className={inputClass}
                   value={officeId}
                   onChange={(e) => setOfficeId(e.target.value)}
-                  disabled={
-                    offices.length === 0 || !governorateChosen || !travelerChosen
-                  }
+                  disabled={offices.length === 0 || !travelerChosen}
                 >
                   <option value="" disabled>
-                    {!governorateChosen
-                      ? t.chooseGovernorateFirst
-                      : !travelerChosen
-                      ? t.chooseTravelerFirst
-                      : t.chooseOffice}
+                    {!travelerChosen ? t.chooseTravelerFirst : t.chooseOffice}
                   </option>
                   {filteredOffices.map((office) => (
                     <option key={office.id} value={office.id}>
@@ -480,10 +447,10 @@ export function BookingRequestForm({
                   className={inputClass}
                   value={officeId}
                   onChange={(e) => setOfficeId(e.target.value)}
-                  disabled={offices.length === 0 || !governorateChosen}
+                  disabled={offices.length === 0}
                 >
                   <option value="" disabled>
-                    {governorateChosen ? t.chooseOffice : t.chooseGovernorateFirst}
+                    {t.chooseOffice}
                   </option>
                   {filteredOffices.map((office) => (
                     <option key={office.id} value={office.id}>

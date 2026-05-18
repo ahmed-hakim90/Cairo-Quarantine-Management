@@ -25,6 +25,8 @@ export type DailyStats = {
   totalNoShow: number;
   totalNewRequests: number;
   lastQueueNumber: number;
+  /** Last completed ticket queue number for approximate ahead display. */
+  currentServingNumber?: number;
   closed: boolean;
   createdAt?: string;
   updatedAt?: string;

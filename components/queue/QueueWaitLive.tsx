@@ -14,14 +14,21 @@ import {
   obtainQueueFcmToken,
   registerQueueWatchOnServer,
 } from "@/lib/firebase/messaging-client";
-import { saveQueueTicketId } from "@/lib/queue/queue-wait-storage";
+import {
+  getQueuePollIntervalMs,
+  shouldStopQueuePolling,
+} from "@/lib/queue/queue-poll-interval";
+import {
+  loadQueuePosition,
+  saveQueuePosition,
+  saveQueueTicketId,
+} from "@/lib/queue/queue-wait-storage";
 import {
   shouldVibrateForAhead,
   shouldVibrateForTurn,
   vibrateQueueAlert,
 } from "@/lib/queue/queue-vibrate";
 
-const POLL_MS = 20_000;
 const STALE_POSITION_MESSAGE =
   "التحديث الحي غير متاح مؤقتًا — آخر رقم ظاهر محفوظ أمامك.";
 
@@ -92,7 +99,7 @@ export function QueueWaitLive({
 }: QueueWaitLiveProps) {
   const t = queueCitizenCopy[locale];
   const [position, setPosition] = useState<QueuePositionPublic | null>(
-    initialPosition ?? null,
+    () => initialPosition ?? loadQueuePosition(ticket.id),
   );
   const [loading, setLoading] = useState(!initialPosition);
   const [positionError, setPositionError] = useState(false);
@@ -107,6 +114,9 @@ export function QueueWaitLive({
 
   const prevAheadRef = useRef<number | null>(
     initialPosition?.aheadCount ?? null,
+  );
+  const positionRef = useRef<QueuePositionPublic | null>(
+    initialPosition ?? loadQueuePosition(ticket.id),
   );
   const vibratedFiveRef = useRef(false);
   const vibratedTurnRef = useRef(false);
@@ -142,9 +152,11 @@ export function QueueWaitLive({
       vibratedTurnRef.current = true;
     }
     prevAheadRef.current = next.aheadCount;
+    positionRef.current = next;
     setPosition(next);
+    saveQueuePosition(ticket.id, next);
     setPositionError(false);
-  }, []);
+  }, [ticket.id]);
 
   const pollPosition = useCallback(async () => {
     const next = await fetchPosition();
@@ -163,17 +175,29 @@ export function QueueWaitLive({
 
   useEffect(() => {
     let cancelled = false;
+    let timeoutId: number | undefined;
 
-    async function poll() {
+    async function tick() {
       if (cancelled) return;
       await pollPosition();
+      const current = positionRef.current;
+      if (
+        current &&
+        shouldStopQueuePolling({
+          status: current.status,
+          queueClosed: current.queueClosed,
+        })
+      ) {
+        return;
+      }
+      const ms = getQueuePollIntervalMs(current?.aheadCount);
+      timeoutId = window.setTimeout(() => void tick(), ms);
     }
 
-    void poll();
-    const id = window.setInterval(() => void poll(), POLL_MS);
+    void tick();
     return () => {
       cancelled = true;
-      window.clearInterval(id);
+      if (timeoutId !== undefined) window.clearTimeout(timeoutId);
     };
   }, [pollPosition]);
 

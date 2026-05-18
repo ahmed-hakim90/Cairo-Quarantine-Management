@@ -1,5 +1,6 @@
 import { FieldValue, Timestamp } from "firebase-admin/firestore";
 import { getAdminDb, isFirebaseAdminConfigured } from "@/lib/firebase/admin";
+import { logEvent } from "@/lib/observability/log-event";
 import { getCairoTodayYmd } from "@/lib/cairo-today-ymd";
 import { phoneLookupVariants } from "@/lib/office-requests/whatsapp-message";
 import {
@@ -525,6 +526,7 @@ export async function completeQueueTicket(ticketId: string): Promise<QueueTicket
         date: ticket.queueDate,
         officeId: ticket.officeId,
         totalCompleted: FieldValue.increment(1),
+        currentServingNumber: ticket.queueNumber,
         updatedAt: now,
         createdAt: FieldValue.serverTimestamp(),
       },
@@ -548,6 +550,13 @@ export async function completeQueueTicket(ticketId: string): Promise<QueueTicket
   }
   const saved = await ticketRef.get();
   const completed = ticketFromDoc(saved.id, saved.data() ?? {});
+  if (statusSyncResult?.changed) {
+    logEvent("queue.completed", {
+      ticketId: completed.id,
+      officeId: completed.officeId,
+      queueNumber: completed.queueNumber,
+    });
+  }
   void import("@/lib/queue/queue-notify")
     .then(({ scanAndNotifyQueueWatches }) =>
       scanAndNotifyQueueWatches({

@@ -1,5 +1,6 @@
 import { OfficeContactIcons } from "@/components/ui/OfficeContactIcons";
 import { resolveOfficeMapUrl } from "@/lib/google-maps-url";
+import { getOfficeWorkingHoursTableLabel } from "@/lib/office-working-hours";
 import type { Locale } from "@/lib/i18n/config";
 import type { Messages } from "@/lib/i18n/messages";
 import { effectiveOfficeService } from "@/lib/office-requests/office-traveler-state";
@@ -205,6 +206,7 @@ export function HajjTravelerOfficesTable({
             address: fields.address,
             locale,
           });
+          const workingHours = getOfficeWorkingHoursTableLabel(row.id, locale);
           return (
             <li
               key={row.id}
@@ -220,6 +222,12 @@ export function HajjTravelerOfficesTable({
                 </p>
                 <p className="text-gov-gray-700">{fields.admin}</p>
                 <p className="text-gov-gray-700">{fields.address}</p>
+                <p className="text-gov-gray-700">
+                  <span className="font-medium text-gov-navy">
+                    {content.colHours}:{" "}
+                  </span>
+                  {workingHours}
+                </p>
                 <p>
                   <span className="inline-flex max-w-full rounded-full border border-gov-gray-200 bg-white px-2.5 py-0.5 text-xs font-medium text-gov-gray-800">
                     {serviceLabel(service, content)}
@@ -240,7 +248,7 @@ export function HajjTravelerOfficesTable({
       </ul>
 
       <div className="mt-8 hidden overflow-x-auto rounded-lg border border-gov-gray-200 shadow-sm md:block">
-        <table className="min-w-[56rem] border-collapse text-start text-sm">
+        <table className="min-w-[64rem] border-collapse text-start text-sm">
           <caption className="sr-only">{content.caption}</caption>
           <thead className="bg-gov-navy text-white">
             <tr>
@@ -258,6 +266,9 @@ export function HajjTravelerOfficesTable({
               </th>
               <th scope="col" className="px-3 py-3 font-heading font-semibold">
                 {content.colAddress}
+              </th>
+              <th scope="col" className="px-3 py-3 font-heading font-semibold">
+                {content.colHours}
               </th>
               <th scope="col" className="px-3 py-3 font-heading font-semibold">
                 {content.colPhone}
@@ -284,6 +295,10 @@ export function HajjTravelerOfficesTable({
                 row.serialInGovernorate > 0 && row.serialInGovernorate < 9999
                   ? row.serialInGovernorate
                   : "—";
+              const workingHours = getOfficeWorkingHoursTableLabel(
+                row.id,
+                locale,
+              );
               return (
                 <tr
                   key={row.id}
@@ -314,6 +329,9 @@ export function HajjTravelerOfficesTable({
                     lang={locale === "fr" ? "fr" : "ar"}
                   >
                     {fields.address}
+                  </td>
+                  <td className="min-w-[11rem] max-w-[14rem] px-3 py-3 align-top text-gov-gray-700">
+                    {workingHours}
                   </td>
                   <td className="whitespace-nowrap px-3 py-3 align-top font-mono text-gov-gray-700">
                     {row.phone ?? content.phoneMissing}

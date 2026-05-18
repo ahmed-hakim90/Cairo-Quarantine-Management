@@ -14,8 +14,22 @@ service cloud.firestore {
       return signedIn() &&
         profile().data.active == true &&
         (profile().data.role == "super_admin" ||
+          profile().data.role == "governorate_admin" ||
           profile().data.role == "office_admin" ||
           profile().data.role == "office_user");
+    }
+
+    function governorateAdminFor(officeId) {
+      return activeAdmin() &&
+        profile().data.role == "governorate_admin" &&
+        officeId in profile().data.allowedOfficeIds;
+    }
+
+    function officeScopedRead(officeId) {
+      return superAdmin() ||
+        governorateAdminFor(officeId) ||
+        officeAdminFor(officeId) ||
+        officeUserFor(officeId);
     }
 
     function superAdmin() {
@@ -54,9 +68,7 @@ service cloud.firestore {
     }
 
     match /requests/{requestId} {
-      allow read: if superAdmin() ||
-        officeAdminFor(resource.data.officeId) ||
-        officeUserFor(resource.data.officeId);
+      allow read: if officeScopedRead(resource.data.officeId);
       allow update: if superAdmin() || (
         (officeUserFor(resource.data.officeId) ||
           officeAdminFor(resource.data.officeId)) &&
@@ -77,17 +89,29 @@ service cloud.firestore {
     }
 
     match /today_queue/{ticketId} {
-      allow read: if superAdmin() ||
-        officeAdminFor(resource.data.officeId) ||
-        officeUserFor(resource.data.officeId);
+      allow read: if officeScopedRead(resource.data.officeId);
       allow write: if false;
     }
 
     match /daily_stats/{statId} {
-      allow read: if superAdmin() ||
-        officeAdminFor(resource.data.officeId) ||
-        officeUserFor(resource.data.officeId);
+      allow read: if officeScopedRead(resource.data.officeId);
       allow write: if false;
+    }
+
+    match /booking_day_stats/{statId} {
+      allow read, write: if false;
+    }
+
+    match /booking_duplicates/{dupId} {
+      allow read, write: if false;
+    }
+
+    match /daily_request_stats/{statId} {
+      allow read, write: if false;
+    }
+
+    match /rate_limits/{limitId} {
+      allow read, write: if false;
     }
 
     match /settings/{docId} {

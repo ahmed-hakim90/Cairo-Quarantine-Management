@@ -1,3 +1,4 @@
+import type { DailyRequestStats } from "@/lib/office-requests/daily-request-stats";
 import type {
   Office,
   OfficeRequest,
@@ -39,6 +40,26 @@ function startOfWeekUtc(d: Date): Date {
 
 function formatDay(d: Date): string {
   return d.toISOString().slice(0, 10);
+}
+
+export function buildAdminAnalyticsFromDailyStats(
+  stats: DailyRequestStats,
+): AdminRequestAnalytics {
+  return {
+    byStatus: {
+      new: stats.new,
+      in_progress: stats.inProgress,
+      contacted: 0,
+      completed: stats.completed,
+      cancelled: stats.cancelled,
+    },
+    byType: {
+      booking: stats.bookings,
+      complaint: stats.complaints,
+      proposal: stats.proposals,
+    },
+    timelineWeeks: [],
+  };
 }
 
 export function buildAdminRequestAnalytics(
