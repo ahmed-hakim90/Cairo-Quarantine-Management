@@ -1,4 +1,5 @@
 import type { Office, TravelerState } from "@/lib/office-requests/types";
+import { EGYPT_GOVERNORATES, DEFAULT_GOVERNORATE_ID } from "@/data/governorates";
 import {
   defaultTravelerStatesFromLegacyLabels,
   getOfficeTravelerStateIds,
@@ -24,6 +25,7 @@ export function OfficeFormFields({ office, travelerStates }: OfficeFormFieldsPro
   const baseOffice: Office =
     office ?? {
       id: "new",
+      governorateId: DEFAULT_GOVERNORATE_ID,
       serialInGovernorate: 0,
       administrationAr: "",
       nameAr: "",
@@ -54,6 +56,21 @@ export function OfficeFormFields({ office, travelerStates }: OfficeFormFieldsPro
   return (
     <>
       <input type="hidden" name="id" value={docId} />
+      <label className="mt-0 block text-sm font-bold text-gov-navy">
+        المحافظة
+        <select
+          name="governorateId"
+          required
+          defaultValue={office?.governorateId ?? DEFAULT_GOVERNORATE_ID}
+          className={officeFieldClass}
+        >
+          {EGYPT_GOVERNORATES.filter((g) => g.active).map((governorate) => (
+            <option key={governorate.id} value={governorate.id}>
+              {governorate.labelAr}
+            </option>
+          ))}
+        </select>
+      </label>
       <label className="mt-0 block text-sm font-bold text-gov-navy">
         الترتيب في المحافظة (م)
         <input

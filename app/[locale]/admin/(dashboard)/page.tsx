@@ -42,7 +42,9 @@ export default async function AdminOverviewPage({
   if (!session) redirect(`/${locale}/admin/login`);
 
   const isSuperAdmin = session.profile.role === "super_admin";
-  const isOfficeAdmin = session.profile.role === "office_admin";
+  const isLocalAdmin =
+    session.profile.role === "office_admin" ||
+    session.profile.role === "governorate_admin";
   const allOffices = await listOffices({ includeInactive: isSuperAdmin });
   const allowedOfficeIds = adminAllowedOfficeIds(session.profile);
   const offices = isSuperAdmin
@@ -148,7 +150,7 @@ export default async function AdminOverviewPage({
                   }
                 />
               </Suspense>
-            ) : isOfficeAdmin ? (
+            ) : isLocalAdmin ? (
               <div className="sm:pt-1">
                 <SuperAdminExportLauncher
                   offices={offices}

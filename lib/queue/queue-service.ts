@@ -7,6 +7,7 @@ import {
   getOffice,
   recordQueueRequestStatusFromQueue,
 } from "@/lib/office-requests/store";
+import { requestNumberLookupVariants } from "@/lib/office-requests/request-number";
 import {
   syncRequestStatusInTransaction,
   type RequestStatusSyncResult,
@@ -69,18 +70,10 @@ export function normalizeRequestLookup(value: string): {
   requestNumbers: string[];
 } {
   const raw = value.trim();
-  const compact = raw.replace(/\s+/g, "").toUpperCase();
-  const numbers = new Set<string>();
-  if (compact) numbers.add(compact);
-  const digits = compact.replace(/\D/g, "");
-  if (digits) {
-    numbers.add(digits);
-    numbers.add(`CQM-${digits.padStart(6, "0")}`);
-  }
   return {
     raw,
     phoneVariants: phoneLookupVariants(raw),
-    requestNumbers: [...numbers],
+    requestNumbers: requestNumberLookupVariants(raw),
   };
 }
 
@@ -143,6 +136,7 @@ function requestFromDoc(
     details: String(data.details ?? ""),
     notes: String(data.notes ?? ""),
     ...(data.hasSpecialNeeds === true ? { hasSpecialNeeds: true } : {}),
+    ...(data.hasElderly === true ? { hasElderly: true } : {}),
     ...(data.passToken ? { passToken: String(data.passToken) } : {}),
     ...(data.passTokenExpiresAt ? { passTokenExpiresAt: iso(data.passTokenExpiresAt) } : {}),
     ...(data.lastWhatsappAt ? { lastWhatsappAt: iso(data.lastWhatsappAt) } : {}),
@@ -426,11 +420,15 @@ export async function createQuickRequestAndQueue(args: {
   travelerStateId: string;
   travelerStateLabel?: string;
   hasSpecialNeeds?: boolean;
+  hasElderly?: boolean;
   details?: string;
 }): Promise<{ request: OfficeRequest; ticket: QueueTicket }> {
   const date = getTodayKey();
+  const office = await getOffice(args.officeId);
+  if (!office) throw new Error("المكتب غير موجود.");
   const stateLabel = args.travelerStateLabel?.trim() || args.travelerStateId;
   const created = await createOfficeRequest({
+    governorateId: office.governorateId,
     officeId: args.officeId,
     type: "booking",
     travelerStateId: args.travelerStateId,
@@ -441,6 +439,7 @@ export async function createQuickRequestAndQueue(args: {
       args.details?.trim() ||
       `حالة المسافر: ${stateLabel}\nالتاريخ المطلوب: ${date}`,
     hasSpecialNeeds: args.hasSpecialNeeds === true,
+    hasElderly: args.hasElderly === true,
   });
   let ticket: QueueTicket;
   try {

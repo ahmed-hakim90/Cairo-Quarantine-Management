@@ -13,6 +13,7 @@ function profile(
     uid: partial.uid ?? "uid",
     email: partial.email ?? null,
     displayName: partial.displayName ?? "User",
+    governorateId: partial.governorateId ?? null,
     officeId: partial.officeId ?? null,
     allowedOfficeIds: partial.allowedOfficeIds,
     active: partial.active ?? true,
@@ -82,5 +83,39 @@ describe("office admin access", () => {
         targetOfficeId: "airport",
       }),
     ).not.toThrow();
+  });
+
+  it("allows governorate_admin to access offices resolved for their governorate", () => {
+    const actor = profile({
+      role: "governorate_admin",
+      governorateId: "cairo",
+      allowedOfficeIds: ["airport", "maadi"],
+    });
+
+    expect(adminCanAccessOffice(actor, "airport")).toBe(true);
+    expect(adminCanAccessOffice(actor, "giza-office")).toBe(false);
+  });
+
+  it("allows governorate_admin to create office users only in resolved offices", () => {
+    const actor = profile({
+      role: "governorate_admin",
+      governorateId: "cairo",
+      allowedOfficeIds: ["airport"],
+    });
+
+    expect(() =>
+      assertOfficeAdminCanSaveUser({
+        actor,
+        targetRole: "office_user",
+        targetOfficeId: "airport",
+      }),
+    ).not.toThrow();
+    expect(() =>
+      assertOfficeAdminCanSaveUser({
+        actor,
+        targetRole: "office_user",
+        targetOfficeId: "maadi",
+      }),
+    ).toThrow("المكتب المختار غير متاح");
   });
 });

@@ -136,6 +136,7 @@ export async function checkinQuickAction(
   const phone = formValue(formData, "phone") || formValue(formData, "lookup");
   const travelerStateId = formValue(formData, "travelerStateId");
   const hasSpecialNeeds = formData.get("hasSpecialNeeds") === "on";
+  const hasElderly = formData.get("hasElderly") === "on";
   const details = formValue(formData, "details");
 
   if (!officeId || !name || !phone || !travelerStateId) {
@@ -159,6 +160,7 @@ export async function checkinQuickAction(
       travelerStateId,
       travelerStateLabel,
       hasSpecialNeeds,
+      hasElderly,
       details,
     });
     return { ...(await successFromRequest(request, ticket)), lookup: phone };

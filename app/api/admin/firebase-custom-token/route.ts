@@ -1,12 +1,18 @@
-import { NextResponse } from "next/server";
 import { getAdminAuth, isFirebaseAdminConfigured } from "@/lib/firebase/admin";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { getAdminSession } from "@/lib/office-requests/session";
+import {
+  noStoreJson,
+  rejectUnsafeAdminRequest,
+} from "@/lib/security/admin-request";
 
-export async function GET() {
+export async function GET(request: Request) {
+  const unsafe = rejectUnsafeAdminRequest(request);
+  if (unsafe) return unsafe;
+
   const session = await getAdminSession();
   if (!session) {
-    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+    return noStoreJson({ error: "unauthorized" }, { status: 401 });
   }
 
   const rateLimit = checkRateLimit({
@@ -15,7 +21,7 @@ export async function GET() {
     windowMs: 60_000,
   });
   if (!rateLimit.allowed) {
-    return NextResponse.json(
+    return noStoreJson(
       { error: "rate_limited" },
       {
         status: 429,
@@ -25,7 +31,7 @@ export async function GET() {
   }
 
   if (!isFirebaseAdminConfigured()) {
-    return NextResponse.json(
+    return noStoreJson(
       { error: "firebase_not_configured" },
       { status: 503 },
     );
@@ -33,12 +39,12 @@ export async function GET() {
 
   try {
     const customToken = await getAdminAuth().createCustomToken(session.uid);
-    return NextResponse.json({
+    return noStoreJson({
       customToken,
       uid: session.uid,
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "unknown";
-    return NextResponse.json({ error: message }, { status: 500 });
+    return noStoreJson({ error: message }, { status: 500 });
   }
 }

@@ -5,6 +5,7 @@ import type { Office, OfficeRequest } from "@/lib/office-requests/types";
 function office(id: string, nameAr = id): Office {
   return {
     id,
+    governorateId: "cairo",
     serialInGovernorate: 1,
     administrationAr: "",
     nameAr,

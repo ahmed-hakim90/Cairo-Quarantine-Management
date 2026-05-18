@@ -760,6 +760,7 @@ export function AdminRequestsTable({
               <th className="px-4 py-3 text-start">الاسم</th>
               <th className="px-4 py-3 text-start">الهاتف</th>
               <th className="px-4 py-3 text-start">ذوي همم</th>
+              <th className="px-4 py-3 text-start">كبار السن</th>
               <th className="px-4 py-3 text-start">المكتب</th>
               <th className="px-4 py-3 text-start">النوع</th>
               <th className="px-4 py-3 text-start">الحالة</th>
@@ -771,7 +772,7 @@ export function AdminRequestsTable({
             {requests.length === 0 ? (
               <tr>
                 <td
-                  colSpan={8}
+                  colSpan={9}
                   className="px-4 py-8 text-center text-gov-gray-600"
                 >
                   لا توجد طلبات حالياً.
@@ -780,7 +781,7 @@ export function AdminRequestsTable({
             ) : filteredRequests.length === 0 ? (
               <tr>
                 <td
-                  colSpan={8}
+                  colSpan={9}
                   className="px-4 py-8 text-center text-gov-gray-600"
                 >
                   {emptyMessage(
@@ -796,8 +797,10 @@ export function AdminRequestsTable({
               filteredRequests.map((request) => {
                 const latest = latestActivityByRequestId[request.id];
                 const isComplaintRow = request.type === "complaint";
-                const isSpecialNeedsBooking =
-                  request.type === "booking" && request.hasSpecialNeeds === true;
+                const isPriorityBooking =
+                  request.type === "booking" &&
+                  (request.hasSpecialNeeds === true ||
+                    request.hasElderly === true);
                 const notes = bookingUserNotes(request, labelById);
                 return (
                   <tr
@@ -805,7 +808,7 @@ export function AdminRequestsTable({
                     className={
                       isComplaintRow
                         ? "bg-red-50/80 hover:bg-red-100/70"
-                        : isSpecialNeedsBooking
+                        : isPriorityBooking
                           ? "bg-green-50/80 hover:bg-green-100/70"
                           : "hover:bg-gov-gray-50/70"
                     }
@@ -822,6 +825,20 @@ export function AdminRequestsTable({
                           disabled
                           readOnly
                           aria-label="ذوي همم"
+                          className="size-4 rounded border-gov-gray-300"
+                        />
+                      ) : (
+                        "—"
+                      )}
+                    </td>
+                    <td className="px-4 py-3">
+                      {request.type === "booking" ? (
+                        <input
+                          type="checkbox"
+                          checked={request.hasElderly === true}
+                          disabled
+                          readOnly
+                          aria-label="كبار السن"
                           className="size-4 rounded border-gov-gray-300"
                         />
                       ) : (

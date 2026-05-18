@@ -1,29 +1,24 @@
-import { NextResponse } from "next/server";
 import { runRetentionMaintenance } from "@/lib/office-requests/retention";
-
-function bearerToken(request: Request): string {
-  const header = request.headers.get("authorization") ?? "";
-  const [scheme, token] = header.split(/\s+/, 2);
-  return scheme?.toLowerCase() === "bearer" ? token ?? "" : "";
-}
+import { bearerToken, safeTokenEquals } from "@/lib/security/bearer-token";
+import { noStoreJson } from "@/lib/security/admin-request";
 
 export async function POST(request: Request) {
   const expected = process.env.MAINTENANCE_CRON_SECRET?.trim();
   if (!expected) {
-    return NextResponse.json(
+    return noStoreJson(
       { error: "MAINTENANCE_CRON_SECRET غير مضبوط." },
       { status: 500 },
     );
   }
-  if (bearerToken(request) !== expected) {
-    return NextResponse.json({ error: "غير مصرح." }, { status: 401 });
+  if (!safeTokenEquals(bearerToken(request), expected)) {
+    return noStoreJson({ error: "غير مصرح." }, { status: 401 });
   }
 
   try {
     const result = await runRetentionMaintenance();
-    return NextResponse.json(result);
+    return noStoreJson(result);
   } catch (e) {
-    return NextResponse.json(
+    return noStoreJson(
       { error: e instanceof Error ? e.message : "فشلت صيانة البيانات." },
       { status: 500 },
     );

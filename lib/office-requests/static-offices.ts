@@ -2,11 +2,13 @@ import {
   CAIRO_TRAVELER_VACCINATION_OFFICES,
   type CairoTravelerVaccinationOffice,
 } from "@/data/hajj-traveler-offices-cairo";
+import { DEFAULT_GOVERNORATE_ID } from "@/data/governorates";
 import type { Office } from "@/lib/office-requests/types";
 
 export function officeFromStatic(row: CairoTravelerVaccinationOffice): Office {
   return {
     id: row.id,
+    governorateId: DEFAULT_GOVERNORATE_ID,
     serialInGovernorate: row.serialInGovernorate,
     administrationAr: row.administrationAr,
     nameAr: row.officeNameAr,

@@ -1,4 +1,5 @@
-import * as XLSX from "xlsx";
+import ExcelJS from "exceljs";
+import { governorateLabelAr } from "@/data/governorates";
 import type { OfficeRequest } from "@/lib/office-requests/types";
 import {
   REQUEST_STATUS_LABELS,
@@ -24,30 +25,79 @@ function travelerLabel(
   return id;
 }
 
-export function officeRequestsToXlsxBuffer(
+type ExportRow = {
+  governorate: string;
+  officeId: string;
+  officeName: string;
+  requestType: string;
+  travelerCategory: string;
+  preferredDate: string;
+  status: string;
+  name: string;
+  phone: string;
+  hasSpecialNeeds: string;
+  hasElderly: string;
+  details: string;
+  notes: string;
+  createdAt: string;
+  updatedAt: string;
+  lastWhatsappAt: string;
+};
+
+const columns: Partial<ExcelJS.Column>[] = [
+  { header: "المحافظة", key: "governorate", width: 18 },
+  { header: "معرف المكتب", key: "officeId", width: 24 },
+  { header: "المكتب", key: "officeName", width: 28 },
+  { header: "نوع الطلب", key: "requestType", width: 18 },
+  { header: "فئة المسافر", key: "travelerCategory", width: 22 },
+  { header: "تاريخ مفضل", key: "preferredDate", width: 16 },
+  { header: "الحالة", key: "status", width: 18 },
+  { header: "الاسم", key: "name", width: 24 },
+  { header: "الهاتف", key: "phone", width: 18 },
+  { header: "ذوي همم", key: "hasSpecialNeeds", width: 12 },
+  { header: "كبار السن", key: "hasElderly", width: 12 },
+  { header: "التفاصيل", key: "details", width: 40 },
+  { header: "الملاحظات", key: "notes", width: 32 },
+  { header: "تاريخ الإنشاء", key: "createdAt", width: 24 },
+  { header: "تاريخ التحديث", key: "updatedAt", width: 24 },
+  { header: "آخر واتساب", key: "lastWhatsappAt", width: 24 },
+];
+
+export async function officeRequestsToXlsxBuffer(
   requests: OfficeRequest[],
   travelerStateLabels: Record<string, string> = {},
-): Buffer {
-  const rows = requests.map((r) => ({
-    "معرف المكتب": r.officeId,
-    المكتب: r.officeNameAr,
-    "نوع الطلب": REQUEST_TYPE_LABELS[r.type],
-    "فئة المسافر": travelerLabel(r, travelerStateLabels),
-    "تاريخ مفضل": r.preferredDate ?? "—",
-    الحالة: REQUEST_STATUS_LABELS[r.status],
-    الاسم: r.name,
-    الهاتف: r.phone,
-    "ذوي همم":
-      r.type === "booking" && r.hasSpecialNeeds ? "نعم" : "—",
-    التفاصيل: r.details,
-    الملاحظات: r.notes,
-    "تاريخ الإنشاء": r.createdAt,
-    "تاريخ التحديث": r.updatedAt,
-    "آخر واتساب": r.lastWhatsappAt ?? "—",
+): Promise<Buffer> {
+  const rows: ExportRow[] = requests.map((r) => ({
+    governorate: r.governorateId ? governorateLabelAr(r.governorateId) : "—",
+    officeId: r.officeId,
+    officeName: r.officeNameAr,
+    requestType: REQUEST_TYPE_LABELS[r.type],
+    travelerCategory: travelerLabel(r, travelerStateLabels),
+    preferredDate: r.preferredDate ?? "—",
+    status: REQUEST_STATUS_LABELS[r.status],
+    name: r.name,
+    phone: r.phone,
+    hasSpecialNeeds: r.type === "booking" && r.hasSpecialNeeds ? "نعم" : "—",
+    hasElderly: r.type === "booking" && r.hasElderly ? "نعم" : "—",
+    details: r.details,
+    notes: r.notes,
+    createdAt: r.createdAt,
+    updatedAt: r.updatedAt,
+    lastWhatsappAt: r.lastWhatsappAt ?? "—",
   }));
 
-  const sheet = XLSX.utils.json_to_sheet(rows);
-  const book = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(book, sheet, "الطلبات");
-  return XLSX.write(book, { type: "buffer", bookType: "xlsx" }) as Buffer;
+  const workbook = new ExcelJS.Workbook();
+  workbook.creator = "Cairo Quarantine Administration";
+  workbook.created = new Date();
+
+  const sheet = workbook.addWorksheet("الطلبات", {
+    views: [{ rightToLeft: true, state: "frozen", ySplit: 1 }],
+  });
+  sheet.columns = columns;
+  sheet.addRows(rows);
+  sheet.getRow(1).font = { bold: true };
+  sheet.getRow(1).alignment = { horizontal: "center" };
+
+  const buffer = await workbook.xlsx.writeBuffer();
+  return Buffer.from(buffer);
 }

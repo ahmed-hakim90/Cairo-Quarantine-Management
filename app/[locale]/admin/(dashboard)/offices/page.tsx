@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { headers } from "next/headers";
 import { notFound, redirect } from "next/navigation";
+import { governorateLabelAr } from "@/data/governorates";
 import { OfficeFormDialog } from "@/components/admin/OfficeFormDialog";
 import { SetOfficeActiveForm } from "@/components/admin/SetOfficeActiveForm";
 import { OfficeQrCard } from "@/components/queue/OfficeQrCard";
@@ -90,6 +91,7 @@ export default async function AdminOfficesPage({
             <thead className="bg-gov-gray-50 text-gov-navy">
               <tr>
                 <th className="px-4 py-3 text-start">م</th>
+                <th className="px-4 py-3 text-start">المحافظة</th>
                 <th className="px-4 py-3 text-start">اسم المكتب</th>
                 <th className="px-4 py-3 text-start">الإدارة</th>
                 <th className="px-4 py-3 text-start">العنوان</th>
@@ -107,6 +109,9 @@ export default async function AdminOfficesPage({
                     office.serialInGovernorate < 9999
                       ? office.serialInGovernorate
                       : "—"}
+                  </td>
+                  <td className="px-4 py-3 whitespace-nowrap text-gov-gray-700">
+                    {governorateLabelAr(office.governorateId)}
                   </td>
                   <td className="px-4 py-3 font-bold text-gov-navy">
                     {office.nameAr}
@@ -175,7 +180,7 @@ export default async function AdminOfficesPage({
               {offices.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={8}
+                    colSpan={9}
                     className="px-4 py-8 text-center text-gov-gray-600"
                   >
                     لا توجد مكاتب.

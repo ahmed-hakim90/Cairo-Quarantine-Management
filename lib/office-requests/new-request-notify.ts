@@ -30,7 +30,7 @@ export function notifyScopeFromProfile(profile: {
   if (profile.role === "super_admin") {
     return { role: profile.role, officeId, allowedOfficeIds: [] };
   }
-  if (profile.role === "office_admin") {
+  if (profile.role === "office_admin" || profile.role === "governorate_admin") {
     const allowedOfficeIds = [
       ...new Set(
         (profile.allowedOfficeIds ?? [])

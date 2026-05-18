@@ -14,6 +14,11 @@ import {
   listTravelerStates,
 } from "@/lib/office-requests/store";
 import { getAdminSession } from "@/lib/office-requests/session";
+import {
+  noStoreHeaders,
+  noStoreJson,
+  rejectUnsafeAdminRequest,
+} from "@/lib/security/admin-request";
 import type {
   OfficeRequestType,
   TravelerCategory,
@@ -39,13 +44,16 @@ function parseCommaList(value: string | null): string[] {
 }
 
 export async function GET(request: Request) {
+  const unsafe = rejectUnsafeAdminRequest(request);
+  if (unsafe) return unsafe;
+
   const session = await getAdminSession();
   if (!session) {
-    return NextResponse.json({ error: "غير مصرح." }, { status: 401 });
+    return noStoreJson({ error: "غير مصرح." }, { status: 401 });
   }
 
   if (!session.profile.active) {
-    return NextResponse.json({ error: "الحساب موقوف." }, { status: 403 });
+    return noStoreJson({ error: "الحساب موقوف." }, { status: 403 });
   }
 
   const role = session.profile.role;
@@ -53,16 +61,16 @@ export async function GET(request: Request) {
     role === "office_user" &&
     !session.profile.officeId?.trim()
   ) {
-    return NextResponse.json(
+    return noStoreJson(
       { error: "حسابك غير مرتبط بمكتب. تواصل مع الإدارة." },
       { status: 403 },
     );
   }
   if (
-    role === "office_admin" &&
+    (role === "office_admin" || role === "governorate_admin") &&
     adminAllowedOfficeIds(session.profile).length === 0
   ) {
-    return NextResponse.json(
+    return noStoreJson(
       { error: "حسابك غير مرتبط بأي مكاتب. تواصل مع الإدارة." },
       { status: 403 },
     );
@@ -90,10 +98,10 @@ export async function GET(request: Request) {
   let officeIds: string[] | null = null;
   if (role === "office_user") {
     officeId = session.profile.officeId!.trim();
-  } else if (role === "office_admin") {
+  } else if (role === "office_admin" || role === "governorate_admin") {
     officeIds = adminAllowedOfficeIds(session.profile);
     if (officeId && !adminCanAccessOffice(session.profile, officeId)) {
-      return NextResponse.json(
+      return noStoreJson(
         { error: "المكتب المختار خارج نطاق صلاحياتك." },
         { status: 403 },
       );
@@ -123,11 +131,11 @@ export async function GET(request: Request) {
     searchParams.get("to"),
   );
   if ("error" in bounds) {
-    return NextResponse.json({ error: bounds.error }, { status: 400 });
+    return noStoreJson({ error: bounds.error }, { status: 400 });
   }
 
   if (!isFirebaseAdminConfigured()) {
-    return NextResponse.json(
+    return noStoreJson(
       {
         error:
           "إعدادات Firebase على الخادم غير مكتملة. راجع متغيرات FIREBASE_* في البيئة.",
@@ -152,11 +160,11 @@ export async function GET(request: Request) {
     const stateLabels = mergeTravelerStateLabelsWithLegacy(
       await listTravelerStates({ includeInactive: true }),
     );
-    const buffer = officeRequestsToXlsxBuffer(requests, stateLabels);
+    const buffer = await officeRequestsToXlsxBuffer(requests, stateLabels);
     const dateStamp = new Date().toISOString().slice(0, 10);
     const filename = `requests-${dateStamp}.xlsx`;
 
-    const headers = new Headers();
+    const headers = noStoreHeaders();
     headers.set(
       "Content-Type",
       "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -180,7 +188,7 @@ export async function GET(request: Request) {
       message.includes("FAILED_PRECONDITION") ||
       message.includes("requires an index");
 
-    return NextResponse.json(
+    return noStoreJson(
       {
         error: needsIndex
           ? "فهرس Firestore مطلوب لهذا التصدير. انشر firestore.indexes.json ثم أعد المحاولة."

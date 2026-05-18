@@ -117,7 +117,7 @@ export function OfficeQueuePanel({
             name="search"
             required
             className="mt-2 w-full rounded-md border border-gov-gray-200 px-3 py-2.5 text-sm"
-            placeholder="مثال: 12 أو CQM-000123 أو 01552900017"
+            placeholder="مثال: 12 أو cairo-trav-17-000001 أو 01552900017"
             dir="rtl"
           />
         </div>

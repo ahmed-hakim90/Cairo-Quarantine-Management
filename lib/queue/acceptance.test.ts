@@ -196,6 +196,11 @@ describe("acceptance: staff search", () => {
 
     const lookup = normalizeRequestLookup("CQM-000012");
     expect(lookup.requestNumbers).toContain("CQM-000012");
+
+    const officeScopedLookup = normalizeRequestLookup("cairo-trav-17-000001");
+    expect(officeScopedLookup.requestNumbers).toContain(
+      "cairo-trav-17-000001",
+    );
   });
 });
 

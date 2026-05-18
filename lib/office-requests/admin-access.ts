@@ -2,6 +2,7 @@ import type { AdminRole, AdminUserProfile } from "@/lib/office-requests/types";
 
 export type AdminRequestScope = {
   role: AdminRole;
+  governorateId?: string | null;
   officeId: string | null;
   allowedOfficeIds?: string[];
 };
@@ -12,6 +13,7 @@ export function normalizeOfficeIds(ids: readonly unknown[]): string[] {
 
 export function roleLabelAr(role: AdminRole): string {
   if (role === "super_admin") return "سوبر أدمن";
+  if (role === "governorate_admin") return "أدمن محافظة";
   if (role === "office_admin") return "أدمن مكاتب";
   return "مستخدم مكتب";
 }
@@ -20,7 +22,7 @@ export function adminAllowedOfficeIds(
   profile: Pick<AdminUserProfile, "role" | "officeId" | "allowedOfficeIds">,
 ): string[] {
   if (profile.role === "super_admin") return [];
-  if (profile.role === "office_admin") {
+  if (profile.role === "office_admin" || profile.role === "governorate_admin") {
     return normalizeOfficeIds(profile.allowedOfficeIds ?? []);
   }
   return profile.officeId?.trim() ? [profile.officeId.trim()] : [];
@@ -48,7 +50,9 @@ export function adminCanManageUser(
   target: Pick<AdminUserProfile, "uid" | "role" | "officeId" | "allowedOfficeIds">,
 ): boolean {
   if (actor.role === "super_admin") return true;
-  if (actor.role !== "office_admin") return false;
+  if (actor.role !== "office_admin" && actor.role !== "governorate_admin") {
+    return false;
+  }
   if (target.uid === actor.uid) return false;
   if (target.role !== "office_user") return false;
   return adminCanAccessOffice(actor, target.officeId);
@@ -64,11 +68,14 @@ export function assertOfficeAdminCanSaveUser(input: {
   > | null;
 }): void {
   if (input.actor.role === "super_admin") return;
-  if (input.actor.role !== "office_admin") {
+  if (
+    input.actor.role !== "office_admin" &&
+    input.actor.role !== "governorate_admin"
+  ) {
     throw new Error("غير مصرح بتنفيذ هذا الإجراء.");
   }
   if (input.targetRole !== "office_user") {
-    throw new Error("أدمن المكاتب يمكنه إنشاء مستخدمي مكاتب فقط.");
+    throw new Error("الأدمن المحلي يمكنه إنشاء مستخدمي مكاتب فقط.");
   }
   if (!adminCanAccessOffice(input.actor, input.targetOfficeId)) {
     throw new Error("المكتب المختار غير متاح ضمن صلاحياتك.");

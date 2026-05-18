@@ -36,6 +36,8 @@ for (const office of offices) {
     ref,
     {
       administrationAr: office.administrationAr,
+      governorateId: "cairo",
+      serialInGovernorate: office.serialInGovernorate,
       nameAr: office.officeNameAr,
       addressAr: office.addressAr,
       phone: office.phone,

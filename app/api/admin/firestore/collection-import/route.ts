@@ -1,4 +1,3 @@
-import { NextResponse } from "next/server";
 import { revalidatePath, revalidateTag } from "next/cache";
 import { SUPER_ADMIN_IMPORT_MAX_DOCS } from "@/lib/office-requests/export-limits";
 import { locales } from "@/lib/i18n/config";
@@ -10,6 +9,11 @@ import {
   parseJsonArrayImportPayload,
   parseNdjsonImportPayload,
 } from "@/lib/office-requests/super-admin-firestore-data";
+import {
+  noStoreJson,
+  rejectOversizedRequest,
+  rejectUnsafeAdminRequest,
+} from "@/lib/security/admin-request";
 
 type BodyShape = {
   collection?: string;
@@ -18,24 +22,29 @@ type BodyShape = {
 };
 
 export async function POST(request: Request) {
+  const unsafe = rejectUnsafeAdminRequest(request);
+  if (unsafe) return unsafe;
+  const oversized = rejectOversizedRequest(request, 2 * 1024 * 1024);
+  if (oversized) return oversized;
+
   const session = await getAdminSession();
   if (!session) {
-    return NextResponse.json({ error: "غير مصرح." }, { status: 401 });
+    return noStoreJson({ error: "غير مصرح." }, { status: 401 });
   }
   if (!session.profile.active) {
-    return NextResponse.json({ error: "الحساب موقوف." }, { status: 403 });
+    return noStoreJson({ error: "الحساب موقوف." }, { status: 403 });
   }
   try {
     assertSuperAdmin(session);
   } catch {
-    return NextResponse.json({ error: "غير مصرح." }, { status: 403 });
+    return noStoreJson({ error: "غير مصرح." }, { status: 403 });
   }
 
   let body: BodyShape;
   try {
     body = (await request.json()) as BodyShape;
   } catch {
-    return NextResponse.json(
+    return noStoreJson(
       { error: "تعذّر قراءة الطلب. أعد المحاولة." },
       { status: 400 },
     );
@@ -43,7 +52,7 @@ export async function POST(request: Request) {
 
   const collection = String(body.collection ?? "").trim();
   if (!isSuperAdminDataCollectionKey(collection)) {
-    return NextResponse.json(
+    return noStoreJson(
       { error: "نوع البيانات المختار غير مسموح للاستيراد." },
       { status: 400 },
     );
@@ -52,7 +61,7 @@ export async function POST(request: Request) {
   const format = body.format === "json" ? "json" : "ndjson";
   const payload = String(body.payload ?? "");
   if (!payload.trim()) {
-    return NextResponse.json(
+    return noStoreJson(
       { error: "لم يُرسل أي نص للاستيراد." },
       { status: 400 },
     );
@@ -83,12 +92,12 @@ export async function POST(request: Request) {
     for (const tag of Object.values(OFFICE_REQUESTS_CACHE_TAGS)) {
       revalidateTag(tag, "max");
     }
-    return NextResponse.json({
+    return noStoreJson({
       written,
       errors: [...combinedErrors, ...errors],
     });
   } catch (e) {
     const msg = e instanceof Error ? e.message : "فشل الاستيراد.";
-    return NextResponse.json({ error: msg }, { status: 500 });
+    return noStoreJson({ error: msg }, { status: 500 });
   }
 }

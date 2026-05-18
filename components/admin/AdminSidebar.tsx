@@ -60,7 +60,7 @@ function NavLinks({
     {
       href: "/admin/queue",
       label: "طوابير المكاتب",
-      roles: ["super_admin", "office_admin"],
+      roles: ["super_admin", "governorate_admin", "office_admin"],
     },
     { href: "/admin/offices", label: "المكاتب", roles: ["super_admin"] },
     {
@@ -72,7 +72,7 @@ function NavLinks({
     {
       href: "/admin/users",
       label: "المستخدمون",
-      roles: ["super_admin", "office_admin"],
+      roles: ["super_admin", "governorate_admin", "office_admin"],
     },
     { href: "/admin/settings", label: "الإعدادات", roles: ["super_admin"] },
     { href: "/admin/activity", label: "سجل النشاط", roles: ["super_admin"] },

@@ -44,7 +44,9 @@ export default async function AdminRequestsPage({
   if (!session) redirect(`/${locale}/admin/login`);
 
   const isSuperAdmin = session.profile.role === "super_admin";
-  const isOfficeAdmin = session.profile.role === "office_admin";
+  const isLocalAdmin =
+    session.profile.role === "office_admin" ||
+    session.profile.role === "governorate_admin";
 
   const sp = (await searchParams) ?? {};
   const dateParams = parseAdminBookingDateParams({
@@ -76,10 +78,10 @@ export default async function AdminRequestsPage({
   };
 
   const allOffices =
-    isSuperAdmin || isOfficeAdmin
+    isSuperAdmin || isLocalAdmin
       ? await listOffices({ includeInactive: isSuperAdmin })
       : [];
-  const visibleOffices = isOfficeAdmin
+  const visibleOffices = isLocalAdmin
     ? allOffices.filter((office) =>
         adminAllowedOfficeIds(session.profile).includes(office.id),
       )
@@ -130,7 +132,7 @@ export default async function AdminRequestsPage({
                 travelerStates={travelerStates}
               />
             </div>
-          ) : isOfficeAdmin ? (
+          ) : isLocalAdmin ? (
             <div className="shrink-0 sm:pt-1">
               <SuperAdminExportLauncher
                 offices={visibleOffices}

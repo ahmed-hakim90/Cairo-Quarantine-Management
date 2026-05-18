@@ -77,7 +77,11 @@ export function SuperAdminDataToolsPanel() {
       });
       const res = await fetch(
         `/api/admin/firestore/collection-export?${params.toString()}`,
-        { method: "GET", credentials: "include" },
+        {
+          method: "GET",
+          credentials: "include",
+          headers: { "X-CQM-Admin-Request": "1" },
+        },
       );
       if (!res.ok) {
         const j = (await res.json().catch(() => null)) as { error?: string } | null;
@@ -108,7 +112,10 @@ export function SuperAdminDataToolsPanel() {
       const res = await fetch("/api/admin/firestore/collection-import", {
         method: "POST",
         credentials: "include",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "X-CQM-Admin-Request": "1",
+        },
         body: JSON.stringify({
           collection: importCollection,
           format: importFormat,
@@ -145,7 +152,10 @@ export function SuperAdminDataToolsPanel() {
       const res = await fetch("/api/admin/firestore/collection-purge", {
         method: "POST",
         credentials: "include",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "X-CQM-Admin-Request": "1",
+        },
         body: JSON.stringify({
           operation: purgeOperation,
           confirm: purgeConfirm.trim(),

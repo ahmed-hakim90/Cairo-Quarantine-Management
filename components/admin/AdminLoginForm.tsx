@@ -33,7 +33,10 @@ export function AdminLoginForm({ redirectTo }: AdminLoginFormProps) {
       const idToken = await credential.user.getIdToken();
       const response = await fetch("/api/admin/session", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "X-CQM-Admin-Request": "1",
+        },
         body: JSON.stringify({ idToken }),
       });
       const data = (await response.json()) as { error?: string };

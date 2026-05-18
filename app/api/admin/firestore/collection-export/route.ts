@@ -10,25 +10,33 @@ import {
 import {
   buildNdjsonExportForCollection,
 } from "@/lib/office-requests/super-admin-firestore-data";
+import {
+  noStoreHeaders,
+  noStoreJson,
+  rejectUnsafeAdminRequest,
+} from "@/lib/security/admin-request";
 
 export async function GET(request: Request) {
+  const unsafe = rejectUnsafeAdminRequest(request);
+  if (unsafe) return unsafe;
+
   const session = await getAdminSession();
   if (!session) {
-    return NextResponse.json({ error: "غير مصرح." }, { status: 401 });
+    return noStoreJson({ error: "غير مصرح." }, { status: 401 });
   }
   if (!session.profile.active) {
-    return NextResponse.json({ error: "الحساب موقوف." }, { status: 403 });
+    return noStoreJson({ error: "الحساب موقوف." }, { status: 403 });
   }
   try {
     assertSuperAdmin(session);
   } catch {
-    return NextResponse.json({ error: "غير مصرح." }, { status: 403 });
+    return noStoreJson({ error: "غير مصرح." }, { status: 403 });
   }
 
   const { searchParams } = new URL(request.url);
   const collection = searchParams.get("collection")?.trim() ?? "";
   if (!isSuperAdminDataCollectionKey(collection)) {
-    return NextResponse.json(
+    return noStoreJson(
       { error: "نوع البيانات المختار غير مسموح للتصدير." },
       { status: 400 },
     );
@@ -47,7 +55,7 @@ export async function GET(request: Request) {
     });
     const dateStamp = new Date().toISOString().slice(0, 10);
     const filename = `${EXPORT_FILE_STEM_AR[collection]}-${dateStamp}.txt`;
-    const headers = new Headers();
+    const headers = noStoreHeaders();
     headers.set("Content-Type", "application/x-ndjson; charset=utf-8");
     headers.set(
       "Content-Disposition",
@@ -61,6 +69,6 @@ export async function GET(request: Request) {
     return new NextResponse(ndjson, { status: 200, headers });
   } catch (e) {
     const msg = e instanceof Error ? e.message : "فشل التصدير.";
-    return NextResponse.json({ error: msg }, { status: 500 });
+    return noStoreJson({ error: msg }, { status: 500 });
   }
 }

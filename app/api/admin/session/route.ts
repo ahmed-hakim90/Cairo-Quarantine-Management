@@ -1,8 +1,13 @@
 import { cookies } from "next/headers";
-import { NextResponse } from "next/server";
 import { getAdminAuth } from "@/lib/firebase/admin";
 import { ADMIN_SESSION_COOKIE } from "@/lib/office-requests/session";
 import { getUserProfile } from "@/lib/office-requests/store";
+import { checkRateLimit, rateLimitKeyFromHeaders } from "@/lib/rate-limit";
+import {
+  noStoreJson,
+  rejectOversizedRequest,
+  rejectUnsafeAdminRequest,
+} from "@/lib/security/admin-request";
 
 type SessionErrorBody = {
   error: string;
@@ -87,6 +92,26 @@ function classifySessionError(error: unknown): {
 }
 
 export async function POST(request: Request) {
+  const unsafe = rejectUnsafeAdminRequest(request);
+  if (unsafe) return unsafe;
+  const oversized = rejectOversizedRequest(request, 32 * 1024);
+  if (oversized) return oversized;
+
+  const rateLimit = checkRateLimit({
+    key: rateLimitKeyFromHeaders(request.headers, "admin-session"),
+    limit: 20,
+    windowMs: 10 * 60_000,
+  });
+  if (!rateLimit.allowed) {
+    return noStoreJson(
+      { error: "Too many login attempts.", code: "rate_limited" },
+      {
+        status: 429,
+        headers: { "Retry-After": String(rateLimit.retryAfterSeconds) },
+      },
+    );
+  }
+
   const isDev = process.env.NODE_ENV === "development";
 
   let idToken: string | undefined;
@@ -94,14 +119,14 @@ export async function POST(request: Request) {
     const body = (await request.json()) as { idToken?: string };
     idToken = body.idToken;
   } catch {
-    return NextResponse.json(
+    return noStoreJson(
       { error: "Invalid JSON body.", code: "invalid_json" },
       { status: 400 },
     );
   }
 
   if (!idToken) {
-    return NextResponse.json(
+    return noStoreJson(
       { error: "Missing token", code: "missing_token" },
       { status: 400 },
     );
@@ -111,7 +136,7 @@ export async function POST(request: Request) {
     const decoded = await getAdminAuth().verifyIdToken(idToken);
     const profile = await getUserProfile(decoded.uid);
     if (!profile) {
-      return NextResponse.json(
+      return noStoreJson(
         {
           error: "لا يوجد حساب مسؤول مرتبط بهذا المستخدم.",
           code: "forbidden_no_profile",
@@ -134,7 +159,7 @@ export async function POST(request: Request) {
       path: "/",
     });
 
-    return NextResponse.json({ ok: true });
+    return noStoreJson({ ok: true });
   } catch (error: unknown) {
     if (isDev) {
       console.error("[api/admin/session]", error);
@@ -148,6 +173,6 @@ export async function POST(request: Request) {
         }
       : body;
 
-    return NextResponse.json(payload, { status });
+    return noStoreJson(payload, { status });
   }
 }

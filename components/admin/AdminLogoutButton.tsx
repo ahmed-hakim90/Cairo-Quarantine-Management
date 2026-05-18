@@ -27,6 +27,7 @@ export function AdminLogoutButton({
       await fetch("/api/admin/logout", {
         method: "POST",
         credentials: "include",
+        headers: { "X-CQM-Admin-Request": "1" },
       });
       window.location.assign(`/${locale}/admin/login`);
     } catch {

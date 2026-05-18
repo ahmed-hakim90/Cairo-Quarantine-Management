@@ -44,6 +44,7 @@ export async function ensureAdminFirebaseAuth(): Promise<User | null> {
       const response = await fetch("/api/admin/firebase-custom-token", {
         method: "GET",
         credentials: "include",
+        headers: { "X-CQM-Admin-Request": "1" },
       });
       if (!response.ok) return null;
 

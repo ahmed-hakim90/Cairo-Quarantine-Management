@@ -8,7 +8,18 @@ export type OfficeRequestStatus =
   | "completed"
   | "cancelled";
 
-export type AdminRole = "super_admin" | "office_admin" | "office_user";
+export type AdminRole =
+  | "super_admin"
+  | "governorate_admin"
+  | "office_admin"
+  | "office_user";
+
+export type Governorate = {
+  id: string;
+  labelAr: string;
+  sortOrder: number;
+  active: boolean;
+};
 
 export type TravelerState = {
   id: string;
@@ -21,6 +32,7 @@ export type TravelerState = {
 
 export type Office = {
   id: string;
+  governorateId: string;
   /** ترتيب العرض في جداول المكاتب العامة (عمود «م»). */
   serialInGovernorate: number;
   administrationAr: string;
@@ -52,6 +64,7 @@ export type OfficeRequest = {
   id: string;
   requestNumber: string;
   requestSequence?: number;
+  governorateId?: string;
   officeId: string;
   officeNameAr: string;
   type: OfficeRequestType;
@@ -67,6 +80,8 @@ export type OfficeRequest = {
   notes: string;
   /** true عند اختيار «ذوي همم» في نموذج الحجز */
   hasSpecialNeeds?: boolean;
+  /** true عند اختيار «كبار السن» في نموذج الحجز */
+  hasElderly?: boolean;
   /** Secret segment for the public booking pass URL; absent on legacy documents. */
   passToken?: string;
   /** Public pass links expire after the configured token TTL. */
@@ -80,6 +95,7 @@ export type OfficeRequest = {
 export type BookingPassPublic = {
   id: string;
   requestNumber: string;
+  governorateId?: string;
   officeNameAr: string;
   type: OfficeRequestType;
   travelerStateId?: string;
@@ -101,6 +117,7 @@ export type PublicOfficeRequestStatus = Pick<
   OfficeRequest,
   | "id"
   | "requestNumber"
+  | "governorateId"
   | "officeNameAr"
   | "type"
   | "travelerStateId"
@@ -120,6 +137,7 @@ export type AdminUserProfile = {
   email: string | null;
   displayName: string;
   role: AdminRole;
+  governorateId?: string | null;
   officeId: string | null;
   allowedOfficeIds?: string[];
   active: boolean;

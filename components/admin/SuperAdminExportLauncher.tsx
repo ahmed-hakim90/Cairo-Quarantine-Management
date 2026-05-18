@@ -143,6 +143,7 @@ export function SuperAdminExportLauncher({
     try {
       const res = await fetch(url, {
         credentials: "include",
+        headers: { "X-CQM-Admin-Request": "1" },
         signal: abortController.signal,
       });
       if (res.status === 401) {

@@ -1,0 +1,1239 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>دليل مذاكرة انترفيو مشروع إدارة الحجر الصحي بالقاهرة</title>
+  <style>
+    :root {
+      --navy: #0c2340;
+      --ink: #172033;
+      --muted: #5d687a;
+      --line: #d9e0ea;
+      --soft: #f5f7fa;
+      --accent: #0f7f87;
+      --accent-soft: #e4f4f3;
+      --gold: #b7791f;
+      --gold-soft: #fff6df;
+      --red: #b42318;
+      --green: #147a43;
+      --white: #ffffff;
+      --shadow: 0 12px 28px rgba(12, 35, 64, 0.08);
+    }
+
+    * { box-sizing: border-box; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: #eef2f6;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Tahoma, Arial, sans-serif;
+      line-height: 1.75;
+    }
+
+    a { color: inherit; }
+
+    .shell {
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: 300px minmax(0, 1fr);
+    }
+
+    aside {
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow: auto;
+      background: var(--navy);
+      color: var(--white);
+      padding: 24px 20px;
+      border-left: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    aside h2 {
+      margin: 0 0 8px;
+      font-size: 20px;
+      line-height: 1.35;
+    }
+
+    aside p {
+      margin: 0 0 20px;
+      color: rgba(255, 255, 255, 0.72);
+      font-size: 13px;
+    }
+
+    nav {
+      display: grid;
+      gap: 6px;
+    }
+
+    nav a {
+      display: block;
+      text-decoration: none;
+      padding: 9px 10px;
+      border-radius: 8px;
+      color: rgba(255, 255, 255, 0.86);
+      font-size: 14px;
+    }
+
+    nav a:hover {
+      background: rgba(255, 255, 255, 0.1);
+      color: #fff;
+    }
+
+    main {
+      min-width: 0;
+      padding: 28px;
+    }
+
+    .hero {
+      background: var(--white);
+      border: 1px solid var(--line);
+      box-shadow: var(--shadow);
+      padding: 30px;
+      border-radius: 10px;
+    }
+
+    .eyebrow {
+      margin: 0 0 10px;
+      color: var(--accent);
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: 0;
+    }
+
+    h1, h2, h3 {
+      color: var(--navy);
+      line-height: 1.35;
+      margin: 0;
+    }
+
+    h1 {
+      font-size: 34px;
+      margin-bottom: 14px;
+    }
+
+    h2 {
+      font-size: 25px;
+      margin-bottom: 14px;
+    }
+
+    h3 {
+      font-size: 18px;
+      margin: 18px 0 8px;
+    }
+
+    .hero .lead {
+      max-width: 980px;
+      margin: 0;
+      color: var(--muted);
+      font-size: 17px;
+    }
+
+    .quick-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 22px;
+    }
+
+    .metric {
+      border: 1px solid var(--line);
+      background: var(--soft);
+      border-radius: 8px;
+      padding: 14px;
+    }
+
+    .metric strong {
+      display: block;
+      color: var(--navy);
+      font-size: 22px;
+      line-height: 1.2;
+    }
+
+    .metric span {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    section {
+      margin-top: 18px;
+      background: var(--white);
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      box-shadow: var(--shadow);
+      padding: 24px;
+    }
+
+    .note {
+      border: 1px solid var(--line);
+      background: var(--soft);
+      border-radius: 8px;
+      padding: 14px 16px;
+      margin: 14px 0;
+    }
+
+    .note strong { color: var(--navy); }
+
+    .remember {
+      background: var(--accent-soft);
+      border-color: #b6dddd;
+    }
+
+    .warning {
+      background: var(--gold-soft);
+      border-color: #f2d38a;
+    }
+
+    .danger {
+      background: #fff1f0;
+      border-color: #ffcbc7;
+    }
+
+    ul, ol {
+      margin: 10px 0 0;
+      padding: 0 22px 0 0;
+    }
+
+    li { margin: 4px 0; }
+
+    code {
+      direction: ltr;
+      unicode-bidi: embed;
+      display: inline-block;
+      background: #edf1f5;
+      border: 1px solid #dbe3ec;
+      border-radius: 5px;
+      padding: 1px 6px;
+      color: #20304a;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.92em;
+    }
+
+    pre {
+      direction: ltr;
+      text-align: left;
+      overflow: auto;
+      background: #101828;
+      color: #e4e7ec;
+      border-radius: 8px;
+      padding: 14px;
+      line-height: 1.55;
+      font-size: 13px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 12px;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+    }
+
+    th, td {
+      border-bottom: 1px solid var(--line);
+      padding: 10px 12px;
+      text-align: right;
+      vertical-align: top;
+    }
+
+    th {
+      background: var(--soft);
+      color: var(--navy);
+      font-size: 13px;
+    }
+
+    tr:last-child td { border-bottom: 0; }
+
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 12px;
+    }
+
+    .card {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 14px;
+      background: #fff;
+    }
+
+    .card h3 { margin-top: 0; }
+
+    .flow {
+      display: grid;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .step {
+      display: grid;
+      grid-template-columns: 42px minmax(0, 1fr);
+      gap: 12px;
+      align-items: start;
+    }
+
+    .num {
+      width: 34px;
+      height: 34px;
+      display: grid;
+      place-items: center;
+      border-radius: 8px;
+      background: var(--accent);
+      color: #fff;
+      font-weight: 900;
+    }
+
+    .step-body {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 10px 12px;
+      background: var(--soft);
+    }
+
+    .step-body strong {
+      display: block;
+      color: var(--navy);
+      margin-bottom: 2px;
+    }
+
+    .pill-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .pill {
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 5px 10px;
+      background: var(--soft);
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--navy);
+    }
+
+    .qa {
+      display: grid;
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    details {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      padding: 0;
+    }
+
+    summary {
+      cursor: pointer;
+      padding: 12px 14px;
+      font-weight: 800;
+      color: var(--navy);
+    }
+
+    details p {
+      margin: 0;
+      padding: 0 14px 14px;
+      color: var(--muted);
+    }
+
+    .two-col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    .print-note {
+      margin-top: 14px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    @media (max-width: 980px) {
+      .shell { grid-template-columns: 1fr; }
+      aside {
+        position: static;
+        height: auto;
+      }
+      nav {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+      main { padding: 18px; }
+      .quick-grid, .cards, .two-col {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media print {
+      body { background: #fff; }
+      .shell { display: block; }
+      aside { display: none; }
+      main { padding: 0; }
+      .hero, section {
+        box-shadow: none;
+        break-inside: avoid;
+      }
+      a { text-decoration: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <aside>
+      <h2>دليل انترفيو المشروع</h2>
+      <p>صفحة مذاكرة مركزة لمشروع Cairo Quarantine Management.</p>
+      <nav>
+        <a href="#overview">1. نظرة عامة</a>
+        <a href="#stack">2. التقنيات</a>
+        <a href="#architecture">3. المعمارية</a>
+        <a href="#data">4. الداتا وFirestore</a>
+        <a href="#booking">5. حجز الموعد</a>
+        <a href="#complaints">6. الشكاوى والمقترحات</a>
+        <a href="#my-requests">7. طلباتي</a>
+        <a href="#admin">8. لوحة الإدارة</a>
+        <a href="#queue">9. الطابور اليومي</a>
+        <a href="#security">10. الأمان والصلاحيات</a>
+        <a href="#pwa">11. PWA والتنبيهات</a>
+        <a href="#files">12. أهم الملفات</a>
+        <a href="#interview">13. أسئلة انترفيو</a>
+        <a href="#scalability">14. تحمل 50 ألف يومياً</a>
+        <a href="#technical-questions">15. أسئلة تكنيكال عميقة</a>
+        <a href="#compound-questions">16. أسئلة مركبة</a>
+        <a href="#script">17. سكريبت شرح سريع</a>
+      </nav>
+    </aside>
+
+    <main>
+      <header class="hero" id="overview">
+        <p class="eyebrow">مشروع إدارة الحجر الصحي بالقاهرة</p>
+        <h1>دليل مذاكرة شامل للانترفيو</h1>
+        <p class="lead">
+          المشروع عبارة عن بوابة ويب حكومية لإدارة خدمات الحجر الصحي والتطعيمات:
+          صفحات معلوماتية، حجز مواعيد، شكاوى ومقترحات، متابعة طلبات، لوحة إدارة،
+          وطابور يومي للمكاتب. ركز في الانترفيو على رحلة الداتا من الواجهة إلى
+          Firestore، وعلى فصل صلاحيات المواطن عن الإدارة.
+        </p>
+        <div class="quick-grid">
+          <div class="metric"><strong>Next 16</strong><span>App Router + Server Actions</span></div>
+          <div class="metric"><strong>Firebase</strong><span>Auth + Firestore + Admin SDK</span></div>
+          <div class="metric"><strong>3 أدوار</strong><span>Super Admin / Office Admin / Office User</span></div>
+          <div class="metric"><strong>PWA</strong><span>Install + Offline + Queue Notifications</span></div>
+        </div>
+        <p class="print-note">نصيحة: اطبع الصفحة PDF أو افتحها جنب الكود وانت بتراجع.</p>
+      </header>
+
+      <section id="stack">
+        <h2>2. التقنيات المستخدمة</h2>
+        <table>
+          <thead>
+            <tr><th>التقنية</th><th>استخدامها في المشروع</th><th>نقطة تقولها في الانترفيو</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>Next.js 16.2.6</code></td>
+              <td>Routing، صفحات عامة، لوحة إدارة، API Routes، Server Actions.</td>
+              <td>المشروع يستخدم App Router، وفي النسخة دي <code>params</code> و<code>searchParams</code> غالباً Promise.</td>
+            </tr>
+            <tr>
+              <td><code>React 19.2.4</code></td>
+              <td>Client components، forms، state، effects، <code>useActionState</code>.</td>
+              <td>الفورم يرسل للسيرفر من غير API يدوي في بعض الحالات عن طريق Server Actions.</td>
+            </tr>
+            <tr>
+              <td>Firebase Auth</td>
+              <td>تسجيل دخول الإدارة بالبريد وكلمة المرور.</td>
+              <td>العميل يجيب idToken والسيرفر يحوله إلى session cookie آمنة.</td>
+            </tr>
+            <tr>
+              <td>Firestore</td>
+              <td>تخزين الطلبات، المكاتب، اللقاحات، المستخدمين، الطابور، الإعدادات.</td>
+              <td>الداتا التشغيلية كلها في Collections واضحة، ومعها indexes للاستعلامات.</td>
+            </tr>
+            <tr>
+              <td>Firebase Admin SDK</td>
+              <td>عمليات السيرفر الآمنة: إنشاء طلب، transactions، session، messaging.</td>
+              <td>المواطن لا يكتب مباشرة في Firestore؛ السيرفر هو مصدر الحقيقة.</td>
+            </tr>
+            <tr>
+              <td>Tailwind CSS v4</td>
+              <td>تصميم الواجهة العامة ولوحة الإدارة.</td>
+              <td>الواجهة RTL/LTR وتدعم لغات متعددة.</td>
+            </tr>
+            <tr>
+              <td>Vitest</td>
+              <td>اختبارات لمنطق الحجز، الطابور، التصدير، الصلاحيات.</td>
+              <td>المنطق الحرج متغطي باختبارات منفصلة في <code>lib</code>.</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3>السيرفر الذي اعتمدنا عليه</h3>
+        <div class="note remember">
+          <strong>الإجابة المختصرة:</strong>
+          اعتمدنا على <code>Next.js Server Runtime</code> كسيرفر التطبيق،
+          ومعاه <code>Firebase</code> كخدمات Backend جاهزة: Firestore للداتا،
+          Firebase Auth لتسجيل الدخول، وFirebase Admin SDK للعمليات السيرفرية الآمنة.
+          يعني لا يوجد Express أو NestJS server منفصل في المشروع.
+        </div>
+
+        <table>
+          <thead>
+            <tr><th>جزء السيرفر</th><th>مسؤوليته</th><th>لماذا استخدمناه؟</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>Next.js Server Runtime</code></td>
+              <td>تشغيل Server Components، Server Actions، وAPI Routes.</td>
+              <td>لأنه مدمج مع المشروع، يقلل الحاجة لسيرفر منفصل، ويسمح بكتابة الواجهة والباك إند في نفس الكودبيز.</td>
+            </tr>
+            <tr>
+              <td><code>Server Actions</code></td>
+              <td>استقبال فورم الحجز/الشكوى وتشغيل validation وحفظ الطلب.</td>
+              <td>مناسبة للفورم، وتقلل boilerplate مقارنة بعمل endpoint يدوي لكل submit.</td>
+            </tr>
+            <tr>
+              <td><code>API Routes</code></td>
+              <td>Endpoints مستقلة مثل availability، status refresh، queue position، admin session.</td>
+              <td>مناسبة للعمليات التي يحتاجها العميل عبر <code>fetch</code> أو polling أو تكاملات خارجية.</td>
+            </tr>
+            <tr>
+              <td><code>Firebase Admin SDK</code></td>
+              <td>قراءة وكتابة Firestore بأمان من السيرفر، إنشاء session cookies، transactions، messaging.</td>
+              <td>لأن العميل لا يجب أن يملك صلاحية إنشاء الطلبات أو تعديل الداتا الحساسة مباشرة.</td>
+            </tr>
+            <tr>
+              <td><code>Firestore</code></td>
+              <td>قاعدة البيانات الرئيسية للطلبات والمكاتب والمستخدمين والطابور.</td>
+              <td>Managed database سريعة في التطوير، realtime-friendly، وتدعم فهارس وصلاحيات.</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3>كيف تمشي request على السيرفر؟</h3>
+        <div class="flow">
+          <div class="step"><div class="num">1</div><div class="step-body"><strong>المواطن يرسل الفورم</strong>الفورم يستدعي Server Action مثل <code>submitOfficeRequest</code>.</div></div>
+          <div class="step"><div class="num">2</div><div class="step-body"><strong>Next.js ينفذ الكود على السيرفر</strong>الـ Action تعمل validation وrate limit وتقرأ إعدادات الحجز.</div></div>
+          <div class="step"><div class="num">3</div><div class="step-body"><strong>Firebase Admin يتعامل مع Firestore</strong>ينشئ request، يولد رقم الطلب وQR token، ويستخدم transaction عند الحاجة.</div></div>
+          <div class="step"><div class="num">4</div><div class="step-body"><strong>النتيجة ترجع للواجهة</strong>المستخدم يرى رقم الطلب والـ QR، ويتحفظ الطلب في localStorage.</div></div>
+        </div>
+
+        <div class="note warning">
+          <strong>ليه مش Express؟</strong>
+          لأن Next.js بالفعل يوفر طبقة سيرفر كافية للمشروع: routes، actions،
+          rendering، cookies، redirects، وintegration مع Firebase. إضافة Express كانت هتزود التعقيد
+          بدون احتياج واضح، خصوصاً أن المشروع ليس REST API ضخم منفصل عن الواجهة.
+        </div>
+      </section>
+
+      <section id="architecture">
+        <h2>3. معمارية المشروع</h2>
+        <div class="cards">
+          <div class="card">
+            <h3>واجهة عامة</h3>
+            <p>صفحات معلوماتية وحجز وشكاوى وطلباتي وتسجيل حضور.</p>
+            <code>app/[locale]/(public)</code>
+          </div>
+          <div class="card">
+            <h3>لوحة إدارة</h3>
+            <p>Dashboard، requests، offices، users، vaccines، queue، settings.</p>
+            <code>app/[locale]/admin</code>
+          </div>
+          <div class="card">
+            <h3>منطق البزنس</h3>
+            <p>كل التعامل الحقيقي مع Firestore والvalidation والصلاحيات.</p>
+            <code>lib/office-requests</code>
+          </div>
+        </div>
+
+        <div class="note remember">
+          <strong>الخلاصة التي تحفظها:</strong>
+          Next.js مسؤول عن الواجهة والراوتنج، و<code>lib</code> مسؤول عن منطق الداتا.
+          Firebase Client يستخدم لتسجيل دخول الإدارة فقط، أما العمليات الحساسة فتتم من السيرفر بـ Admin SDK.
+        </div>
+
+        <h3>الـ routing واللغات</h3>
+        <ul>
+          <li>كل صفحات المستخدم تحت <code>/{locale}</code> مثل <code>/ar/booking</code>.</li>
+          <li>العربي هو الافتراضي، والـ proxy يحول <code>/</code> إلى <code>/ar</code>.</li>
+          <li>لوحة الإدارة مجبرة على العربي؛ <code>/en/admin</code> تتحول إلى <code>/ar/admin</code>.</li>
+          <li>النصوص موجودة في ملفات <code>lib/i18n</code>.</li>
+        </ul>
+      </section>
+
+      <section id="data">
+        <h2>4. الداتا وFirestore</h2>
+        <p>أهم نقطة في الانترفيو: تعرف كل collection بتخزن إيه، ومين يقرأها أو يكتبها.</p>
+        <table>
+          <thead>
+            <tr><th>Collection</th><th>المحتوى</th><th>مين يستخدمها؟</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>requests</code></td><td>الحجوزات والشكاوى والمقترحات.</td><td>المواطن ينشئ عبر السيرفر، والإدارة تتابع.</td></tr>
+            <tr><td><code>offices</code></td><td>بيانات المكاتب، الخدمة، السعة اليومية، الحالات المقبولة.</td><td>العامة للحجز، والإدارة للتعديل.</td></tr>
+            <tr><td><code>traveler_states</code></td><td>حالات المسافر: دولي، حج وعمرة، مواطنين، أو غيرها.</td><td>الحجز وفلترة المكاتب.</td></tr>
+            <tr><td><code>vaccines</code></td><td>كتالوج اللقاحات والأسعار والتفعيل.</td><td>الجمهور يشاهد، والسوبر أدمن يدير.</td></tr>
+            <tr><td><code>users</code></td><td>Profiles لمستخدمي لوحة الإدارة وأدوارهم.</td><td>تسجيل الدخول والصلاحيات.</td></tr>
+            <tr><td><code>messageTemplates</code></td><td>قوالب رسائل واتساب.</td><td>الإدارة عند التواصل مع المواطن.</td></tr>
+            <tr><td><code>activityLogs</code></td><td>سجل نشاط الإدارة والتغييرات.</td><td>السوبر أدمن وتفاصيل الطلب.</td></tr>
+            <tr><td><code>today_queue</code></td><td>تذاكر الطابور اليومية.</td><td>تسجيل الحضور ولوحة الطابور.</td></tr>
+            <tr><td><code>daily_stats</code></td><td>إحصاءات يومية لكل مكتب.</td><td>إغلاق اليوم وتقارير الطابور.</td></tr>
+            <tr><td><code>settings/app</code></td><td>إعدادات عامة مثل ساعة إغلاق حجز نفس اليوم.</td><td>السوبر أدمن والحجز.</td></tr>
+            <tr><td><code>queue_watches</code></td><td>توكنات متابعة تنبيهات الطابور.</td><td>Firebase Messaging.</td></tr>
+          </tbody>
+        </table>
+
+        <h3>شكل الطلب الأساسي</h3>
+        <pre><code>OfficeRequest {
+  id: string
+  requestNumber: string        // مثل CQM-000123
+  officeId: string
+  officeNameAr: string
+  type: "booking" | "complaint" | "proposal"
+  travelerStateId?: string
+  preferredDate?: "YYYY-MM-DD"
+  status: "new" | "in_progress" | "contacted" | "completed" | "cancelled"
+  name: string
+  phone: string
+  details: string
+  notes: string
+  passToken?: string
+  passTokenExpiresAt?: string
+  createdAt: string
+  updatedAt: string
+}</code></pre>
+
+        <div class="pill-row">
+          <span class="pill">new = جديد</span>
+          <span class="pill">in_progress = قيد المتابعة</span>
+          <span class="pill">contacted = تم التواصل</span>
+          <span class="pill">completed = مكتمل</span>
+          <span class="pill">cancelled = ملغي</span>
+        </div>
+      </section>
+
+      <section id="booking">
+        <h2>5. Feature: حجز موعد تطعيم</h2>
+        <div class="flow">
+          <div class="step"><div class="num">1</div><div class="step-body"><strong>تحميل البيانات</strong>صفحة الحجز تجيب المكاتب النشطة، حالات المسافر، وإعدادات cutoff من Firestore.</div></div>
+          <div class="step"><div class="num">2</div><div class="step-body"><strong>اختيار حالة المسافر</strong>المكاتب تتفلتر حسب <code>travelerStateId</code> والخدمة التي يقدمها المكتب.</div></div>
+          <div class="step"><div class="num">3</div><div class="step-body"><strong>اختيار التاريخ</strong>الحد الأدنى للتاريخ يعتمد على توقيت القاهرة وساعة cutoff.</div></div>
+          <div class="step"><div class="num">4</div><div class="step-body"><strong>فحص السعة</strong>API <code>/api/booking/availability</code> يتأكد أن اليوم لم يصل إلى <code>dailyBookingCap</code>.</div></div>
+          <div class="step"><div class="num">5</div><div class="step-body"><strong>Server Action</strong><code>submitOfficeRequest</code> يعمل validation كامل على السيرفر.</div></div>
+          <div class="step"><div class="num">6</div><div class="step-body"><strong>إنشاء الطلب</strong><code>createOfficeRequest</code> يستخدم transaction لتوليد رقم طلب متسلسل وحفظ request.</div></div>
+          <div class="step"><div class="num">7</div><div class="step-body"><strong>نتيجة للمواطن</strong>يرجع request number وpass token، ويتحفظ في localStorage ويظهر QR.</div></div>
+        </div>
+
+        <h3>قواعد الحجز المهمة</h3>
+        <ul>
+          <li>حجز نفس اليوم مسموح قبل ساعة cutoff، والافتراضي الساعة 14:00 بتوقيت القاهرة.</li>
+          <li>بعد cutoff، أقل تاريخ مسموح هو الغد.</li>
+          <li>التاريخ في الماضي مرفوض.</li>
+          <li>كل مكتب ممكن يكون له <code>dailyBookingCap</code>؛ لو null يبقى غير محدود.</li>
+          <li>المكتب لازم يكون نشط ويخدم حالة المسافر المختارة.</li>
+          <li>يتم منع الحجز المكرر لنفس المكتب والتاريخ وحالة المسافر وبيانات الشخص.</li>
+        </ul>
+
+        <div class="note remember">
+          <strong>إجابة ذهبية:</strong>
+          الواجهة تعمل validation لتحسين التجربة، لكن السيرفر يعيد كل التحقق قبل الحفظ؛ لذلك لا نعتمد على المتصفح كمصدر أمان.
+        </div>
+      </section>
+
+      <section id="complaints">
+        <h2>6. Feature: الشكاوى والمقترحات</h2>
+        <div class="two-col">
+          <div class="note">
+            <strong>الفرق عن الحجز</strong>
+            <ul>
+              <li>لا يحتاج تاريخ.</li>
+              <li>لا يحتاج حالة مسافر.</li>
+              <li>التفاصيل إلزامية.</li>
+              <li>يستخدم نفس collection: <code>requests</code>.</li>
+            </ul>
+          </div>
+          <div class="note">
+            <strong>أنواع الطلب</strong>
+            <ul>
+              <li><code>booking</code>: حجز موعد.</li>
+              <li><code>complaint</code>: شكوى.</li>
+              <li><code>proposal</code>: مقترح.</li>
+            </ul>
+          </div>
+        </div>
+        <p>
+          نفس مكون الفورم <code>BookingRequestForm</code> يعمل في وضعين:
+          <code>booking</code> أو <code>complaint</code>. الاختلاف في الحقول والـ validation.
+        </p>
+      </section>
+
+      <section id="my-requests">
+        <h2>7. Feature: طلباتي</h2>
+        <p>
+          صفحة <code>/my-requests</code> ليست حساب مستخدم. هي تعتمد على
+          <code>localStorage</code> في جهاز المواطن.
+        </p>
+        <div class="flow">
+          <div class="step"><div class="num">1</div><div class="step-body"><strong>بعد إنشاء الطلب</strong>يحفظ النظام آخر 20 طلب في localStorage.</div></div>
+          <div class="step"><div class="num">2</div><div class="step-body"><strong>عند التحديث</strong>يبعت request id ورقم الهاتف إلى <code>/api/office-requests/status</code>.</div></div>
+          <div class="step"><div class="num">3</div><div class="step-body"><strong>التحقق</strong>السيرفر لا يرجع الحالة إلا لو الهاتف مطابق للهاتف المسجل.</div></div>
+          <div class="step"><div class="num">4</div><div class="step-body"><strong>النتيجة</strong>يرجع الحالة وملاحظات المتابعة، ومعها QR لو token محفوظ على نفس الجهاز.</div></div>
+        </div>
+        <div class="note warning">
+          <strong>Tradeoff مهم:</strong>
+          localStorage مريح لأنه لا يحتاج حساب، لكنه مرتبط بالجهاز. لو المواطن مسح بيانات المتصفح قد يفقد قائمة الطلبات والـ QR token.
+        </div>
+      </section>
+
+      <section id="admin">
+        <h2>8. لوحة الإدارة</h2>
+        <h3>تسجيل الدخول</h3>
+        <ol>
+          <li>المستخدم يدخل البريد وكلمة المرور عبر Firebase Auth.</li>
+          <li>العميل يحصل على <code>idToken</code>.</li>
+          <li>يرسل token إلى <code>/api/admin/session</code>.</li>
+          <li>السيرفر يتحقق من token باستخدام Firebase Admin.</li>
+          <li>السيرفر يقرأ profile من <code>users</code>.</li>
+          <li>لو profile موجود، ينشئ session cookie آمنة HttpOnly.</li>
+        </ol>
+
+        <h3>الأدوار</h3>
+        <table>
+          <thead>
+            <tr><th>الدور</th><th>الصلاحيات</th><th>مثال عملي</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>super_admin</code></td>
+              <td>كل المكاتب، كل الطلبات، إدارة مستخدمين، إعدادات، حذف، تصدير.</td>
+              <td>مدير النظام المركزي.</td>
+            </tr>
+            <tr>
+              <td><code>office_admin</code></td>
+              <td>إدارة طلبات عدة مكاتب مسموحة، وإنشاء/تعديل مستخدمي مكتب.</td>
+              <td>مشرف على مجموعة مكاتب.</td>
+            </tr>
+            <tr>
+              <td><code>office_user</code></td>
+              <td>طلبات مكتبه فقط، تحديث الحالة والملاحظات والتواصل.</td>
+              <td>موظف مكتب تطعيم.</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3>الشاشات</h3>
+        <div class="cards">
+          <div class="card"><h3>Dashboard</h3><p>إحصاءات حسب الحالة والنوع ورسوم بيانية وتقييم مكاتب.</p></div>
+          <div class="card"><h3>Requests</h3><p>قائمة الطلبات مع فلاتر وترقيم صفحات وتصدير.</p></div>
+          <div class="card"><h3>Request Detail</h3><p>تحديث الحالة، ملاحظات، واتساب، timeline للنشاط.</p></div>
+          <div class="card"><h3>Offices</h3><p>إدارة المكاتب، السعة اليومية، حالات المسافر المقبولة.</p></div>
+          <div class="card"><h3>Users</h3><p>إدارة حسابات الإدارة والأدوار والتفعيل.</p></div>
+          <div class="card"><h3>Vaccines</h3><p>إدارة اللقاحات والأسعار وظهورها للجمهور.</p></div>
+        </div>
+      </section>
+
+      <section id="queue">
+        <h2>9. Feature: الطابور اليومي</h2>
+        <p>
+          الطابور يخدم يوم العمل داخل المكتب. المواطن يمسح QR خاص بالمكتب ويدخل رقم الطلب أو الهاتف.
+        </p>
+        <div class="flow">
+          <div class="step"><div class="num">1</div><div class="step-body"><strong>فتح رابط المكتب</strong><code>/ar/checkin?officeId=...</code> يتأكد أن المكتب نشط.</div></div>
+          <div class="step"><div class="num">2</div><div class="step-body"><strong>بحث عن الطلب</strong>بالرقم أو الهاتف باستخدام <code>findRequestByNumberOrPhone</code>.</div></div>
+          <div class="step"><div class="num">3</div><div class="step-body"><strong>إنشاء Ticket</strong>لو الطلب صحيح ومكتبه مطابق، ينشئ ticket في <code>today_queue</code>.</div></div>
+          <div class="step"><div class="num">4</div><div class="step-body"><strong>رقم الدور</strong>transaction تزود <code>lastQueueNumber</code> في <code>daily_stats</code>.</div></div>
+          <div class="step"><div class="num">5</div><div class="step-body"><strong>متابعة مباشرة</strong>المواطن يرى رقم الدور وعدد المنتظرين قبله عبر polling كل 20 ثانية.</div></div>
+          <div class="step"><div class="num">6</div><div class="step-body"><strong>إتمام الخدمة</strong>الموظف يعمل complete؛ الطلب يتزامن إلى <code>completed</code>.</div></div>
+        </div>
+
+        <h3>Quick Request</h3>
+        <p>
+          لو المواطن جاء بدون طلب مسبق، صفحة الحضور تسمح بإنشاء طلب سريع لنفس اليوم ثم تسجيله في الطابور.
+        </p>
+
+        <h3>إغلاق اليوم</h3>
+        <ul>
+          <li>عند إغلاق طابور اليوم يحسب النظام <code>totalNoShow = totalCheckedIn - totalCompleted</code>.</li>
+          <li>يتم حذف مستندات <code>today_queue</code> لذلك اليوم والمكتب.</li>
+          <li>تبقى الإحصاءات محفوظة في <code>daily_stats</code>.</li>
+        </ul>
+      </section>
+
+      <section id="security">
+        <h2>10. الأمان والصلاحيات</h2>
+        <div class="cards">
+          <div class="card">
+            <h3>Firestore Rules</h3>
+            <p>تمنع public write. قراءة وتحديث الطلبات حسب الدور والمكتب فقط.</p>
+          </div>
+          <div class="card">
+            <h3>Admin SDK</h3>
+            <p>العمليات الحساسة تتم من السيرفر وليس من المتصفح.</p>
+          </div>
+          <div class="card">
+            <h3>Rate Limiting</h3>
+            <p>حدود للطلبات العامة مثل الحجز والتحديث والتحقق من السعة.</p>
+          </div>
+        </div>
+
+        <h3>قيود مهمة</h3>
+        <ul>
+          <li>إنشاء request من العميل المباشر ممنوع في Firestore rules.</li>
+          <li>موظف المكتب لا يستطيع تعديل <code>officeId</code> أو بيانات المواطن.</li>
+          <li>تحديث موظف المكتب محدود في <code>status</code> و<code>notes</code> و<code>lastWhatsappAt</code> و<code>updatedAt</code>.</li>
+          <li>حذف الطلبات للسوبر أدمن فقط.</li>
+          <li>admin APIs تتحقق من origin وreferer وheader خاص ضد الطلبات غير الآمنة.</li>
+        </ul>
+
+        <h3>Rate limits تحفظها</h3>
+        <table>
+          <thead><tr><th>العملية</th><th>الحد</th></tr></thead>
+          <tbody>
+            <tr><td>إرسال حجز/شكوى</td><td>10 طلبات كل 10 دقائق لكل IP.</td></tr>
+            <tr><td>التحقق من السعة</td><td>60 طلباً في الدقيقة.</td></tr>
+            <tr><td>تحديث طلباتي</td><td>30 طلباً في الدقيقة، وحتى 20 طلب في body واحد.</td></tr>
+            <tr><td>تسجيل جلسة الإدارة</td><td>20 محاولة كل 10 دقائق.</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="pwa">
+        <h2>11. PWA والتنبيهات</h2>
+        <ul>
+          <li><code>app/manifest.ts</code> يعرف اسم التطبيق والأيقونات والاختصارات.</li>
+          <li><code>public/sw.js</code> يعمل cache للأصول الثابتة وoffline fallback.</li>
+          <li><code>public/firebase-messaging-sw.js</code> يستقبل Firebase background messages.</li>
+          <li>في الطابور، المستخدم يمكنه تفعيل تنبيهات عند اقتراب دوره.</li>
+          <li>لو تبقى 5 أشخاص أو أصبح دوره، النظام يدعم notification وvibration محلياً.</li>
+        </ul>
+      </section>
+
+      <section id="files">
+        <h2>12. أهم الملفات التي تعرفها</h2>
+        <table>
+          <thead><tr><th>الملف</th><th>وظيفته</th></tr></thead>
+          <tbody>
+            <tr><td><code>lib/office-requests/types.ts</code></td><td>تعريفات الداتا الأساسية: request، office، user، vaccine.</td></tr>
+            <tr><td><code>lib/office-requests/store.ts</code></td><td>طبقة التعامل مع Firestore للطلبات والمكاتب والمستخدمين واللقاحات.</td></tr>
+            <tr><td><code>app/[locale]/(public)/booking/actions.ts</code></td><td>Server Action للحجز والشكاوى والvalidation.</td></tr>
+            <tr><td><code>components/booking/BookingRequestForm.tsx</code></td><td>فورم الحجز/الشكوى في الواجهة.</td></tr>
+            <tr><td><code>lib/queue/queue-service.ts</code></td><td>منطق الطابور، إنشاء التذاكر، الإكمال، إغلاق اليوم.</td></tr>
+            <tr><td><code>components/queue/CheckinForm.tsx</code></td><td>واجهة تسجيل الحضور للمواطن.</td></tr>
+            <tr><td><code>components/queue/QueueWaitLive.tsx</code></td><td>متابعة الدور live polling والتنبيهات.</td></tr>
+            <tr><td><code>lib/office-requests/session.ts</code></td><td>قراءة جلسة الإدارة والتحقق منها.</td></tr>
+            <tr><td><code>firestore.rules</code></td><td>قواعد صلاحيات Firestore.</td></tr>
+            <tr><td><code>firestore.indexes.json</code></td><td>الفهارس المركبة للاستعلامات.</td></tr>
+            <tr><td><code>proxy.ts</code></td><td>توجيه اللغة الافتراضية وقواعد admin locale.</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="interview">
+        <h2>13. أسئلة انترفيو متوقعة</h2>
+        <div class="qa">
+          <details open>
+            <summary>اشرح المشروع في دقيقة.</summary>
+            <p>بوابة ويب لإدارة خدمات الحجر الصحي بالقاهرة. المواطن يقدر يشوف معلومات، يحجز موعد، يقدم شكوى، يتابع طلبه، ويسجل حضور في الطابور. الإدارة عندها لوحة لمتابعة الطلبات والمكاتب والمستخدمين واللقاحات والإحصاءات. المشروع مبني بـ Next.js وFirebase، والعمليات الحساسة تتم على السيرفر باستخدام Admin SDK.</p>
+          </details>
+
+          <details>
+            <summary>ليه استخدمت Firebase Admin SDK؟</summary>
+            <p>لأننا لا نريد أن يكتب المواطن مباشرة في Firestore. السيرفر يتحكم في validation والصلاحيات والtransactions وتوليد أرقام الطلبات والـ session cookies.</p>
+          </details>
+
+          <details>
+            <summary>إزاي بيتم إنشاء رقم الطلب؟</summary>
+            <p>داخل transaction في <code>createOfficeRequest</code>. يتم قراءة counter من <code>settings/request_numbers</code> ثم زيادته وتنسيقه كرقم طلب مثل <code>CQM-000123</code> وحفظ الطلب.</p>
+          </details>
+
+          <details>
+            <summary>إزاي تمنع الحجز في يوم ممتلئ؟</summary>
+            <p>كل مكتب له <code>dailyBookingCap</code>. قبل الحفظ يتم عد حجوزات نفس المكتب ونفس التاريخ ونوع <code>booking</code>. لو العدد وصل للحد، السيرفر يرفض الحجز. الواجهة أيضاً تفحص السعة مسبقاً لتحسين التجربة.</p>
+          </details>
+
+          <details>
+            <summary>إزاي تمنع الحجز المكرر؟</summary>
+            <p>قبل إنشاء الطلب يتم البحث عن طلب بنفس المكتب والتاريخ وحالة المسافر ورقم الهاتف/بيانات الشخص. لو وجد مطابق يرجع رسالة duplicate ويوجه المستخدم إلى صفحة طلباتي.</p>
+          </details>
+
+          <details>
+            <summary>إزاي QR آمن؟</summary>
+            <p>الرابط لا يعتمد على id فقط، بل يحتوي على token عشوائي. السيرفر يقارن token ويتأكد من expiry قبل عرض البيانات. كمان الصفحة لا تعرض رقم الهاتف.</p>
+          </details>
+
+          <details>
+            <summary>ليه طلباتي تستخدم localStorage؟</summary>
+            <p>عشان المواطن يتابع بدون إنشاء حساب. لكن عند تحديث الحالة، السيرفر يطلب id ورقم الهاتف ويتأكد من التطابق قبل إرجاع الحالة.</p>
+          </details>
+
+          <details>
+            <summary>إزاي صلاحيات الإدارة متقسمة؟</summary>
+            <p>كل مستخدم له profile في <code>users</code> يحتوي role وofficeId أو allowedOfficeIds. الاستعلامات على السيرفر تتفلتر حسب الدور، وFirestore rules تفرض حدود القراءة والتحديث.</p>
+          </details>
+
+          <details>
+            <summary>إزاي الطابور يضمن رقم دور صحيح؟</summary>
+            <p>إنشاء ticket يتم داخل transaction تقرأ <code>daily_stats.lastQueueNumber</code> وتزوده واحد. كده نقلل مشاكل السباق عند تسجيل أكثر من شخص في نفس الوقت.</p>
+          </details>
+
+          <details>
+            <summary>ما أهم نقطة أمان في المشروع؟</summary>
+            <p>عدم الاعتماد على العميل. كل validation مهم والصلاحيات وإنشاء الداتا تتم على السيرفر، مع Firestore rules تمنع الكتابة العامة المباشرة.</p>
+          </details>
+        </div>
+      </section>
+
+      <section id="scalability">
+        <h2>14. هل النظام يتحمل 50 ألف طلب وحضور في اليوم؟</h2>
+        <div class="note warning">
+          <strong>الإجابة الصريحة:</strong>
+          Firestore وNext.js يقدروا يخدموا 50 ألف عملية في اليوم من ناحية المبدأ،
+          لكن النسخة الحالية لا يُفضَّل الاعتماد عليها بثقة لهذا الرقم بدون تعديلات
+          في السعة، الطابور، polling، والمراقبة. لو الـ 50 ألف موزعين على اليوم وعلى
+          مكاتب كثيرة فالفرصة أفضل. لو ضغط لحظي عالي على مكتب واحد، لازم تطويرات قبل الإنتاج.
+        </div>
+
+        <h3>تقييم أجزاء النظام</h3>
+        <table>
+          <thead><tr><th>الجزء</th><th>الوضع الحالي</th><th>الحكم عند 50 ألف/يوم</th><th>التطوير المطلوب</th></tr></thead>
+          <tbody>
+            <tr>
+              <td>إنشاء الطلبات</td>
+              <td>Server Action + Firestore write + رقم طلب transaction.</td>
+              <td>مقبول غالباً لو الضغط موزع.</td>
+              <td>مراقبة retries، وتقليل أي reads غير لازمة قبل الحفظ.</td>
+            </tr>
+            <tr>
+              <td>سعة الحجز اليومية</td>
+              <td>Count query قبل الحفظ.</td>
+              <td>فيه احتمال race condition تحت الضغط.</td>
+              <td>استخدام capacity document لكل مكتب/تاريخ داخل transaction.</td>
+            </tr>
+            <tr>
+              <td>رقم الطابور</td>
+              <td>آخر رقم محفوظ في <code>daily_stats</code> ويتم تحديثه transaction.</td>
+              <td>جيد للضغط المتوسط، لكن قد يصبح hot document في الزحام العالي.</td>
+              <td>تقسيم الطوابير حسب مكتب/نافذة زمنية، أو خدمة queue مخصصة، أو strategy تقلل contention.</td>
+            </tr>
+            <tr>
+              <td>متابعة الدور للمواطن</td>
+              <td>Polling كل 20 ثانية + aggregation count.</td>
+              <td>أكبر مصدر تكلفة وضغط لو آلاف فاتحين الصفحة.</td>
+              <td>تقليل polling، push notifications، أو currentServingNumber بدل count لكل مستخدم.</td>
+            </tr>
+            <tr>
+              <td>Dashboard</td>
+              <td>استعلامات محدودة وpagination في بعض الصفحات.</td>
+              <td>محتاج تحسين للتقارير الكبيرة.</td>
+              <td>Precomputed analytics وdaily aggregates بدل scan مباشر.</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3>أولويات التطوير قبل الاعتماد الكبير</h3>
+        <ol>
+          <li><strong>Atomic booking capacity:</strong> استبدال count قبل الحفظ بوثيقة سعة يومية داخل transaction.</li>
+          <li><strong>Queue position optimization:</strong> بدل count لكل مستخدم، نخزن <code>currentServingNumber</code> أو <code>lastCompletedQueueNumber</code> ونحسب <code>ahead = queueNumber - currentServingNumber</code> مع تصحيح للحالات الخاصة.</li>
+          <li><strong>Reduce polling:</strong> نخلي polling adaptive: سريع فقط قرب الدور، وبطيء لمن هم بعيدون، مع الاعتماد على notifications.</li>
+          <li><strong>Precomputed analytics:</strong> تحديث إحصاءات يومية عند إنشاء/تحديث الطلب بدلاً من حسابها من requests كل مرة.</li>
+          <li><strong>Monitoring:</strong> إضافة logs/metrics للأخطاء، زمن الاستجابة، عدد Firestore reads/writes، ومعدلات retry.</li>
+          <li><strong>Load testing:</strong> اختبار سيناريو 50 ألف موزع وسيناريو burst على مكتب واحد قبل الإطلاق.</li>
+        </ol>
+
+        <div class="note remember">
+          <strong>جملة انترفيو قوية:</strong>
+          "النظام معماره يسمح بالتوسع، لكن الوصول لـ 50 ألف حضور يومياً يتطلب تحويل بعض
+          العمليات من حساب مباشر وقت الطلب إلى counters وaggregates، وتقليل polling،
+          ومعالجة hot documents في الطابور."
+        </div>
+      </section>
+
+      <section id="technical-questions">
+        <h2>15. أسئلة تكنيكال عميقة</h2>
+        <p>
+          الأسئلة دي هدفها إنك تبين إنك فاهم التصميم الداخلي، مش بس عارف تستخدم
+          Next وFirebase. اقرأ السؤال، حاول تجاوب بصوتك، ثم افتح الإجابة.
+        </p>
+
+        <h3>Next.js وReact</h3>
+        <div class="qa">
+          <details>
+            <summary>ليه استخدمت Server Actions في الحجز بدل ما تعمل API route عادي؟</summary>
+            <p>Server Actions مناسبة للفورم لأنها تربط submit مباشرة بمنطق السيرفر وتقلل boilerplate. في المشروع <code>submitOfficeRequest</code> يستقبل <code>FormData</code> ويعمل validation ويحفظ الطلب. لو العملية محتاجة endpoint عام مستقل أو polling زي availability/status، استخدمنا API routes.</p>
+          </details>
+
+          <details>
+            <summary>إيه الفرق بين Server Component وClient Component هنا؟</summary>
+            <p>Server Component يستخدم لجلب بيانات أولية بأمان من السيرفر، مثل صفحة الحجز التي تجيب المكاتب وحالات المسافر. Client Component يستخدم للتفاعل: state، effects، localStorage، fetch availability، وإظهار toast. مثال: صفحة <code>booking/page.tsx</code> Server، و<code>BookingRequestForm</code> Client.</p>
+          </details>
+
+          <details>
+            <summary>ليه <code>params</code> و<code>searchParams</code> بتتعمل await في الصفحات؟</summary>
+            <p>المشروع على Next.js 16، والنسخة دي تغيرت فيها بعض APIs، لذلك الصفحات تتعامل مع <code>params</code> و<code>searchParams</code> كـ Promise. دي نقطة مهمة لأن المشروع نفسه حاط تعليمات إن Next هنا فيه breaking changes ولازم ترجع للوثائق المحلية.</p>
+          </details>
+
+          <details>
+            <summary>ليه بعض الصفحات تجيب الداتا على السيرفر بدل useEffect؟</summary>
+            <p>جلب الداتا على السيرفر يحسن أول تحميل، يقلل flicker، ويخفي تفاصيل الوصول للداتا. مثلاً صفحة الحجز تجيب المكاتب وحالات المسافر قبل render، وبعدها الفورم العميل يتعامل مع التفاعل فقط.</p>
+          </details>
+
+          <details>
+            <summary>ليه استخدمت <code>useActionState</code> في الفورم؟</summary>
+            <p>لأنه يحافظ على نتيجة Server Action داخل React state: نجاح، أخطاء validation، القيم القديمة، وحالة pending. ده مناسب جداً للفورم لأنه يرجع errors على مستوى الحقول ويخلي الواجهة تركز أول حقل فيه خطأ.</p>
+          </details>
+        </div>
+
+        <h3>Firestore وتصميم الداتا</h3>
+        <div class="qa">
+          <details>
+            <summary>ليه كل الطلبات في collection واحدة <code>requests</code> بدل collections منفصلة للحجز والشكاوى؟</summary>
+            <p>لأن الثلاثة لهم دورة متابعة مشتركة: مكتب، حالة، اسم، هاتف، ملاحظات، timestamps، ولوحة إدارة واحدة. وجودهم في collection واحدة يسهل الفلاتر والتحليلات والتصدير. الاختلافات محفوظة في <code>type</code> وحقول اختيارية مثل <code>preferredDate</code>.</p>
+          </details>
+
+          <details>
+            <summary>إزاي بتتعامل مع Firestore composite indexes؟</summary>
+            <p>الاستعلامات التي تجمع <code>where</code> مع <code>orderBy</code> أو أكثر من فلتر تحتاج indexes. المشروع يعرفها في <code>firestore.indexes.json</code> مثل استعلامات الطلبات حسب <code>officeId</code> و<code>status</code> و<code>createdAt</code>، والطابور حسب <code>officeId</code> و<code>queueDate</code> و<code>queueNumber</code>.</p>
+          </details>
+
+          <details>
+            <summary>ليه رقم الطلب بيتولد من counter في transaction؟</summary>
+            <p>لأننا نريد رقم تسلسلي مفهوم للإدارة والمواطن مثل <code>CQM-000123</code>. transaction تضمن أن طلبين متزامنين لا يأخذان نفس sequence. بدون transaction ممكن يحصل race condition.</p>
+          </details>
+
+          <details>
+            <summary>هل عد الحجوزات اليومية فيه احتمالية race condition؟</summary>
+            <p>نعم، لو طلبان وصلوا في نفس اللحظة وكان المتبقي مكان واحد، مجرد count قبل insert قد يسمح بتجاوز السعة. الحل الأقوى مستقبلاً هو counter يومي لكل مكتب/تاريخ داخل transaction، أو document reservation مثل <code>booking_day_stats/{officeId_date}</code> يتم increment عليه بشرط ألا يتجاوز cap.</p>
+          </details>
+
+          <details>
+            <summary>ليه فيه fallback للبيانات الثابتة مثل المكاتب أو اللقاحات؟</summary>
+            <p>الفكرة أن المشروع يقدر يعرض بيانات أو يبدأ محلياً حتى لو Firestore غير مملوء بالكامل، ثم يتحول للبيانات الديناميكية بعد seed. ده يقلل توقف الواجهة العامة في مراحل الإعداد.</p>
+          </details>
+
+          <details>
+            <summary>إزاي بتتعامل مع بيانات قديمة قبل traveler states الديناميكية؟</summary>
+            <p>الطلب يدعم <code>travelerStateId</code> للحجوزات الجديدة و<code>travelerCategory</code> للحجوزات القديمة. فيه helper يحدد الحالة الفعالة، وده يحافظ على backward compatibility بدل ما يكسر البيانات القديمة.</p>
+          </details>
+        </div>
+
+        <h3>Firebase Auth والجلسات</h3>
+        <div class="qa">
+          <details>
+            <summary>ليه عملت session cookie بدل الاعتماد على Firebase client token فقط؟</summary>
+            <p>session cookie HttpOnly لا يقرأها JavaScript، فتقلل خطر سرقة التوكن من XSS. كمان صفحات الإدارة Server Components تقدر تتحقق من الجلسة على السيرفر وتعمل redirect قبل عرض أي بيانات.</p>
+          </details>
+
+          <details>
+            <summary>إيه الفرق بين Firebase Auth user وprofile في <code>users</code>؟</summary>
+            <p>Firebase Auth يثبت هوية المستخدم: uid/email/password. أما profile في Firestore يحدد صلاحيات التطبيق: role، officeId، allowedOfficeIds، active، displayName. وجود Auth user وحده لا يكفي لدخول اللوحة.</p>
+          </details>
+
+          <details>
+            <summary>ليه فيه صفحة pending review؟</summary>
+            <p>لو المستخدم موجود لكن غير مفعل أو لم يتم ربطه بمكتب، لا نسمح له بدخول dashboard. pending review تمنع access ناقص وتوضح أن الحساب يحتاج مراجعة من السوبر أدمن.</p>
+          </details>
+        </div>
+
+        <h3>Security</h3>
+        <div class="qa">
+          <details>
+            <summary>لو حد فتح DevTools وحاول يغير <code>officeId</code> أو <code>type</code> في الفورم، إيه اللي يحصل؟</summary>
+            <p>السيرفر يعيد التحقق. يتأكد أن المكتب موجود ونشط، وأن النوع مسموح، وأن المكتب يخدم حالة المسافر، وأن التاريخ والسعة صحيحين. لذلك تعديل HTML في المتصفح لا يكفي لتجاوز القواعد.</p>
+          </details>
+
+          <details>
+            <summary>إزاي بتحمي public status endpoint؟</summary>
+            <p>endpoint لا يرجع بيانات بمجرد request id. لازم الهاتف يطابق الهاتف المخزن بعد normalizing variants. كمان فيه limit لحجم body وعدد الطلبات وrate limit.</p>
+          </details>
+
+          <details>
+            <summary>ما الفرق بين authorization في السيرفر وFirestore rules؟</summary>
+            <p>السيرفر يفلتر الاستعلامات حسب session role قبل قراءة الداتا. Firestore rules طبقة دفاع إضافية لو client حاول يقرأ مباشرة باستخدام SDK. وجود الطبقتين أفضل من الاعتماد على واحدة فقط.</p>
+          </details>
+
+          <details>
+            <summary>ليه admin APIs تحتاج origin/referer وheader خاص؟</summary>
+            <p>لتقليل مخاطر CSRF والطلبات غير المقصودة. حتى لو المتصفح أرسل cookie، endpoint يرفض الطلب لو origin أو referer مختلف أو header الإدارة غير موجود.</p>
+          </details>
+
+          <details>
+            <summary>هل QR token يعتبر Authentication؟</summary>
+            <p>هو capability token: من يملك الرابط السري يقدر يرى بيانات محدودة للطلب. لذلك الصفحة لا تعرض الهاتف، والtoken له expiry، والمقارنة تتم على السيرفر.</p>
+          </details>
+        </div>
+
+        <h3>Performance وScalability</h3>
+        <div class="qa">
+          <details>
+            <summary>إيه أكثر نقطة ممكن تعمل ضغط على Firestore؟</summary>
+            <p>استعلامات dashboard والتصدير وقوائم الطلبات مع فلاتر كثيرة، وعد الحجوزات اليومية، وpolling الطابور. المشروع يخفف ده بالفهارس، pagination، limits، caching لبعض البيانات العامة، وrate limits.</p>
+          </details>
+
+          <details>
+            <summary>ليه polling كل 20 ثانية في الطابور بدل realtime listener؟</summary>
+            <p>polling أبسط وأسهل في التحكم بالrate limits ومناسب لأن عدد المنتظرين لا يحتاج millisecond realtime. لو الاحتياج زاد، يمكن استخدام Firestore realtime listener أو WebSocket/Server-Sent Events.</p>
+          </details>
+
+          <details>
+            <summary>إزاي تتعامل مع export كبير؟</summary>
+            <p>لا نسحب كل البيانات مرة واحدة. نستخدم pagination/cursors وحد أقصى للصفوف، ونفلتر حسب صلاحيات المستخدم. المشروع لديه constants للتصدير وحدود مثل <code>SUPER_ADMIN_EXPORT_MAX_ROWS</code>.</p>
+          </details>
+
+          <details>
+            <summary>لو عدد المكاتب زاد جداً، إيه التحسينات المطلوبة؟</summary>
+            <p>نحتاج search/pagination للمكاتب في الإدارة، caching أقوى للقوائم العامة، وربما denormalized fields لتقليل joins اليدوية، مع مراقبة Firestore reads والتكلفة.</p>
+          </details>
+        </div>
+
+        <h3>Testing</h3>
+        <div class="qa">
+          <details>
+            <summary>إيه أكثر أجزاء لازم تختبرها؟</summary>
+            <p>قواعد التاريخ والcutoff، منع التكرار، صلاحيات الإدارة، pagination/filtering، token expiry، queue number logic، وإغلاق الطابور. لأنها أجزاء فيها business rules وقد تؤثر على بيانات حقيقية.</p>
+          </details>
+
+          <details>
+            <summary>ليه اختبارات كثيرة في <code>lib</code> مش في components؟</summary>
+            <p>لأن منطق المشروع الحرج موجود في helpers والخدمات: validation، analytics، queue logic، access control. اختبار المنطق هناك أسرع وأكثر ثباتاً من اختبار UI فقط.</p>
+          </details>
+        </div>
+      </section>
+
+      <section id="compound-questions">
+        <h2>16. أسئلة مركبة وسيناريوهات</h2>
+        <p>
+          دي أسئلة أصعب شوية. الإجابة الجيدة فيها تبين إنك بتفكر في الداتا،
+          السباق، الصلاحيات، وتجربة المستخدم معاً.
+        </p>
+
+        <div class="qa">
+          <details open>
+            <summary>سيناريو: مكتب سعته اليومية 50، والطلب رقم 50 و51 اتبعتوا في نفس الثانية. هل ممكن الاثنين يتقبلوا؟ وإزاي تصلحها؟</summary>
+            <p>في التصميم الحالي فيه فحص count قبل الإنشاء، وده ممكن نظرياً يسمح بسباق لو الطلبين قرأوا نفس العدد قبل الحفظ. الإصلاح الأقوى هو عمل document لكل مكتب/تاريخ مثل <code>booking_capacity/{officeId}_{date}</code> يحتوي <code>used</code> و<code>cap</code>، وداخل transaction نقرأه ونتأكد أن <code>used &lt; cap</code> ثم نعمل increment وننشئ الطلب. كده check والحفظ يبقوا atomic.</p>
+          </details>
+
+          <details>
+            <summary>سيناريو: موظف مكتب حاول يفتح طلب مكتب آخر عن طريق تغيير URL. ماذا يحدث؟</summary>
+            <p>على مستوى السيرفر، session profile يحتوي role وofficeId. دوال القراءة مثل <code>listRequestsForSession</code> وقراءة التفاصيل يجب أن تتحقق من access. وعلى مستوى Firestore rules، <code>officeUserFor(resource.data.officeId)</code> تمنع قراءة request لا ينتمي لمكتبه. إذن حتى لو غير URL، لا يحصل على الداتا.</p>
+          </details>
+
+          <details>
+            <summary>سيناريو: مواطن فقد QR لأنه مسح localStorage، لكنه يعرف رقم الطلب والهاتف. إيه المتاح؟</summary>
+            <p>يستطيع متابعة الحالة عبر "طلباتي" لو عنده id والهاتف من خلال endpoint status، لكن QR token نفسه قد لا يكون متاحاً لأن token كان محفوظ على الجهاز بعد الحجز. تحسين مستقبلي: استرجاع آمن للـ pass عبر OTP على الهاتف أو رسالة واتساب رسمية.</p>
+          </details>
+
+          <details>
+            <summary>سيناريو: Firebase Admin env غير مضبوط في production. ما الأثر؟ وكيف تكتشفه؟</summary>
+            <p>أي عملية تعتمد على Admin SDK مثل إنشاء الطلبات وتسجيل جلسة الإدارة وقراءة Firestore السيرفرية ستفشل أو ترجع بيانات فارغة حسب الدالة. نكتشفه من errors مثل "Firebase Admin environment variables are not configured"، ومن health check أو logs. الحل مراجعة <code>FIREBASE_PROJECT_ID</code> و<code>FIREBASE_CLIENT_EMAIL</code> و<code>FIREBASE_PRIVATE_KEY</code> خصوصاً newline escaping.</p>
+          </details>
+
+          <details>
+            <summary>سيناريو: الإدارة قالت إن طلبات اليوم مش ظاهرة لبعض موظفين المكاتب. تبدأ debug منين؟</summary>
+            <p>أبدأ من profile المستخدم: هل <code>active</code> true؟ هل role صحيح؟ هل <code>officeId</code> أو <code>allowedOfficeIds</code> مضبوط؟ ثم أفحص filters في URL، نطاق تاريخ الحجز، وFirestore indexes. بعد ذلك أفحص أن الطلب فعلاً يحمل نفس <code>officeId</code> المتوقع وليس office قديم أو inactive.</p>
+          </details>
+
+          <details>
+            <summary>سيناريو: المستخدم يختار حالة مسافر ثم المكتب يختفي. هل ده bug؟</summary>
+            <p>ليس بالضرورة. الفورم يفلتر المكاتب حسب حالة المسافر. لو المكتب لا يخدم الحالة المختارة، يتم تفريغ الاختيار وإظهار المكاتب المطابقة فقط. ده يحمي المستخدم من إنشاء طلب لمكتب غير مناسب.</p>
+          </details>
+
+          <details>
+            <summary>سيناريو: طلب قديم لا يحتوي <code>travelerStateId</code>. هل يكسر العرض؟</summary>
+            <p>لا، لأن type يدعم <code>travelerCategory</code> القديم ويوجد helper لاستخراج الحالة الفعالة. ده مثال على backward compatibility مع البيانات القديمة بعد تغيير model.</p>
+          </details>
+
+          <details>
+            <summary>سيناريو: مواطن سجل حضور مرتين لنفس الطلب في نفس اليوم. ماذا يحدث؟</summary>
+            <p>النظام يتحقق من ticket موجود لنفس request/office/date. لو موجود يرجعه بدلاً من إنشاء ticket جديد. ده يمنع تكرار رقم الدور لنفس الطلب في نفس اليوم.</p>
+          </details>
+
+          <details>
+            <summary>سيناريو: موظف ضغط complete مرتين على نفس ticket. هل يزيد <code>totalCompleted</code> مرتين؟</summary>
+            <p>المنطق يستخدم <code>shouldIncrementTotalCompleted</code>، ولو ticket بالفعل <code>completed</code> لا يزيد الإجمالي مرة أخرى. دي idempotency مهمة لتجنب تضخيم الإحصاءات بسبب ضغطات مكررة.</p>
+          </details>
+
+          <details>
+            <summary>سيناريو: public API للتوفر رجع أن اليوم متاح، وبعدها submit فشل بسبب الامتلاء. هل ده خطأ؟</summary>
+            <p>لا، ده طبيعي في الأنظمة المتزامنة. availability check لتحسين تجربة المستخدم فقط، لكن الحسم النهائي عند submit على السيرفر. ممكن شخص آخر حجز آخر مكان بين الفحص والإرسال.</p>
+          </details>
+
+          <details>
+            <summary>سيناريو: عايزين نضيف SMS OTP للمواطنين. تضيفه فين؟</summary>
+            <p>أضيف service مستقل للتحقق من الهاتف، ثم أربطه بإنشاء الطلب أو استرجاع QR. لا أغير model الأساسي كثيراً؛ ممكن أضيف <code>phoneVerifiedAt</code> أو collection مؤقتة للOTP. وأحافظ على rate limiting وexpiry للرمز.</p>
+          </details>
+
+          <details>
+            <summary>سيناريو: عايزين multi-governorate بدل القاهرة فقط. ما التغييرات؟</summary>
+            <p>أضيف field مثل <code>governorateId</code> في offices والrequests، وأعدل filters والadmin access ليشمل المحافظة. أراجع indexes لأن أغلب الاستعلامات ستحتاج <code>governorateId</code>. وأفصل إعدادات مثل cutoff أو messaging حسب المحافظة إذا اختلفت السياسات.</p>
+          </details>
+
+          <details>
+            <summary>سيناريو: عايزين الطابور live بدون polling. ما الاختيارات؟</summary>
+            <p>اختيار أول: Firestore realtime listeners لو العميل مسموح يقرأ بيانات محدودة أو من خلال rules دقيقة. اختيار ثاني: SSE أو WebSocket endpoint يبث position. لازم نوازن بين التكلفة، التعقيد، وعدد المستخدمين. polling الحالي أبسط ومناسب لو الدقة كل 20 ثانية مقبولة.</p>
+          </details>
+
+          <details>
+            <summary>سيناريو: عايز تمنع enumeration لروابط QR. ماذا تفعل؟</summary>
+            <p>النظام بالفعل يستخدم random token، وليس id فقط. أضيف rate limit على pass endpoint إن لم يكن موجوداً، وأجعل response موحد عند فشل token أو id حتى لا تكشف إن الطلب موجود. وأتأكد أن الصفحة noindex ولا تعرض بيانات حساسة.</p>
+          </details>
+
+          <details>
+            <summary>سيناريو: Firestore query بطيء في صفحة requests. خطة التحسين؟</summary>
+            <p>أفحص query shape والindex المستخدم، أقلل page size، أستخدم cursor pagination بدل offset، أضيف denormalized fields لو فيه joins متكررة، وأقيس عدد reads. كمان أراجع الفلاتر: status/type/office/date لازم تكون مدعومة بفهرس مناسب.</p>
+          </details>
+
+          <details>
+            <summary>سيناريو: عايزين audit trail لأي تغيير في الطلب. أين تضعه؟</summary>
+            <p>أستخدم <code>activityLogs</code> وأضيف append log عند كل server action/update حساس، مع actor uid وlabel وaction وrequestId وmeta. لا أعتمد على client في كتابة audit log، لأن السجل يجب أن يكون trusted.</p>
+          </details>
+        </div>
+
+        <div class="note remember">
+          <strong>طريقة إجابة السؤال المركب:</strong>
+          ابدأ بتحديد المشكلة، ثم اذكر الوضع الحالي في المشروع، ثم المخاطر،
+          ثم حل عملي قصير. مثال: "حالياً عندنا count قبل الحفظ، المخاطرة race condition،
+          والحل counter document داخل transaction".
+        </div>
+      </section>
+
+      <section id="script">
+        <h2>17. سكريبت شرح سريع تحفظه</h2>
+        <div class="note remember">
+          <p>
+            المشروع عبارة عن منصة Next.js لإدارة خدمات الحجر الصحي بالقاهرة.
+            عندنا واجهة عامة للمواطن فيها معلومات وحجز وشكاوى ومتابعة طلبات،
+            ولوحة إدارة محمية بـ Firebase Auth. الداتا كلها في Firestore،
+            لكن المواطن لا يكتب مباشرة في قاعدة البيانات؛ Server Actions وAPI routes
+            تستخدم Firebase Admin SDK عشان تعمل validation وتحفظ الطلبات بأمان.
+          </p>
+          <p>
+            أهم flow هو الحجز: المستخدم يختار حالة المسافر والمكتب والتاريخ،
+            النظام يتحقق من cutoff بتوقيت القاهرة، ومن سعة المكتب اليومية،
+            ومن عدم وجود حجز مكرر. بعدها ينشئ request برقم متسلسل وQR pass
+            له token سري. الإدارة تتابع الطلب حسب الأدوار، وموظف المكتب يقدر
+            يحدث الحالة والملاحظات فقط.
+          </p>
+          <p>
+            فيه كمان نظام طابور يومي: المواطن يسجل حضوره بالطلب أو الهاتف،
+            النظام ينشئ ticket برقم دور داخل transaction، والمواطن يتابع عدد
+            الناس قبله مع دعم تنبيهات PWA. المشروع مهتم بالأمان من خلال
+            Firestore rules، rate limiting، session cookies، وفصل صلاحيات واضح.
+          </p>
+        </div>
+
+        <div class="note danger">
+          <strong>لو اتسألت عن نقطة ضعف أو تحسين:</strong>
+          ممكن تقول إن الاعتماد على localStorage في "طلباتي" مريح لكنه مرتبط بالجهاز.
+          تحسين مستقبلي ممكن يكون إضافة اختيارية لتسجيل المواطن أو استرجاع QR بطريقة آمنة عبر OTP.
+        </div>
+      </section>
+    </main>
+  </div>
+</body>
+</html>

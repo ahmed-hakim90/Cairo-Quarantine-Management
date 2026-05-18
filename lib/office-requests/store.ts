@@ -17,11 +17,18 @@ import {
 } from "@/lib/booking-pass-token";
 import { STATIC_OFFICES } from "@/lib/office-requests/static-offices";
 import {
+  DEFAULT_GOVERNORATE_ID,
+  normalizeGovernorateId,
+} from "@/data/governorates";
+import {
   defaultTravelerStatesFromLegacyLabels,
   effectiveTravelerStateIdOnRequest,
   officeAcceptsTravelerState,
 } from "@/lib/office-requests/office-traveler-state";
-import { formatRequestNumber } from "@/lib/office-requests/request-number";
+import {
+  formatRequestNumber,
+  requestNumberLookupVariants,
+} from "@/lib/office-requests/request-number";
 import {
   normalizePhone,
   normalizePhoneForStorage,
@@ -217,6 +224,7 @@ function publicRequestStatus(
   return {
     id: request.id,
     requestNumber: request.requestNumber,
+    ...(request.governorateId ? { governorateId: request.governorateId } : {}),
     officeNameAr: request.officeNameAr,
     type: request.type,
     ...(request.travelerStateId
@@ -284,6 +292,9 @@ function parseSerialInGovernorate(value: unknown): number {
 
 export function sortOffices(offices: Office[]): Office[] {
   return [...offices].sort((a, b) => {
+    if (a.governorateId !== b.governorateId) {
+      return a.governorateId.localeCompare(b.governorateId);
+    }
     const serialA = a.serialInGovernorate > 0 ? a.serialInGovernorate : 9999;
     const serialB = b.serialInGovernorate > 0 ? b.serialInGovernorate : 9999;
     if (serialA !== serialB) return serialA - serialB;
@@ -296,6 +307,7 @@ function officeFromDoc(id: string, data: FirebaseFirestore.DocumentData): Office
   const travelerStateIds = parseTravelerStateIdsFromDoc(data);
   return {
     id,
+    governorateId: normalizeGovernorateId(data.governorateId),
     serialInGovernorate: parseSerialInGovernorate(data.serialInGovernorate),
     administrationAr: String(data.administrationAr ?? ""),
     nameAr: String(data.nameAr ?? ""),
@@ -654,6 +666,9 @@ function requestFromDoc(
     id,
     requestNumber: String(data.requestNumber ?? id),
     ...(sequence ? { requestSequence: sequence } : {}),
+    ...(data.governorateId
+      ? { governorateId: normalizeGovernorateId(data.governorateId) }
+      : {}),
     officeId: String(data.officeId ?? ""),
     officeNameAr: String(data.officeNameAr ?? ""),
     type: (data.type ?? "booking") as OfficeRequestType,
@@ -670,6 +685,7 @@ function requestFromDoc(
     details: String(data.details ?? ""),
     notes: String(data.notes ?? ""),
     ...(data.hasSpecialNeeds === true ? { hasSpecialNeeds: true } : {}),
+    ...(data.hasElderly === true ? { hasElderly: true } : {}),
     ...(data.passToken ? { passToken: String(data.passToken) } : {}),
     ...(data.passTokenExpiresAt
       ? { passTokenExpiresAt: iso(data.passTokenExpiresAt) }
@@ -687,6 +703,8 @@ function profileFromDoc(
   const role: AdminRole =
     data.role === "super_admin"
       ? "super_admin"
+      : data.role === "governorate_admin"
+        ? "governorate_admin"
       : data.role === "office_admin"
         ? "office_admin"
         : "office_user";
@@ -698,8 +716,14 @@ function profileFromDoc(
     email: data.email ? String(data.email) : null,
     displayName: String(data.displayName ?? data.email ?? "مستخدم"),
     role,
+    governorateId:
+      role === "governorate_admin"
+        ? normalizeGovernorateId(data.governorateId)
+        : null,
     officeId: data.officeId ? String(data.officeId) : null,
-    ...(role === "office_admin" ? { allowedOfficeIds } : {}),
+    ...(role === "office_admin" || role === "governorate_admin"
+      ? { allowedOfficeIds }
+      : {}),
     active: data.active !== false,
     createdAt: data.createdAt ? iso(data.createdAt) : undefined,
     updatedAt: data.updatedAt ? iso(data.updatedAt) : undefined,
@@ -865,6 +889,7 @@ export async function findDuplicateBookingRequest(
 }
 
 export async function createOfficeRequest(input: {
+  governorateId: string;
   officeId: string;
   type: OfficeRequestType;
   travelerStateId?: string;
@@ -874,6 +899,7 @@ export async function createOfficeRequest(input: {
   phone: string;
   details: string;
   hasSpecialNeeds?: boolean;
+  hasElderly?: boolean;
 }): Promise<CreatedOfficeRequestPublic> {
   if (!isFirebaseAdminConfigured()) {
     throw new Error("Firebase غير مضبوط حالياً، لا يمكن حفظ الطلب.");
@@ -881,6 +907,10 @@ export async function createOfficeRequest(input: {
 
   const office = await getOffice(input.officeId);
   if (!office?.active) throw new Error("المكتب المختار غير متاح.");
+  const governorateId = normalizeGovernorateId(input.governorateId);
+  if ((office.governorateId || DEFAULT_GOVERNORATE_ID) !== governorateId) {
+    throw new Error("هذا المكتب لا يتبع المحافظة المختارة. اختر مكتباً آخر.");
+  }
 
   if (input.type === "booking") {
     const sid = input.travelerStateId?.trim();
@@ -931,7 +961,11 @@ export async function createOfficeRequest(input: {
   const travelerStateId = input.travelerStateId?.trim();
   const db = getAdminDb();
   const docRef = db.collection(REQUESTS).doc();
-  const counterRef = db.collection(SETTINGS).doc(REQUEST_NUMBERS_SETTINGS);
+  const counterRef = db
+    .collection(SETTINGS)
+    .doc(REQUEST_NUMBERS_SETTINGS)
+    .collection("offices")
+    .doc(office.id);
 
   await db.runTransaction(async (tx) => {
     const counterSnap = await tx.get(counterRef);
@@ -941,7 +975,7 @@ export async function createOfficeRequest(input: {
         ? counterSnap.data()!.lastRequestSequence
         : 0;
     const requestSequence = last + 1;
-    const requestNumber = formatRequestNumber(requestSequence);
+    const requestNumber = formatRequestNumber(office.id, requestSequence);
     tx.set(
       counterRef,
       { lastRequestSequence: requestSequence },
@@ -950,6 +984,7 @@ export async function createOfficeRequest(input: {
     tx.set(docRef, {
       requestNumber,
       requestSequence,
+      governorateId,
       officeId: office.id,
       officeNameAr: office.nameAr,
       type: input.type,
@@ -960,6 +995,9 @@ export async function createOfficeRequest(input: {
       ...(input.preferredDate ? { preferredDate: input.preferredDate } : {}),
       ...(input.type === "booking" && input.hasSpecialNeeds
         ? { hasSpecialNeeds: true }
+        : {}),
+      ...(input.type === "booking" && input.hasElderly
+        ? { hasElderly: true }
         : {}),
       status: "new",
       name: input.name.trim(),
@@ -1015,6 +1053,7 @@ export async function getBookingPassPublic(args: {
   return {
     id: request.id,
     requestNumber: request.requestNumber,
+    ...(request.governorateId ? { governorateId: request.governorateId } : {}),
     officeNameAr: request.officeNameAr,
     type: request.type,
     ...(request.travelerStateId
@@ -1098,7 +1137,7 @@ export async function listRequestsForSession(args: {
   if (args.role === "office_user") {
     if (!args.officeId) return [];
     query = query.where("officeId", "==", args.officeId);
-  } else if (args.role === "office_admin") {
+  } else if (args.role === "office_admin" || args.role === "governorate_admin") {
     if (args.officeFilter) {
       if (!adminCanAccessOffice(baseProfile, args.officeFilter)) return [];
       query = query.where("officeId", "==", args.officeFilter);
@@ -1308,7 +1347,7 @@ export async function listRequestsForSessionPage(args: {
   if (args.role === "office_user") {
     if (!args.officeId) return { items: [], nextCursor: null };
     officeIds = [args.officeId];
-  } else if (args.role === "office_admin") {
+  } else if (args.role === "office_admin" || args.role === "governorate_admin") {
     if (args.officeFilter) {
       if (!adminCanAccessOffice(baseProfile, args.officeFilter)) {
         return { items: [], nextCursor: null };
@@ -1337,18 +1376,6 @@ export async function listRequestsForSessionPage(args: {
     nextCursor:
       collected.length > pageSize ? nextCursorFromRequests(items, sortKey) : null,
   };
-}
-
-function requestNumberLookupVariants(value: string): string[] {
-  const compact = value.trim().replace(/\s+/g, "").toUpperCase();
-  const values = new Set<string>();
-  if (compact) values.add(compact);
-  const digits = compact.replace(/\D/g, "");
-  if (digits) {
-    values.add(digits);
-    values.add(`CQM-${digits.padStart(6, "0")}`);
-  }
-  return [...values];
 }
 
 function normalizeSearchText(value: string): string {
@@ -1424,7 +1451,7 @@ function adminRequestOfficeScope(args: {
   if (args.role === "office_user") {
     return args.officeId ? [args.officeId] : [];
   }
-  if (args.role === "office_admin") {
+  if (args.role === "office_admin" || args.role === "governorate_admin") {
     if (args.officeFilter) {
       return adminCanAccessOffice(baseProfile, args.officeFilter)
         ? [args.officeFilter]
@@ -1849,6 +1876,10 @@ export async function upsertUserProfile(input: AdminUserProfile) {
         email: input.email,
         displayName: input.displayName,
         role: input.role,
+        governorateId:
+          input.role === "governorate_admin"
+            ? normalizeGovernorateId(input.governorateId)
+            : null,
         officeId: input.role === "office_user" ? input.officeId : null,
         allowedOfficeIds,
         active: input.active,
@@ -1878,6 +1909,7 @@ export async function upsertAdminUserAccount(input: {
   password?: string;
   displayName: string;
   role: AdminUserProfile["role"];
+  governorateId?: string | null;
   officeId: string | null;
   allowedOfficeIds?: string[];
   active: boolean;
@@ -1903,9 +1935,16 @@ export async function upsertAdminUserAccount(input: {
     role === "office_admin"
       ? normalizeOfficeIds(input.allowedOfficeIds ?? [])
       : [];
+  const governorateId =
+    role === "governorate_admin"
+      ? normalizeGovernorateId(input.governorateId)
+      : null;
 
   if (role === "office_user" && !input.officeId?.trim()) {
     throw new Error("اختر مكتباً لمستخدم المكتب.");
+  }
+  if (role === "governorate_admin" && !governorateId) {
+    throw new Error("اختر محافظة لأدمن المحافظة.");
   }
   if (role === "office_admin" && allowedOfficeIds.length === 0) {
     throw new Error("اختر مكتباً واحداً على الأقل لأدمن المكاتب.");
@@ -1925,8 +1964,11 @@ export async function upsertAdminUserAccount(input: {
     email,
     displayName,
     role,
+    governorateId,
     officeId: role === "office_user" ? input.officeId : null,
-    ...(role === "office_admin" ? { allowedOfficeIds } : {}),
+    ...(role === "office_admin" || role === "governorate_admin"
+      ? { allowedOfficeIds }
+      : {}),
     active,
   };
 
@@ -1952,8 +1994,11 @@ export async function upsertAdminUserAccount(input: {
     email,
     displayName,
     role,
+    governorateId,
     officeId: role === "office_user" ? input.officeId : null,
-    ...(role === "office_admin" ? { allowedOfficeIds } : {}),
+    ...(role === "office_admin" || role === "governorate_admin"
+      ? { allowedOfficeIds }
+      : {}),
     active: input.active,
   };
 
@@ -2129,6 +2174,7 @@ export async function upsertOffice(
 
   await ref.set(
     {
+      governorateId: normalizeGovernorateId(input.governorateId),
       serialInGovernorate: parseSerialInGovernorate(input.serialInGovernorate),
       administrationAr: input.administrationAr.trim(),
       nameAr: input.nameAr.trim(),

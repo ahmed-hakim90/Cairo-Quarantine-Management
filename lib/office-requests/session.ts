@@ -1,6 +1,6 @@
 import { cookies } from "next/headers";
 import { getAdminAuth } from "@/lib/firebase/admin";
-import { getUserProfile } from "@/lib/office-requests/store";
+import { getUserProfile, listOffices } from "@/lib/office-requests/store";
 import type { AdminSession } from "@/lib/office-requests/types";
 
 export const ADMIN_SESSION_COOKIE = "cqm_admin_session";
@@ -14,6 +14,12 @@ export async function getAdminSession(): Promise<AdminSession | null> {
     const decoded = await getAdminAuth().verifySessionCookie(token, true);
     const profile = await getUserProfile(decoded.uid);
     if (!profile) return null;
+    if (profile.role === "governorate_admin" && profile.governorateId) {
+      const offices = await listOffices({ includeInactive: true });
+      profile.allowedOfficeIds = offices
+        .filter((office) => office.governorateId === profile.governorateId)
+        .map((office) => office.id);
+    }
 
     return {
       uid: decoded.uid,
@@ -34,6 +40,9 @@ export function shouldShowAdminPendingReview(session: AdminSession): boolean {
   if (session.profile.role === "office_admin") {
     return (session.profile.allowedOfficeIds ?? []).length === 0;
   }
+  if (session.profile.role === "governorate_admin") {
+    return !(session.profile.governorateId?.trim());
+  }
   return false;
 }
 
@@ -46,6 +55,7 @@ export function assertSuperAdmin(session: AdminSession) {
 export function assertCanManageAdminUsers(session: AdminSession) {
   if (
     session.profile.role !== "super_admin" &&
+    session.profile.role !== "governorate_admin" &&
     session.profile.role !== "office_admin"
   ) {
     throw new Error("غير مصرح بتنفيذ هذا الإجراء.");

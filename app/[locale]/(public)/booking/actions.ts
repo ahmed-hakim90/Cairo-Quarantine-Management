@@ -1,6 +1,7 @@
 "use server";
 
 import { headers } from "next/headers";
+import { EGYPT_GOVERNORATES, normalizeGovernorateId } from "@/data/governorates";
 import {
   getCairoMinBookingYmd,
   getCairoTodayYmd,
@@ -33,6 +34,7 @@ export type BookingFormState = {
   errors?: Record<string, string>;
   values?: {
     officeId: string;
+    governorateId: string;
     type: OfficeRequestType;
     travelerStateId: string;
     preferredDate: string;
@@ -40,12 +42,14 @@ export type BookingFormState = {
     phone: string;
     details: string;
     hasSpecialNeeds?: boolean;
+    hasElderly?: boolean;
   };
   request?: PublicOfficeRequestStatus & { phone: string; passToken: string };
 };
 
 const requestTypes: OfficeRequestType[] = ["booking", "complaint", "proposal"];
 const MAX_OFFICE_ID_LENGTH = 120;
+const MAX_GOVERNORATE_ID_LENGTH = 80;
 const MAX_TRAVELER_STATE_ID_LENGTH = 80;
 const MAX_NAME_LENGTH = 120;
 const MAX_PHONE_LENGTH = 30;
@@ -80,6 +84,7 @@ export async function submitOfficeRequest(
   }
 
   const officeId = value(formData, "officeId");
+  const governorateId = value(formData, "governorateId");
   const type = value(formData, "type") as OfficeRequestType;
   const travelerStateId = value(formData, "travelerStateId");
   const preferredDate = value(formData, "preferredDate");
@@ -87,18 +92,29 @@ export async function submitOfficeRequest(
   const phone = value(formData, "phone");
   const details = value(formData, "details");
   const hasSpecialNeeds = formData.get("hasSpecialNeeds") === "on";
+  const hasElderly = formData.get("hasElderly") === "on";
 
   const errors: Record<string, string> = {};
   const values = {
     officeId,
+    governorateId,
     type,
     travelerStateId,
     preferredDate,
     name,
     phone,
     details,
-    ...(type === "booking" ? { hasSpecialNeeds } : {}),
+    ...(type === "booking" ? { hasSpecialNeeds, hasElderly } : {}),
   };
+  const validGovernorateIds = new Set(
+    EGYPT_GOVERNORATES.filter((g) => g.active).map((g) => g.id),
+  );
+  if (!governorateId || !validGovernorateIds.has(governorateId)) {
+    errors.governorateId = t.chooseGovernorate;
+  }
+  if (governorateId.length > MAX_GOVERNORATE_ID_LENGTH) {
+    errors.governorateId = t.invalidGovernorate;
+  }
   if (!officeId) errors.officeId = t.chooseOffice;
   if (officeId.length > MAX_OFFICE_ID_LENGTH) {
     errors.officeId = t.invalidOffice;
@@ -113,6 +129,19 @@ export async function submitOfficeRequest(
   const labelById = Object.fromEntries(
     activeStates.map((s) => [s.id, s.labelAr]),
   );
+
+  let selectedOffice = null as Awaited<ReturnType<typeof getOffice>>;
+  if (officeId && !errors.officeId) {
+    selectedOffice = await getOffice(officeId);
+    if (!selectedOffice) {
+      errors.officeId = t.officeMissing;
+    } else if (
+      !errors.governorateId &&
+      selectedOffice.governorateId !== normalizeGovernorateId(governorateId)
+    ) {
+      errors.officeId = t.officeGovernorateMismatch;
+    }
+  }
 
   if (type === "booking") {
     const { bookingSameDayCutoffHour } = await getBookingSettings();
@@ -136,14 +165,13 @@ export async function submitOfficeRequest(
       }
     }
 
-    let bookingOffice = null as Awaited<ReturnType<typeof getOffice>>;
+    const bookingOffice = selectedOffice;
     if (
       officeId &&
       !errors.officeId &&
       travelerStateId &&
       allowedIds.has(travelerStateId)
     ) {
-      bookingOffice = await getOffice(officeId);
       if (!bookingOffice) {
         errors.officeId = t.officeMissing;
       } else if (!officeAcceptsTravelerState(bookingOffice, travelerStateId)) {
@@ -217,6 +245,7 @@ export async function submitOfficeRequest(
         ? labelById[travelerStateId] ?? travelerStateId
         : "";
     const created = await createOfficeRequest({
+      governorateId,
       officeId,
       type,
       travelerStateId: type === "booking" ? travelerStateId : undefined,
@@ -228,6 +257,7 @@ export async function submitOfficeRequest(
           ? `حالة المسافر: ${stateLabel}\nالتاريخ المطلوب: ${preferredDate}`
           : details,
       hasSpecialNeeds: type === "booking" && hasSpecialNeeds,
+      hasElderly: type === "booking" && hasElderly,
     });
     return {
       ok: true,
@@ -248,6 +278,8 @@ export async function submitOfficeRequest(
             ? t.dayFull
             : rawMessage === bookingActionCopy.ar.officeMismatch
               ? t.officeMismatch
+              : rawMessage === bookingActionCopy.ar.officeGovernorateMismatch
+                ? t.officeGovernorateMismatch
               : rawMessage || t.saveFailed;
     return {
       ok: false,

@@ -10,6 +10,7 @@ import {
   OfficeFormFields,
   officeFieldClass,
 } from "@/components/admin/OfficeFormFields";
+import { EGYPT_GOVERNORATES } from "@/data/governorates";
 import { defaultTravelerStatesFromLegacyLabels } from "@/lib/office-requests/office-traveler-state";
 import { runWithFeedback } from "@/lib/ui/run-with-feedback";
 import type { AdminRole, AdminUserProfile, Office } from "@/lib/office-requests/types";
@@ -49,6 +50,7 @@ function UserRoleOfficeFields({
             onChange={(e) => setSelectedRole(e.target.value as AdminRole)}
           >
             <option value="office_user">مستخدم مكتب</option>
+            <option value="governorate_admin">أدمن محافظة</option>
             <option value="office_admin">أدمن مكاتب</option>
             <option value="super_admin">سوبر أدمن</option>
           </select>
@@ -57,7 +59,24 @@ function UserRoleOfficeFields({
         <input type="hidden" name="role" value="office_user" />
       )}
 
-      {selectedRole === "office_admin" ? (
+      {selectedRole === "governorate_admin" ? (
+        <label className="mt-3 block text-sm font-bold text-gov-navy">
+          المحافظة
+          <select
+            name="governorateId"
+            className={officeFieldClass}
+            defaultValue={userToEdit?.governorateId ?? ""}
+            required
+          >
+            <option value="">اختر محافظة</option>
+            {EGYPT_GOVERNORATES.filter((g) => g.active).map((governorate) => (
+              <option key={governorate.id} value={governorate.id}>
+                {governorate.labelAr}
+              </option>
+            ))}
+          </select>
+        </label>
+      ) : selectedRole === "office_admin" ? (
         <fieldset className="mt-3 rounded-md border border-gov-gray-200 p-3">
           <legend className="px-1 text-sm font-bold text-gov-navy">
             المكاتب المفتوحة

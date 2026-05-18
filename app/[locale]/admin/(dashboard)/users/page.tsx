@@ -20,6 +20,7 @@ export default async function AdminUsersPage({
   if (!session) redirect(`/${locale}/admin/login`);
   if (
     session.profile.role !== "super_admin" &&
+    session.profile.role !== "governorate_admin" &&
     session.profile.role !== "office_admin"
   ) {
     redirect(`/${locale}/admin`);
@@ -29,12 +30,14 @@ export default async function AdminUsersPage({
     listOffices({ includeInactive: true }),
     listUserProfiles(),
   ]);
-  const isOfficeAdmin = session.profile.role === "office_admin";
+  const isLocalAdmin =
+    session.profile.role === "office_admin" ||
+    session.profile.role === "governorate_admin";
   const allowedIds = adminAllowedOfficeIds(session.profile);
-  const offices = isOfficeAdmin
+  const offices = isLocalAdmin
     ? allOffices.filter((office) => allowedIds.includes(office.id))
     : allOffices;
-  const users = isOfficeAdmin
+  const users = isLocalAdmin
     ? allUsers.filter((user) => adminCanManageUser(session.profile, user))
     : allUsers;
 

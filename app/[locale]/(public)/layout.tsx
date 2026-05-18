@@ -1,8 +1,8 @@
 import { HashAnchorScroll } from "@/components/navigation/HashAnchorScroll";
+import { ConditionalSiteFooter } from "@/components/layout/ConditionalSiteFooter";
 import { FloatingTextToSpeechButton } from "@/components/layout/FloatingTextToSpeechButton";
 import { FloatingVaccinationBookingButton } from "@/components/layout/FloatingVaccinationBookingButton";
 import { FloatingWhatsAppButton } from "@/components/layout/FloatingWhatsAppButton";
-import { SiteFooter } from "@/components/layout/SiteFooter";
 import { SiteHeader } from "@/components/layout/SiteHeader";
 import { InstallPrompt } from "@/components/pwa/InstallPrompt";
 import { ServiceWorkerRegistrar } from "@/components/pwa/ServiceWorkerRegistrar";
@@ -35,7 +35,7 @@ export default async function PublicLayout({
         <HashAnchorScroll />
         {children}
       </main>
-      <SiteFooter messages={messages} />
+      <ConditionalSiteFooter messages={messages} />
       <div className="fixed bottom-5 start-5 z-[60] flex flex-col items-center gap-3">
         <FloatingTextToSpeechButton locale={locale} labels={messages.tts} />
         <FloatingWhatsAppButton />

@@ -68,7 +68,8 @@ export function AdminDashboardLayout({
         queueOfficeId={
           role === "office_user"
             ? officeId
-            : role === "office_admin" && allowedOfficeIds.length === 1
+            : (role === "office_admin" || role === "governorate_admin") &&
+                allowedOfficeIds.length === 1
               ? allowedOfficeIds[0]
               : null
         }

@@ -304,9 +304,12 @@ export async function saveUserProfileAction(formData: FormData) {
   const rawRole = formValue(formData, "role") as AdminRole;
   const uid = formValue(formData, "uid");
   const role: AdminRole =
-    rawRole === "super_admin" || rawRole === "office_admin"
+    rawRole === "super_admin" ||
+    rawRole === "governorate_admin" ||
+    rawRole === "office_admin"
       ? rawRole
       : "office_user";
+  const governorateId = formValue(formData, "governorateId") || null;
   const officeId = formValue(formData, "officeId") || null;
   const allowedOfficeIds = formValues(formData, "allowedOfficeIds");
   const existing = uid ? await getUserProfile(uid) : null;
@@ -325,6 +328,7 @@ export async function saveUserProfileAction(formData: FormData) {
     password: formValue(formData, "password") || undefined,
     displayName: formValue(formData, "displayName") || "مستخدم",
     role,
+    governorateId,
     officeId,
     allowedOfficeIds,
     active: formData.get("active") === "on",
@@ -418,6 +422,7 @@ export async function saveOfficeAction(formData: FormData) {
   await upsertOffice(
     {
       id,
+      governorateId: formValue(formData, "governorateId"),
       serialInGovernorate,
       administrationAr: formValue(formData, "administrationAr"),
       nameAr: formValue(formData, "nameAr"),

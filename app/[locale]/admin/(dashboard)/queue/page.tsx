@@ -26,7 +26,11 @@ export default async function AdminQueueHubPage({
     redirect(`/${locale}/office-dashboard/${officeId}/queue`);
   }
 
-  if (role !== "super_admin" && role !== "office_admin") {
+  if (
+    role !== "super_admin" &&
+    role !== "governorate_admin" &&
+    role !== "office_admin"
+  ) {
     redirect(`/${locale}/admin`);
   }
 
@@ -51,7 +55,7 @@ export default async function AdminQueueHubPage({
     <div className="mx-auto max-w-7xl">
       <header className="border-b border-gov-gray-200 pb-6">
         <p className="text-xs font-bold uppercase text-gov-gray-600">
-          {isSuperAdmin ? "سوبر أدمن" : "أدمن مكاتب"}
+          {isSuperAdmin ? "سوبر أدمن" : "أدمن محلي"}
         </p>
         <h1 className="mt-1 font-heading text-2xl font-extrabold text-gov-navy">
           طوابير المكاتب

@@ -32,7 +32,16 @@ describe("queue service helpers", () => {
     });
     expect(normalizeRequestLookup(" cqm-000123 ")).toMatchObject({
       raw: "cqm-000123",
-      requestNumbers: ["CQM-000123", "000123"],
+      requestNumbers: ["cqm-000123", "CQM-000123", "000123"],
+    });
+    expect(normalizeRequestLookup(" cairo-trav-17-000001 ")).toMatchObject({
+      raw: "cairo-trav-17-000001",
+      requestNumbers: [
+        "cairo-trav-17-000001",
+        "CAIRO-TRAV-17-000001",
+        "17000001",
+        "CQM-17000001",
+      ],
     });
     expect(normalizeRequestLookup("01552900017").phoneVariants).toEqual(
       expect.arrayContaining(["01552900017", "+201552900017"]),

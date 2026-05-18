@@ -195,7 +195,7 @@ export function CheckinForm({
             value={lookupValue}
             onChange={(e) => setLookupValue(e.target.value)}
             className="mt-2 w-full rounded-md border border-gov-gray-200 px-3 py-2.5 text-sm"
-            placeholder="مثال: CQM-000123 أو 010…"
+            placeholder="مثال: cairo-trav-17-000001 أو CQM-000123 أو 010…"
           />
         </div>
         <button
@@ -275,6 +275,14 @@ export function CheckinForm({
               className="size-4 rounded border-gov-gray-300"
             />
             <span>ذوي همم</span>
+          </label>
+          <label className="flex items-center gap-2 text-sm font-semibold text-gov-gray-800">
+            <input
+              type="checkbox"
+              name="hasElderly"
+              className="size-4 rounded border-gov-gray-300"
+            />
+            <span>كبار السن</span>
           </label>
           <div>
             <label htmlFor="details" className="block text-sm font-bold text-gov-navy">
