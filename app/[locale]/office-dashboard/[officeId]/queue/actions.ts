@@ -1,6 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { isVpsApiEnabled } from "@/lib/api/vps-config";
+import { vpsCompleteQueueTicket } from "@/lib/api/vps-client";
 import { adminCanAccessOffice } from "@/lib/office-requests/admin-access";
 import { getAdminSession } from "@/lib/office-requests/session";
 import {
@@ -79,7 +81,9 @@ export async function completeTicketAction(
 
   try {
     await assertQueueAccess(officeId);
-    const updated = await completeQueueTicket(ticketId);
+    const updated = isVpsApiEnabled()
+      ? await vpsCompleteQueueTicket(ticketId)
+      : await completeQueueTicket(ticketId);
     const ticket = await findQueueTicketForOfficeDay({
       officeId,
       date: updated.queueDate,

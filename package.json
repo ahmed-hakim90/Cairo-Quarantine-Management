@@ -11,6 +11,8 @@
     "seed:offices": "node --env-file=.env.local scripts/seed-firestore-offices.mjs",
     "seed:traveler-states": "node --env-file=.env.local scripts/seed-firestore-traveler-states.mjs",
     "seed:vaccines": "node --env-file=.env.local scripts/seed-firestore-vaccines.mjs",
+    "seed:pg": "node --env-file=.env.local scripts/seed/pg-reference-data.mjs",
+    "migrate:firestore-to-pg": "node --env-file=.env.local scripts/migrate/firestore-to-pg.mjs",
     "admin:create-profile": "node --env-file=.env.local scripts/create-admin-profile.mjs"
   },
   "dependencies": {

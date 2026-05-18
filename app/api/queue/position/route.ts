@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+import { isVpsApiEnabled } from "@/lib/api/vps-config";
+import { vpsGetQueueTicketState } from "@/lib/api/vps-client";
 import { getQueuePositionPublic } from "@/lib/queue/queue-position";
 import { checkRateLimit, rateLimitKeyFromHeaders } from "@/lib/rate-limit";
 
@@ -24,7 +26,9 @@ export async function GET(request: Request) {
   }
 
   try {
-    const position = await getQueuePositionPublic(ticketId);
+    const position = isVpsApiEnabled()
+      ? await vpsGetQueueTicketState(ticketId)
+      : await getQueuePositionPublic(ticketId);
     if (!position) {
       return NextResponse.json({ error: "التذكرة غير موجودة." }, { status: 404 });
     }

@@ -1,0 +1,16 @@
+# Replace api.example.com with your VPS API hostname.
+# Caddy obtains TLS certificates automatically when ports 80/443 are reachable.
+
+{
+	email {$CADDY_ACME_EMAIL}
+}
+
+api.example.com {
+	reverse_proxy api:3001
+	encode gzip
+	header {
+		-Server
+		X-Content-Type-Options nosniff
+		Referrer-Policy strict-origin-when-cross-origin
+	}
+}

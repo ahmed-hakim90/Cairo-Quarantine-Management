@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { isVpsApiEnabled } from "@/lib/api/vps-config";
 import { isFirebaseAdminConfigured } from "@/lib/firebase/admin";
 import { getCairoTodayYmd } from "@/lib/cairo-today-ymd";
 import { parseExportCreatedBounds } from "@/lib/office-requests/export-date-bounds";
@@ -134,7 +135,7 @@ export async function GET(request: Request) {
     return noStoreJson({ error: bounds.error }, { status: 400 });
   }
 
-  if (!isFirebaseAdminConfigured()) {
+  if (!isVpsApiEnabled() && !isFirebaseAdminConfigured()) {
     return noStoreJson(
       {
         error:
@@ -145,17 +146,29 @@ export async function GET(request: Request) {
   }
 
   try {
-    const { requests, capped } = await listRequestsForSuperAdminExport({
-      types,
-      officeId,
-      officeIds,
-      travelerStateIds,
-      travelerCategories,
-      includeUncategorizedBookings: includeUncategorized,
-      createdFrom: bounds.createdFrom,
-      createdTo: bounds.createdTo,
-      adminBookingTodayYmd: getCairoTodayYmd(),
-    });
+    const exportScope = {
+      role,
+      officeId:
+        role === "office_user" ? session.profile.officeId?.trim() ?? null : null,
+      allowedOfficeIds:
+        role === "office_admin" || role === "governorate_admin"
+          ? adminAllowedOfficeIds(session.profile)
+          : undefined,
+    };
+    const { requests, capped } = await listRequestsForSuperAdminExport(
+      {
+        types,
+        officeId,
+        officeIds,
+        travelerStateIds,
+        travelerCategories,
+        includeUncategorizedBookings: includeUncategorized,
+        createdFrom: bounds.createdFrom,
+        createdTo: bounds.createdTo,
+        adminBookingTodayYmd: getCairoTodayYmd(),
+      },
+      exportScope,
+    );
 
     const stateLabels = mergeTravelerStateLabelsWithLegacy(
       await listTravelerStates({ includeInactive: true }),

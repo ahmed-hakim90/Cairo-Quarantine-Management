@@ -15,6 +15,7 @@ import {
   isBookingPassTokenExpired,
   passTokensMatch,
 } from "@/lib/booking-pass-token";
+import { getCairoTodayYmd } from "@/lib/cairo-today-ymd";
 import { STATIC_OFFICES } from "@/lib/office-requests/static-offices";
 import {
   DEFAULT_GOVERNORATE_ID,
@@ -73,6 +74,18 @@ import {
   type UserCategory,
   type VaccineRecord,
 } from "@/data/vaccines";
+import { isVpsApiEnabled } from "@/lib/api/vps-config";
+import {
+  vpsCreateRequest,
+  vpsExportAdminRequests,
+  vpsGetBookingAvailability,
+  vpsListActivityLogs,
+  vpsListLatestActivityLogsByRequestIds,
+  vpsListRequestsForSessionPage,
+  vpsSearchRequestsForSessionPage,
+  vpsUpdateAdminRequest,
+  VpsApiError,
+} from "@/lib/api/vps-client";
 import { SUPER_ADMIN_EXPORT_MAX_ROWS } from "@/lib/office-requests/export-limits";
 import {
   isLastExportCursorPage,
@@ -859,6 +872,14 @@ export async function countBookingRequestsForOfficeDay(
   officeId: string,
   preferredDate: string,
 ): Promise<number> {
+  if (isVpsApiEnabled()) {
+    try {
+      const result = await vpsGetBookingAvailability({ officeId, preferredDate });
+      return result.count;
+    } catch {
+      return 0;
+    }
+  }
   if (!isFirebaseAdminConfigured()) return 0;
   const snap = await getAdminDb()
     .collection(REQUESTS)
@@ -901,6 +922,17 @@ export async function createOfficeRequest(input: {
   hasSpecialNeeds?: boolean;
   hasElderly?: boolean;
 }): Promise<CreatedOfficeRequestPublic> {
+  if (isVpsApiEnabled()) {
+    try {
+      return await vpsCreateRequest(input);
+    } catch (e) {
+      if (e instanceof VpsApiError && e.message) {
+        throw new Error(e.message);
+      }
+      throw e;
+    }
+  }
+
   if (!isFirebaseAdminConfigured()) {
     throw new Error("Firebase غير مضبوط حالياً، لا يمكن حفظ الطلب.");
   }
@@ -1260,6 +1292,9 @@ export async function listRequestsForSessionPage(args: {
   bookingDateFrom?: string | null;
   bookingDateTo?: string | null;
 }): Promise<PaginatedResult<OfficeRequest>> {
+  const vpsPage = await vpsListRequestsForSessionPage(args);
+  if (vpsPage) return vpsPage;
+
   if (!isFirebaseAdminConfigured()) return { items: [], nextCursor: null };
 
   const updatedFrom = args.updatedFrom ?? null;
@@ -1477,8 +1512,11 @@ export async function searchRequestsForSessionPage(args: {
   bookingDateFrom?: string | null;
   bookingDateTo?: string | null;
 }): Promise<PaginatedResult<OfficeRequest>> {
-  if (!isFirebaseAdminConfigured()) return { items: [], nextCursor: null };
   const q = args.q.trim();
+  const vpsPage = await vpsSearchRequestsForSessionPage(args);
+  if (vpsPage) return vpsPage;
+
+  if (!isFirebaseAdminConfigured()) return { items: [], nextCursor: null };
   if (!q) {
     return listRequestsForSessionPage(args);
   }
@@ -1637,7 +1675,31 @@ function requestMatchesSuperAdminExport(
  */
 export async function listRequestsForSuperAdminExport(
   filters: SuperAdminExportFilters,
+  scope?: {
+    role: AdminRole;
+    officeId: string | null;
+    allowedOfficeIds?: string[];
+  },
 ): Promise<{ requests: OfficeRequest[]; capped: boolean }> {
+  if (isVpsApiEnabled()) {
+    try {
+      return await vpsExportAdminRequests({
+        scope: scope ?? { role: "super_admin", officeId: null },
+        types: filters.types,
+        officeId: filters.officeId,
+        officeIds: filters.officeIds,
+        travelerStateIds: filters.travelerStateIds,
+        travelerCategories: filters.travelerCategories,
+        includeUncategorizedBookings: filters.includeUncategorizedBookings,
+        createdFrom: filters.createdFrom?.toDate().toISOString(),
+        createdTo: filters.createdTo?.toDate().toISOString(),
+        adminBookingTodayYmd:
+          filters.adminBookingTodayYmd ?? getCairoTodayYmd(),
+      });
+    } catch {
+      return { requests: [], capped: false };
+    }
+  }
   if (!isFirebaseAdminConfigured()) {
     return { requests: [], capped: false };
   }
@@ -1788,6 +1850,29 @@ export async function updateRequestForSession(args: {
   notes: string;
   actor: AdminActivityActor;
 }) {
+  if (isVpsApiEnabled()) {
+    try {
+      await vpsUpdateAdminRequest({
+        scope: {
+          role: args.role,
+          officeId: args.officeId,
+          allowedOfficeIds: args.allowedOfficeIds,
+        },
+        id: args.id,
+        status: args.status,
+        notes: args.notes,
+        actorUid: args.actor.uid,
+        actorLabel: args.actor.label,
+      });
+    } catch (e) {
+      if (e instanceof VpsApiError && e.message) {
+        throw new Error(e.message);
+      }
+      throw e;
+    }
+    return;
+  }
+
   const request = await getRequestForSession(args);
   if (!request) throw new Error("الطلب غير موجود أو غير مصرح.");
 
@@ -2281,6 +2366,21 @@ export async function listActivityLogsForSuperAdminPage(args?: {
   actorUid?: string | null;
   cursor?: string | null;
 }): Promise<PaginatedResult<AdminActivityLogEntry>> {
+  if (isVpsApiEnabled()) {
+    try {
+      return await vpsListActivityLogs({
+        scope: { role: "super_admin", officeId: null },
+        limit: args?.limit,
+        cursor: args?.cursor,
+        createdFrom: args?.createdFrom?.toDate().toISOString(),
+        createdTo: args?.createdTo?.toDate().toISOString(),
+        officeFilter: args?.officeId,
+        actorUid: args?.actorUid,
+      });
+    } catch {
+      return { items: [], nextCursor: null };
+    }
+  }
   if (!isFirebaseAdminConfigured()) return { items: [], nextCursor: null };
   const requested = args?.limit ?? ACTIVITY_LOG_PAGE_SIZE;
   const limit = Math.min(Math.max(1, requested), ACTIVITY_LOG_MAX_SUPER);
@@ -2319,6 +2419,22 @@ export async function listActivityLogsForRequest(args: {
   allowedOfficeIds?: string[];
   limit?: number;
 }): Promise<AdminActivityLogEntry[]> {
+  if (isVpsApiEnabled()) {
+    try {
+      const page = await vpsListActivityLogs({
+        scope: {
+          role: args.role,
+          officeId: args.officeId,
+          allowedOfficeIds: args.allowedOfficeIds,
+        },
+        requestId: args.requestId,
+        limit: args.limit,
+      });
+      return page.items;
+    } catch {
+      return [];
+    }
+  }
   if (!isFirebaseAdminConfigured()) return [];
   const access = await getRequestForSession({
     id: args.requestId,
@@ -2377,12 +2493,17 @@ function nextCursorFromActivityLogs(logs: AdminActivityLogEntry[]): string | nul
   return last ? encodeCursor(last.createdAt) : null;
 }
 
-/**
- * أحدث سجل نشاط لكل طلب (حسب createdAt تنازليًا) لمجموعة معرفات دفعة واحدة.
- */
+/** أحدث سجل نشاط لكل طلب (حسب createdAt تنازليًا) لمجموعة معرفات دفعة واحدة. */
 export async function listLatestActivityLogByRequestIds(
   requestIds: string[],
 ): Promise<Record<string, AdminActivityLogEntry>> {
+  if (isVpsApiEnabled()) {
+    try {
+      return await vpsListLatestActivityLogsByRequestIds(requestIds);
+    } catch {
+      return {};
+    }
+  }
   if (!isFirebaseAdminConfigured()) return {};
   const unique = [...new Set(requestIds.map((id) => id.trim()).filter(Boolean))];
   if (unique.length === 0) return {};

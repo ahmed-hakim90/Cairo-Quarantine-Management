@@ -8,6 +8,8 @@
 
 عرض إداري بالعربية يشرح المميزات ومنطق العمل ولوحة التحكم (للإرسال للإدارة): [`docs/ADMIN-BRIEF-AR.md`](docs/ADMIN-BRIEF-AR.md).
 
+دليل التثبيت والتشغيل (محلي + VPS): [`docs/SETUP-LOCAL-AND-VPS.md`](docs/SETUP-LOCAL-AND-VPS.md).
+
 ## الميزات | Features
 
 - **لغات**: العربية (افتراضي)، الإنجليزية، الصينية — مع اتجاه النص RTL/LTR حسب اللغة.

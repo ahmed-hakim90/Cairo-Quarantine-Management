@@ -1,5 +1,7 @@
 "use server";
 
+import { isVpsApiEnabled } from "@/lib/api/vps-config";
+import { vpsCheckin } from "@/lib/api/vps-client";
 import {
   assertActiveOffice,
   checkExistingTodayQueue,
@@ -68,6 +70,27 @@ export async function checkinLookupAction(
   }
 
   try {
+    if (isVpsApiEnabled()) {
+      const result = await vpsCheckin({
+        mode: "lookup",
+        officeId,
+        lookup,
+      });
+      if (!result.ok) return result;
+      return {
+        ok: true,
+        ticket: result.ticket,
+        citizenName: result.citizenName,
+        requestId: result.requestId,
+        requestType: result.requestType,
+        officeNameAr: result.officeNameAr,
+        ...(result.preferredDate ? { preferredDate: result.preferredDate } : {}),
+        ...(result.passToken ? { passToken: result.passToken } : {}),
+        ...(result.initialPosition ? { initialPosition: result.initialPosition } : {}),
+        lookup,
+      };
+    }
+
     await assertActiveOffice(officeId);
     const request = await findRequestByNumberOrPhone(lookup);
     if (!request) {
@@ -110,6 +133,26 @@ export async function checkinRestoreAction(
   }
 
   try {
+    if (isVpsApiEnabled()) {
+      const result = await vpsCheckin({
+        mode: "restore",
+        officeId,
+        ticketId,
+      });
+      if (!result.ok) return result;
+      return {
+        ok: true,
+        ticket: result.ticket,
+        citizenName: result.citizenName,
+        requestId: result.requestId,
+        requestType: result.requestType,
+        officeNameAr: result.officeNameAr,
+        ...(result.preferredDate ? { preferredDate: result.preferredDate } : {}),
+        ...(result.passToken ? { passToken: result.passToken } : {}),
+        ...(result.initialPosition ? { initialPosition: result.initialPosition } : {}),
+      };
+    }
+
     await assertActiveOffice(officeId);
     const restored = await restoreOfficeCheckinByTicketId(officeId, ticketId);
     if (!restored) {
@@ -144,6 +187,32 @@ export async function checkinQuickAction(
   }
 
   try {
+    if (isVpsApiEnabled()) {
+      const result = await vpsCheckin({
+        mode: "quick",
+        officeId,
+        name,
+        phone,
+        travelerStateId,
+        hasSpecialNeeds,
+        hasElderly,
+        details,
+      });
+      if (!result.ok) return result;
+      return {
+        ok: true,
+        ticket: result.ticket,
+        citizenName: result.citizenName,
+        requestId: result.requestId,
+        requestType: result.requestType,
+        officeNameAr: result.officeNameAr,
+        ...(result.preferredDate ? { preferredDate: result.preferredDate } : {}),
+        ...(result.passToken ? { passToken: result.passToken } : {}),
+        ...(result.initialPosition ? { initialPosition: result.initialPosition } : {}),
+        lookup: phone,
+      };
+    }
+
     const office = await assertActiveOffice(officeId);
     const acceptedIds = new Set(getOfficeTravelerStateIds(office));
     if (!acceptedIds.has(travelerStateId)) {

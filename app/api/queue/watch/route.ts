@@ -1,4 +1,9 @@
 import { NextResponse } from "next/server";
+import { isVpsApiEnabled } from "@/lib/api/vps-config";
+import {
+  vpsDeleteQueueWatch,
+  vpsRegisterQueueWatch,
+} from "@/lib/api/vps-client";
 import {
   deleteQueueWatch,
   registerQueueWatch,
@@ -44,7 +49,11 @@ export async function POST(request: Request) {
   }
 
   try {
-    await registerQueueWatch({ ticketId, fcmToken });
+    if (isVpsApiEnabled()) {
+      await vpsRegisterQueueWatch({ ticketId, fcmToken });
+    } else {
+      await registerQueueWatch({ ticketId, fcmToken });
+    }
     return NextResponse.json({ ok: true });
   } catch (e) {
     return NextResponse.json(
@@ -64,7 +73,11 @@ export async function DELETE(request: Request) {
   }
 
   try {
-    await deleteQueueWatch(ticketId);
+    if (isVpsApiEnabled()) {
+      await vpsDeleteQueueWatch(ticketId);
+    } else {
+      await deleteQueueWatch(ticketId);
+    }
     return NextResponse.json({ ok: true });
   } catch (e) {
     return NextResponse.json(

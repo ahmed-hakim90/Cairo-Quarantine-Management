@@ -1,0 +1,17 @@
+# Host-level cron examples for Cairo Quarantine Management VPS
+# Install: crontab -e  (run as deploy user with DATABASE_URL / S3 vars loaded)
+#
+# Adjust paths and timezone. Cairo is UTC+2 / UTC+3 (DST).
+
+# Daily PostgreSQL backup to S3 (02:00 UTC ≈ 04:00–05:00 Cairo)
+0 2 * * * cd /opt/cqm && set -a && source .env && set +a && ./scripts/backup/pg-dump-to-s3.sh >> /var/log/cqm-backup.log 2>&1
+
+# Optional: weekly restore smoke test (Sunday 03:00 UTC)
+# 0 3 * * 0 cd /opt/cqm && set -a && source .env && set +a && ./scripts/backup/restore-test.sh >> /var/log/cqm-restore-test.log 2>&1
+
+# Note: queue notify + retention run inside the `worker` Docker service (WORKER_TICK_MS),
+# not via host cron. After cutover (USE_VPS_API=true on Vercel + VPS):
+#   - Remove/disable Vercel cron for POST /api/queue/notify-scan
+#   - Remove/disable Vercel cron for POST /api/admin/maintenance/retention
+#   - Apply migration 002_queue_watches.sql; set USE_VPS_API=true in VPS .env for PG watches
+# Host cron here is only for pg-dump backup (and optional restore-test).

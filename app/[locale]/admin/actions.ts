@@ -30,6 +30,7 @@ import {
   upsertTravelerState,
   upsertVaccine,
 } from "@/lib/office-requests/store";
+import { isVpsApiEnabled, vpsAddRequestToQueue } from "@/lib/api/vps-client";
 import {
   checkExistingTodayQueue,
   createQueueTicket,
@@ -198,6 +199,32 @@ export async function addRequestToQueueAction(
     const session = await requireSession();
     if (!requestId) {
       return { ok: false, error: "رمز الطلب مفقود." };
+    }
+
+    if (isVpsApiEnabled()) {
+      const result = await vpsAddRequestToQueue({
+        scope: {
+          role: session.profile.role,
+          officeId: session.profile.officeId,
+          allowedOfficeIds: session.profile.allowedOfficeIds,
+        },
+        requestId,
+      });
+      revalidatePath(`/${locale}/admin/requests`);
+      revalidatePath(`/${locale}/admin/requests/${result.requestId}`);
+      revalidatePath(`/${locale}/office-dashboard/${result.officeId}/queue`);
+      return {
+        ok: true,
+        requestId: result.requestId,
+        ticketId: result.ticketId,
+        officeId: result.officeId,
+        requestNumber: result.requestNumber,
+        citizenName: result.citizenName,
+        queueNumber: result.queueNumber,
+        aheadCount: result.aheadCount,
+        alreadyInQueue: result.alreadyInQueue,
+        message: result.message,
+      };
     }
 
     const request = await getRequestForSession({

@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+import { vpsGetBookingAvailability } from "@/lib/api/vps-client";
+import { isVpsApiEnabled } from "@/lib/api/vps-config";
 import { checkRateLimit, rateLimitKeyFromHeaders } from "@/lib/rate-limit";
 import { isFirebaseAdminConfigured } from "@/lib/firebase/admin";
 import {
@@ -35,6 +37,21 @@ export async function GET(req: Request) {
     !DATE_RE.test(preferredDate)
   ) {
     return NextResponse.json({ error: "bad_params" }, { status: 400 });
+  }
+
+  if (isVpsApiEnabled()) {
+    try {
+      const result = await vpsGetBookingAvailability({ officeId, preferredDate });
+      return NextResponse.json(result);
+    } catch (e) {
+      return NextResponse.json(
+        {
+          error: "server",
+          message: e instanceof Error ? e.message : "unknown",
+        },
+        { status: 500 },
+      );
+    }
   }
 
   if (!isFirebaseAdminConfigured()) {
