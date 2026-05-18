@@ -364,6 +364,11 @@ export async function createQueueTicket(args: {
     if (stats.closed) {
       throw new Error("تم إغلاق طابور هذا اليوم لهذا المكتب.");
     }
+    statusSync = await syncRequestStatusInTransaction(
+      tx,
+      args.requestId,
+      "checked_in",
+    );
     const queueNumber = nextQueueNumber(stats.lastQueueNumber);
     const now = FieldValue.serverTimestamp();
     if (!statsSnap.exists) {
@@ -392,11 +397,6 @@ export async function createQueueTicket(args: {
         createdAt: FieldValue.serverTimestamp(),
       },
       { merge: true },
-    );
-    statusSync = await syncRequestStatusInTransaction(
-      tx,
-      args.requestId,
-      "checked_in",
     );
   });
 
@@ -442,13 +442,21 @@ export async function createQuickRequestAndQueue(args: {
       `حالة المسافر: ${stateLabel}\nالتاريخ المطلوب: ${date}`,
     hasSpecialNeeds: args.hasSpecialNeeds === true,
   });
-  const ticket = await createQueueTicket({
-    requestId: created.id,
-    requestNumber: created.requestNumber,
-    officeId: args.officeId,
-    createdFrom: "new_request",
-    date,
-  });
+  let ticket: QueueTicket;
+  try {
+    ticket = await createQueueTicket({
+      requestId: created.id,
+      requestNumber: created.requestNumber,
+      officeId: args.officeId,
+      createdFrom: "new_request",
+      date,
+    });
+  } catch (e) {
+    throw new Error(
+      "تم حفظ الطلب، حاول تسجيل الحضور مرة أخرى بنفس رقم الهاتف لإصدار رقم الدور.",
+      { cause: e },
+    );
+  }
   const request = await findRequestByNumberOrPhone(created.requestNumber);
   if (!request) throw new Error("تم إنشاء الطلب لكن تعذر قراءته مرة أخرى.");
   return { request, ticket };
@@ -502,6 +510,11 @@ export async function completeQueueTicket(ticketId: string): Promise<QueueTicket
     const statsRef = db
       .collection(DAILY_STATS)
       .doc(dailyStatsId(ticket.queueDate, ticket.officeId));
+    statusSync = await syncRequestStatusInTransaction(
+      tx,
+      ticket.requestId,
+      "completed",
+    );
     const now = FieldValue.serverTimestamp();
     tx.update(ticketRef, {
       status: "completed",
@@ -517,11 +530,6 @@ export async function completeQueueTicket(ticketId: string): Promise<QueueTicket
         createdAt: FieldValue.serverTimestamp(),
       },
       { merge: true },
-    );
-    statusSync = await syncRequestStatusInTransaction(
-      tx,
-      ticket.requestId,
-      "completed",
     );
   });
 
