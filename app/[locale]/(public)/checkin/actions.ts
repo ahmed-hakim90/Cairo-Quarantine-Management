@@ -12,7 +12,8 @@ import {
 import { getOfficeTravelerStateIds } from "@/lib/office-requests/office-traveler-state";
 import { listTravelerStatesForPublicBooking } from "@/lib/office-requests/store";
 import type { OfficeRequest } from "@/lib/office-requests/types";
-import type { QueueTicket } from "@/lib/queue/types";
+import { getQueuePositionPublic } from "@/lib/queue/queue-position";
+import type { QueuePositionPublic, QueueTicket } from "@/lib/queue/types";
 
 export type CheckinState =
   | {
@@ -25,6 +26,7 @@ export type CheckinState =
       officeNameAr?: string;
       preferredDate?: string;
       lookup?: string;
+      initialPosition?: QueuePositionPublic;
     }
   | {
       ok: false;
@@ -37,10 +39,11 @@ function formValue(formData: FormData, key: string) {
   return String(formData.get(key) ?? "").trim();
 }
 
-function successFromRequest(
+async function successFromRequest(
   request: OfficeRequest,
   ticket: QueueTicket,
-): Extract<CheckinState, { ok: true }> {
+): Promise<Extract<CheckinState, { ok: true }>> {
+  const initialPosition = await getQueuePositionPublic(ticket.id);
   return {
     ok: true,
     ticket,
@@ -50,6 +53,7 @@ function successFromRequest(
     officeNameAr: request.officeNameAr,
     ...(request.preferredDate ? { preferredDate: request.preferredDate } : {}),
     ...(request.passToken ? { passToken: request.passToken } : {}),
+    ...(initialPosition ? { initialPosition } : {}),
   };
 }
 
@@ -88,7 +92,7 @@ export async function checkinLookupAction(
         date,
       }));
 
-    return { ...successFromRequest(request, ticket), lookup };
+    return { ...(await successFromRequest(request, ticket)), lookup };
   } catch (e) {
     return {
       ok: false,
@@ -157,7 +161,7 @@ export async function checkinQuickAction(
       hasSpecialNeeds,
       details,
     });
-    return { ...successFromRequest(request, ticket), lookup: phone };
+    return { ...(await successFromRequest(request, ticket)), lookup: phone };
   } catch (e) {
     return {
       ok: false,

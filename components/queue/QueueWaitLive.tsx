@@ -22,12 +22,15 @@ import {
 } from "@/lib/queue/queue-vibrate";
 
 const POLL_MS = 20_000;
+const STALE_POSITION_MESSAGE =
+  "التحديث الحي غير متاح مؤقتًا — آخر رقم ظاهر محفوظ أمامك.";
 
 type QueueWaitLiveProps = {
   locale: Locale;
   ticket: QueueTicket;
   officeNameAr: string;
   citizenName?: string;
+  initialPosition?: QueuePositionPublic;
   iosHelp: string;
 };
 
@@ -38,16 +41,60 @@ function formatAheadLine(locale: Locale, aheadCount: number): string {
   return copy.aheadYouMany.replace("{count}", String(aheadCount));
 }
 
+export type QueueWaitPositionView = {
+  kind: "loading" | "error" | "turn" | "ahead" | "message" | "empty";
+  text?: string;
+  staleWarning?: string;
+};
+
+export function getQueueWaitPositionView(args: {
+  locale: Locale;
+  loading: boolean;
+  positionError: boolean;
+  position: QueuePositionPublic | null;
+}): QueueWaitPositionView {
+  const t = queueCitizenCopy[args.locale];
+  const aheadCount = args.position?.aheadCount ?? null;
+  const waitingInLine =
+    args.position?.status === "waiting" && !args.position?.queueClosed;
+  const staleWarning =
+    args.positionError && args.position ? STALE_POSITION_MESSAGE : undefined;
+
+  if (args.loading && !args.position) {
+    return { kind: "loading", text: t.updatingPosition };
+  }
+  if (args.positionError && !args.position) {
+    return { kind: "error", text: t.positionError };
+  }
+  if (waitingInLine && aheadCount === 0) {
+    return { kind: "turn", text: t.yourTurnNow, staleWarning };
+  }
+  if (waitingInLine && aheadCount !== null && aheadCount > 0) {
+    return {
+      kind: "ahead",
+      text: formatAheadLine(args.locale, aheadCount),
+      staleWarning,
+    };
+  }
+  if (args.position?.message) {
+    return { kind: "message", text: args.position.message, staleWarning };
+  }
+  return { kind: "empty", staleWarning };
+}
+
 export function QueueWaitLive({
   locale,
   ticket,
   officeNameAr,
   citizenName,
+  initialPosition,
   iosHelp,
 }: QueueWaitLiveProps) {
   const t = queueCitizenCopy[locale];
-  const [position, setPosition] = useState<QueuePositionPublic | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [position, setPosition] = useState<QueuePositionPublic | null>(
+    initialPosition ?? null,
+  );
+  const [loading, setLoading] = useState(!initialPosition);
   const [positionError, setPositionError] = useState(false);
   const [notifyState, setNotifyState] = useState<
     "idle" | "pending" | "enabled" | "denied" | "unsupported"
@@ -58,7 +105,9 @@ export function QueueWaitLive({
   );
   const [notifyError, setNotifyError] = useState<string | null>(null);
 
-  const prevAheadRef = useRef<number | null>(null);
+  const prevAheadRef = useRef<number | null>(
+    initialPosition?.aheadCount ?? null,
+  );
   const vibratedFiveRef = useRef(false);
   const vibratedTurnRef = useRef(false);
 
@@ -171,13 +220,12 @@ export function QueueWaitLive({
     // eslint-disable-next-line react-hooks/exhaustive-deps -- run once on mount when already granted
   }, []);
 
-  const aheadCount = position?.aheadCount ?? null;
-  const waitingInLine =
-    position?.status === "waiting" && !position?.queueClosed;
-  const showAheadBlock =
-    !loading && !positionError && waitingInLine && aheadCount !== null;
-  const showTurnNow = showAheadBlock && aheadCount === 0;
-  const showAheadCount = showAheadBlock && aheadCount !== null && aheadCount > 0;
+  const positionView = getQueueWaitPositionView({
+    locale,
+    loading,
+    positionError,
+    position,
+  });
 
   return (
     <div className="mx-auto max-w-md space-y-4">
@@ -202,25 +250,30 @@ export function QueueWaitLive({
                 {t.aheadInQueue}
               </p>
 
-              {loading ? (
+              {positionView.kind === "loading" ? (
                 <p className="mt-3 text-sm font-semibold text-gov-gray-600">
-                  {t.updatingPosition}
+                  {positionView.text}
                 </p>
-              ) : positionError ? (
+              ) : positionView.kind === "error" ? (
                 <p className="mt-3 text-sm font-semibold text-red-800">
-                  {t.positionError}
+                  {positionView.text}
                 </p>
-              ) : showTurnNow ? (
+              ) : positionView.kind === "turn" ? (
                 <p className="mt-3 text-2xl font-extrabold text-emerald-800">
-                  {t.yourTurnNow}
+                  {positionView.text}
                 </p>
-              ) : showAheadCount && aheadCount !== null ? (
+              ) : positionView.kind === "ahead" ? (
                 <p className="mt-3 text-2xl font-extrabold leading-snug text-gov-navy">
-                  {formatAheadLine(locale, aheadCount)}
+                  {positionView.text}
                 </p>
-              ) : position?.message ? (
+              ) : positionView.kind === "message" ? (
                 <p className="mt-3 text-sm font-semibold text-gov-gray-700">
-                  {position.message}
+                  {positionView.text}
+                </p>
+              ) : null}
+              {positionView.staleWarning ? (
+                <p className="mt-2 text-xs font-semibold text-amber-800">
+                  {positionView.staleWarning}
                 </p>
               ) : null}
           </div>

@@ -85,13 +85,13 @@ export async function completeTicketAction(
       date: updated.queueDate,
       value: String(updated.queueNumber),
     });
+    if (!ticket) return { ok: false, error: "تعذر قراءة التذكرة بعد التحديث." };
     const locale = String(formData.get("locale") ?? "ar").trim() || "ar";
     revalidatePath(`/${locale}/office-dashboard/${officeId}/queue`);
     revalidatePath(`/${locale}/admin/requests`);
     if (ticket.request?.id) {
       revalidatePath(`/${locale}/admin/requests/${ticket.request.id}`);
     }
-    if (!ticket) return { ok: false, error: "تعذر قراءة التذكرة بعد التحديث." };
     return { ok: true, ticket };
   } catch (e) {
     return {

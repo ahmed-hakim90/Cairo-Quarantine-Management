@@ -163,6 +163,7 @@ export function CheckinForm({
         ticket={result.ticket}
         officeNameAr={officeNameAr}
         citizenName={result.citizenName}
+        initialPosition={result.initialPosition}
         iosHelp={iosHelp}
       />
     );

@@ -7,7 +7,10 @@ import {
   getOffice,
   recordQueueRequestStatusFromQueue,
 } from "@/lib/office-requests/store";
-import { syncRequestStatusInTransaction } from "@/lib/queue/request-status-sync";
+import {
+  syncRequestStatusInTransaction,
+  type RequestStatusSyncResult,
+} from "@/lib/queue/request-status-sync";
 import type { OfficeRequest } from "@/lib/office-requests/types";
 import {
   dailyStatsCreatePayload,
@@ -397,12 +400,17 @@ export async function createQueueTicket(args: {
     );
   });
 
-  if (statusSync?.changed && statusSync.prevStatus && statusSync.nextStatus) {
+  const statusSyncResult = statusSync as RequestStatusSyncResult | null;
+  if (
+    statusSyncResult?.changed &&
+    statusSyncResult.prevStatus &&
+    statusSyncResult.nextStatus
+  ) {
     void recordQueueRequestStatusFromQueue({
-      requestId: statusSync.requestId,
-      officeId: statusSync.officeId ?? args.officeId,
-      prevStatus: statusSync.prevStatus,
-      nextStatus: statusSync.nextStatus,
+      requestId: statusSyncResult.requestId,
+      officeId: statusSyncResult.officeId ?? args.officeId,
+      prevStatus: statusSyncResult.prevStatus,
+      nextStatus: statusSyncResult.nextStatus,
       phase: "checked_in",
     }).catch(() => undefined);
   }
@@ -517,12 +525,17 @@ export async function completeQueueTicket(ticketId: string): Promise<QueueTicket
     );
   });
 
-  if (statusSync?.changed && statusSync.prevStatus && statusSync.nextStatus) {
+  const statusSyncResult = statusSync as RequestStatusSyncResult | null;
+  if (
+    statusSyncResult?.changed &&
+    statusSyncResult.prevStatus &&
+    statusSyncResult.nextStatus
+  ) {
     void recordQueueRequestStatusFromQueue({
-      requestId: statusSync.requestId,
-      officeId: statusSync.officeId ?? "",
-      prevStatus: statusSync.prevStatus,
-      nextStatus: statusSync.nextStatus,
+      requestId: statusSyncResult.requestId,
+      officeId: statusSyncResult.officeId ?? "",
+      prevStatus: statusSyncResult.prevStatus,
+      nextStatus: statusSyncResult.nextStatus,
       phase: "completed",
     }).catch(() => undefined);
   }
