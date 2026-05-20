@@ -130,8 +130,15 @@ export type Messages = {
       description: string;
       beforeTravel: string;
       bullets: [string, string, string];
-      destinationVaccinesWhatsapp: string;
-      destinationVaccinesWhatsappAria: string;
+      destinationVaccinesIntro: string;
+      countryRequirements: {
+        searchPlaceholder: string;
+        selectAria: string;
+        listAria: string;
+        requirementsHeading: string;
+        noResults: string;
+        emptyCatalog: string;
+      };
     };
     hajj: {
       metaTitle: string;
@@ -335,12 +342,18 @@ const ar: Messages = {
       bullets: [
         "أحضر جواز سفر ساريًا — للمسافر الدولي",
         "بطاقة الرقم القومي سارية",
-        "صورة شخصية حديثة",
+        "في حالة تطعيم الملاريا . احضار ما يثبت السفر للدولة ( تذكرة الطائرة . صورة التأشيرة )",
       ],
-      destinationVaccinesWhatsapp:
-        "لمعرفة طعوم الدولة المتجه إليها اضغط على الرمز لفتح ملف الوضع الوبائي.",
-      destinationVaccinesWhatsappAria:
-        "فتح ملف الوضع الوبائي لمعرفة طعوم الدولة المتجه إليها",
+      destinationVaccinesIntro:
+        "لمعرفة طعوم الدولة المتجه إليها، ابحث عن الدولة واخترها من القائمة:",
+      countryRequirements: {
+        searchPlaceholder: "ابحث باسم الدولة (عربي أو إنجليزي)…",
+        selectAria: "اختيار دولة الوجهة",
+        listAria: "نتائج البحث عن الدول",
+        requirementsHeading: "متطلبات التطعيم",
+        noResults: "لا توجد دولة مطابقة.",
+        emptyCatalog: "قائمة الدول غير متوفرة حالياً.",
+      },
     },
     hajj: {
       metaTitle: "الحج والعمرة",
@@ -567,10 +580,16 @@ const en: Messages = {
         "Valid national ID card",
         "Recent passport-style photo",
       ],
-      destinationVaccinesWhatsapp:
-        "To learn which vaccines are needed for your destination, tap the icon to open the epidemiological status document.",
-      destinationVaccinesWhatsappAria:
-        "Open epidemiological status document for destination vaccines",
+      destinationVaccinesIntro:
+        "To see vaccines required for your destination, search and select your country:",
+      countryRequirements: {
+        searchPlaceholder: "Search country name (Arabic or English)…",
+        selectAria: "Select destination country",
+        listAria: "Country search results",
+        requirementsHeading: "Vaccination requirements",
+        noResults: "No matching country.",
+        emptyCatalog: "Country list is not available yet.",
+      },
     },
     hajj: {
       metaTitle: "Hajj & Umrah",
@@ -788,9 +807,16 @@ const zh: Messages = {
         "有效国民身份证",
         "近照证件照",
       ],
-      destinationVaccinesWhatsapp:
-        "如需了解目的地所需疫苗，请点击图标打开流行病学状况文件。",
-      destinationVaccinesWhatsappAria: "打开流行病学状况文件以了解目的地疫苗",
+      destinationVaccinesIntro:
+        "如需了解目的地所需疫苗，请搜索并选择国家：",
+      countryRequirements: {
+        searchPlaceholder: "搜索国家名称（中文界面仍可用英文或阿拉伯文国名）…",
+        selectAria: "选择目的地国家",
+        listAria: "国家搜索结果",
+        requirementsHeading: "疫苗接种要求",
+        noResults: "未找到匹配的国家。",
+        emptyCatalog: "国家列表暂不可用。",
+      },
     },
     hajj: {
       metaTitle: "朝觐与副朝",
@@ -1017,10 +1043,17 @@ const fr: Messages = {
         "Carte nationale d'identite valide",
         "Photo d'identite recente",
       ],
-      destinationVaccinesWhatsapp:
-        "Pour connaitre les vaccins necessaires a votre destination, appuyez sur l'icone pour ouvrir le document sur la situation epidemiologique.",
-      destinationVaccinesWhatsappAria:
-        "Ouvrir le document sur la situation epidemiologique pour les vaccins de destination",
+      destinationVaccinesIntro:
+        "Pour connaitre les vaccins necessaires a votre destination, recherchez et selectionnez le pays :",
+      countryRequirements: {
+        searchPlaceholder:
+          "Rechercher un pays (nom arabe ou anglais)…",
+        selectAria: "Selectionner le pays de destination",
+        listAria: "Resultats de recherche de pays",
+        requirementsHeading: "Exigences de vaccination",
+        noResults: "Aucun pays correspondant.",
+        emptyCatalog: "La liste des pays n'est pas disponible pour le moment.",
+      },
     },
     hajj: {
       metaTitle: "Hajj et Omra",

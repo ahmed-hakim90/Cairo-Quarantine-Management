@@ -7,7 +7,7 @@ import {
 describe("getOfficeWorkingHoursTableLabel", () => {
   it("returns standard hours for regular offices", () => {
     expect(getOfficeWorkingHoursTableLabel("cairo-trav-2", "ar")).toBe(
-      "٨ صباحًا – ٥ مساءً (الجُمع والعطلات الرسمية)",
+      "٨ صباحًا – ٥ مساءً ( ما عدا الجُمع والعطلات الرسمية)",
     );
   });
 

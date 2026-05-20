@@ -1,7 +1,9 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { normalizedNavPath } from "@/components/layout/SiteNavLinks";
 import { collection, onSnapshot, query, where, type Query, type Unsubscribe } from "firebase/firestore";
 import {
   getFirestoreListenerErrorMessage,
@@ -30,11 +32,12 @@ import {
 } from "@/lib/office-requests/new-request-notify";
 import { REQUEST_TYPE_LABELS, type AdminRole } from "@/lib/office-requests/types";
 
-const MAX_TOASTS = 3;
+const MAX_NOTIFICATIONS = 30;
 
-type ToastItem = {
+type NotificationItem = {
   id: string;
   request: NotifyRequestPayload;
+  read: boolean;
 };
 
 type ListenerStatus = "idle" | "connecting" | "live" | "error";
@@ -66,16 +69,16 @@ function buildNewRequestQueries(
   );
 }
 
-function RequestToast({
-  toast,
+function NotificationRow({
+  item,
   locale,
   onDismiss,
 }: {
-  toast: ToastItem;
+  item: NotificationItem;
   locale: string;
   onDismiss: () => void;
 }) {
-  const { request } = toast;
+  const { request } = item;
   const typeLabel = REQUEST_TYPE_LABELS[request.type] ?? request.type;
   const href =
     request.type === "booking"
@@ -84,15 +87,32 @@ function RequestToast({
 
   return (
     <div
-      role="alert"
-      className="w-[min(100vw-2rem,22rem)] rounded-lg border border-gov-accent/30 bg-white p-4 shadow-lg"
+      className={`border-b border-gov-gray-100 px-4 py-3 last:border-b-0 ${
+        item.read ? "bg-white" : "bg-gov-accent/5"
+      }`}
     >
-      <div className="flex justify-end">
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-extrabold text-gov-navy">طلب جديد</p>
+          <p className="mt-0.5 text-xs text-gov-gray-600">
+            {request.officeNameAr} — {typeLabel}
+          </p>
+          <p className="mt-0.5 truncate text-sm font-semibold text-gov-navy">
+            {request.name}
+          </p>
+          <Link
+            href={href}
+            className="mt-2 inline-flex text-xs font-bold text-gov-accent underline decoration-gov-accent/40 underline-offset-2 hover:decoration-gov-accent"
+            onClick={onDismiss}
+          >
+            {request.type === "booking" ? "عرض الحجوزات" : "عرض الطلب"}
+          </Link>
+        </div>
         <button
           type="button"
           onClick={onDismiss}
-          className="rounded p-1 text-gov-gray-600 hover:bg-gov-gray-100 hover:text-gov-navy"
-          aria-label="إغلاق الإشعار"
+          className="shrink-0 rounded p-1 text-gov-gray-500 hover:bg-gov-gray-100 hover:text-gov-navy"
+          aria-label="إزالة الإشعار"
         >
           <svg
             className="h-4 w-4"
@@ -106,18 +126,6 @@ function RequestToast({
           </svg>
         </button>
       </div>
-      <p className="mt-1 text-sm font-extrabold text-gov-navy">طلب جديد</p>
-      <p className="mt-1 text-sm text-gov-gray-700">
-        {request.officeNameAr} — {typeLabel}
-      </p>
-      <p className="text-sm font-semibold text-gov-navy">{request.name}</p>
-      <Link
-        href={href}
-        className="mt-3 inline-flex text-sm font-bold text-gov-accent underline decoration-gov-accent/40 underline-offset-2 hover:decoration-gov-accent"
-        onClick={onDismiss}
-      >
-        {request.type === "booking" ? "عرض الحجوزات" : "عرض الطلب"}
-      </Link>
     </div>
   );
 }
@@ -138,7 +146,13 @@ export function AdminNewRequestNotifier({
     [role, officeId, allowedOfficeIds],
   );
 
+  const router = useRouter();
+  const pathname = usePathname();
   const scopeRef = useRef(scope);
+  const panelOpenRef = useRef(false);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const refreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   useEffect(() => {
     scopeRef.current = scope;
   }, [scope]);
@@ -150,7 +164,8 @@ export function AdminNewRequestNotifier({
   const notifiedIdsRef = useRef(new Set<string>());
   const unsubscribesRef = useRef<Unsubscribe[]>([]);
 
-  const [toasts, setToasts] = useState<ToastItem[]>([]);
+  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+  const [panelOpen, setPanelOpen] = useState(false);
   const [muted, setMuted] = useState(() =>
     typeof window === "undefined" ? false : isNewRequestSoundMuted(),
   );
@@ -158,6 +173,15 @@ export function AdminNewRequestNotifier({
   const [listenerStatus, setListenerStatus] =
     useState<ListenerStatus>("idle");
   const [listenerError, setListenerError] = useState<string | null>(null);
+
+  useEffect(() => {
+    panelOpenRef.current = panelOpen;
+  }, [panelOpen]);
+
+  const unreadCount = useMemo(
+    () => notifications.filter((n) => !n.read).length,
+    [notifications],
+  );
 
   const resetBaseline = useCallback(() => {
     baselineIdsRef.current = new Set();
@@ -167,16 +191,30 @@ export function AdminNewRequestNotifier({
     notifiedIdsRef.current = new Set();
   }, []);
 
-  const pushToast = useCallback((request: NotifyRequestPayload) => {
-    setToasts((prev) => {
-      const next = [
-        { id: request.id, request },
-        ...prev.filter((t) => t.id !== request.id),
-      ];
-      return next.slice(0, MAX_TOASTS);
-    });
-    void playNewRequestSound();
-  }, []);
+  const scheduleRequestsListRefresh = useCallback(() => {
+    if (normalizedNavPath(pathname) !== "/admin/requests") return;
+    if (refreshTimerRef.current) clearTimeout(refreshTimerRef.current);
+    refreshTimerRef.current = setTimeout(() => {
+      router.refresh();
+      refreshTimerRef.current = null;
+    }, 400);
+  }, [pathname, router]);
+
+  const pushNotification = useCallback(
+    (request: NotifyRequestPayload) => {
+      const markRead = panelOpenRef.current;
+      setNotifications((prev) => {
+        const next = [
+          { id: request.id, request, read: markRead },
+          ...prev.filter((n) => n.id !== request.id),
+        ];
+        return next.slice(0, MAX_NOTIFICATIONS);
+      });
+      void playNewRequestSound();
+      scheduleRequestsListRefresh();
+    },
+    [scheduleRequestsListRefresh],
+  );
 
   const processAddedDoc = useCallback(
     (docId: string, data: Record<string, unknown>) => {
@@ -187,9 +225,9 @@ export function AdminNewRequestNotifier({
       if (notifiedIdsRef.current.has(docId)) return;
 
       notifiedIdsRef.current.add(docId);
-      pushToast(request);
+      pushNotification(request);
     },
-    [pushToast],
+    [pushNotification],
   );
 
   const teardownListeners = useCallback(() => {
@@ -271,11 +309,16 @@ export function AdminNewRequestNotifier({
   }, [processAddedDoc, scope, teardownListeners]);
 
   useEffect(() => {
+    return () => {
+      if (refreshTimerRef.current) clearTimeout(refreshTimerRef.current);
+    };
+  }, []);
+
+  useEffect(() => {
     resetBaseline();
   }, [scope, resetBaseline]);
 
   useEffect(() => {
-    // Firestore listener setup runs after auth; snapshot callbacks drive UI state.
     // eslint-disable-next-line react-hooks/set-state-in-effect -- subscription bootstrap
     void setupListeners();
     return () => teardownListeners();
@@ -295,8 +338,44 @@ export function AdminNewRequestNotifier({
       document.removeEventListener("visibilitychange", onVisibilityChange);
   }, [setupListeners, teardownListeners]);
 
-  function dismissToast(id: string) {
-    setToasts((prev) => prev.filter((t) => t.id !== id));
+  useEffect(() => {
+    if (!panelOpen) return;
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") setPanelOpen(false);
+    }
+    function onPointerDown(e: MouseEvent) {
+      const root = rootRef.current;
+      if (root && !root.contains(e.target as Node)) {
+        setPanelOpen(false);
+      }
+    }
+    document.addEventListener("keydown", onKey);
+    document.addEventListener("mousedown", onPointerDown);
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.removeEventListener("mousedown", onPointerDown);
+    };
+  }, [panelOpen]);
+
+  function openPanel() {
+    setPanelOpen(true);
+    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+  }
+
+  function togglePanel() {
+    if (panelOpen) {
+      setPanelOpen(false);
+    } else {
+      openPanel();
+    }
+  }
+
+  function dismissNotification(id: string) {
+    setNotifications((prev) => prev.filter((n) => n.id !== id));
+  }
+
+  function clearAllNotifications() {
+    setNotifications([]);
   }
 
   async function toggleMute() {
@@ -319,42 +398,100 @@ export function AdminNewRequestNotifier({
     listenerStatus === "error" && listenerError && !authFailed;
 
   return (
-    <>
-      <div className="fixed bottom-4 end-4 z-[90] flex flex-col items-end gap-2">
-        <button
-          type="button"
-          onClick={() => void toggleMute()}
-          className="rounded-md border border-gov-gray-200 bg-white px-3 py-1.5 text-xs font-bold text-gov-navy shadow-sm hover:bg-gov-gray-50"
-          aria-pressed={muted}
+    <div ref={rootRef} className="relative">
+      <button
+        type="button"
+        onClick={togglePanel}
+        className="relative inline-flex min-h-10 min-w-10 items-center justify-center rounded-md border border-gov-gray-200 bg-white text-gov-navy transition hover:border-gov-accent hover:text-gov-accent"
+        aria-expanded={panelOpen}
+        aria-haspopup="dialog"
+        aria-label={
+          unreadCount > 0
+            ? `الإشعارات، ${unreadCount} غير مقروء`
+            : "الإشعارات"
+        }
+      >
+        <svg
+          className="h-5 w-5"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={2}
+          viewBox="0 0 24 24"
+          aria-hidden
         >
-          {muted ? "تفعيل الأصوات" : "كتم الأصوات"}
-        </button>
-
-        {authFailed ? (
-          <p className="max-w-xs rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-900 shadow-sm">
-            تعذّر تفعيل الإشعار الفوري. أعد تحميل الصفحة أو سجّل الدخول من
-            جديد.
-          </p>
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
+          />
+        </svg>
+        {unreadCount > 0 ? (
+          <span className="absolute -top-1 -end-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-black leading-none text-white">
+            {unreadCount > 9 ? "9+" : unreadCount}
+          </span>
         ) : null}
+      </button>
 
-        {showListenerWarning ? (
-          <p className="max-w-xs rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-900 shadow-sm">
-            {listenerError}
-          </p>
-        ) : null}
-      </div>
-
-      <div className="pointer-events-none fixed inset-x-0 top-4 z-[100] flex flex-col items-center gap-2 px-4">
-        {toasts.map((toast) => (
-          <div key={toast.id} className="pointer-events-auto">
-            <RequestToast
-              toast={toast}
-              locale={locale}
-              onDismiss={() => dismissToast(toast.id)}
-            />
+      {panelOpen ? (
+        <div
+          role="dialog"
+          aria-label="إشعارات الطلبات الجديدة"
+          className="absolute top-full end-0 z-[100] mt-2 flex w-[min(100vw-2rem,22rem)] flex-col overflow-hidden rounded-lg border border-gov-gray-200 bg-white shadow-xl"
+        >
+          <div className="flex items-center justify-between gap-2 border-b border-gov-gray-200 px-4 py-3">
+            <h2 className="text-sm font-extrabold text-gov-navy">الإشعارات</h2>
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                onClick={() => void toggleMute()}
+                className="rounded px-2 py-1 text-[11px] font-bold text-gov-gray-600 hover:bg-gov-gray-100"
+                aria-pressed={muted}
+              >
+                {muted ? "تفعيل الصوت" : "كتم"}
+              </button>
+              {notifications.length > 0 ? (
+                <button
+                  type="button"
+                  onClick={clearAllNotifications}
+                  className="rounded px-2 py-1 text-[11px] font-bold text-gov-gray-600 hover:bg-gov-gray-100"
+                >
+                  مسح الكل
+                </button>
+              ) : null}
+            </div>
           </div>
-        ))}
-      </div>
-    </>
+
+          <div className="max-h-[min(70vh,24rem)] overflow-y-auto">
+            {notifications.length === 0 ? (
+              <p className="px-4 py-8 text-center text-sm text-gov-gray-500">
+                لا توجد إشعارات جديدة
+              </p>
+            ) : (
+              notifications.map((item) => (
+                <NotificationRow
+                  key={item.id}
+                  item={item}
+                  locale={locale}
+                  onDismiss={() => dismissNotification(item.id)}
+                />
+              ))
+            )}
+          </div>
+
+          {authFailed ? (
+            <p className="border-t border-amber-100 bg-amber-50 px-4 py-2 text-xs font-semibold text-amber-900">
+              تعذّر تفعيل الإشعار الفوري. أعد تحميل الصفحة أو سجّل الدخول من
+              جديد.
+            </p>
+          ) : null}
+
+          {showListenerWarning ? (
+            <p className="border-t border-amber-100 bg-amber-50 px-4 py-2 text-xs font-semibold text-amber-900">
+              {listenerError}
+            </p>
+          ) : null}
+        </div>
+      ) : null}
+    </div>
   );
 }

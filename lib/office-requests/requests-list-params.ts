@@ -82,8 +82,33 @@ export type AdminRequestsHrefParams = {
   range?: string;
   from?: string;
   to?: string;
+  /** @deprecated Use page + cursors */
   cursor?: string | null;
+  page?: number | null;
+  cursors?: string[] | null;
 };
+
+export function parseAdminRequestsPage(raw?: string | null): number {
+  const value = raw?.trim();
+  if (!value) return 1;
+  const n = Number.parseInt(value, 10);
+  return Number.isFinite(n) && n >= 1 ? n : 1;
+}
+
+export function parseAdminRequestsCursors(raw?: string | null): string[] {
+  const value = raw?.trim();
+  if (!value) return [];
+  return value.split(",").map((c) => c.trim()).filter(Boolean);
+}
+
+/** Cursor for Firestore list at 1-based page number. */
+export function cursorForAdminRequestsPage(
+  page: number,
+  cursors: string[],
+): string | undefined {
+  if (page <= 1) return undefined;
+  return cursors[page - 2];
+}
 
 export function buildAdminRequestsHref(
   base: string,
@@ -103,7 +128,16 @@ export function buildAdminRequestsHref(
   if (params.range && params.range !== "all") {
     search.set("range", params.range);
   }
-  if (params.cursor) search.set("cursor", params.cursor);
+  if (params.page && params.page > 1) {
+    search.set("page", String(params.page));
+  }
+  const cursors = params.cursors?.filter(Boolean) ?? [];
+  if (cursors.length > 0) {
+    search.set("cursors", cursors.join(","));
+  }
+  if (params.cursor && cursors.length === 0) {
+    search.set("cursor", params.cursor);
+  }
   const qs = search.toString();
   return qs ? `${base}?${qs}` : base;
 }

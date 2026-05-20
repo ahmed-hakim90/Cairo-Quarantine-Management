@@ -4,14 +4,21 @@ import { SuperAdminExportLauncher } from "@/components/admin/SuperAdminExportLau
 import { getCairoTodayYmd } from "@/lib/cairo-today-ymd";
 import { isLocale } from "@/lib/i18n/config";
 import { adminAllowedOfficeIds } from "@/lib/office-requests/admin-access";
-import { parseAdminBookingDateParams } from "@/lib/office-requests/admin-booking-date-range";
 import {
+  isExplicitBookingDateFilter,
+  parseAdminBookingDateParams,
+} from "@/lib/office-requests/admin-booking-date-range";
+import {
+  cursorForAdminRequestsPage,
+  parseAdminRequestsCursors,
+  parseAdminRequestsPage,
   parseAdminRequestsSort,
   parseAdminRequestsStatus,
   sortToFirestore,
 } from "@/lib/office-requests/requests-list-params";
 import { getAdminSession } from "@/lib/office-requests/session";
 import {
+  countVisibleBookingsForSession,
   listLatestActivityLogByRequestIds,
   listOffices,
   listRequestsForSessionPage,
@@ -58,7 +65,18 @@ export default async function AdminRequestsPage({
     redirect(`/${locale}/admin/requests`);
   }
 
-  const cursor = firstSearchParam(sp.cursor);
+  const legacyCursor = firstSearchParam(sp.cursor);
+  let currentPage = parseAdminRequestsPage(firstSearchParam(sp.page));
+  let pageCursors = parseAdminRequestsCursors(firstSearchParam(sp.cursors));
+  if (legacyCursor && pageCursors.length === 0) {
+    currentPage = Math.max(currentPage, 2);
+    pageCursors = [legacyCursor];
+  }
+  const listCursor = cursorForAdminRequestsPage(currentPage, pageCursors);
+  if (currentPage > 1 && !listCursor) {
+    redirect(`/${locale}/admin/requests`);
+  }
+
   const q = firstSearchParam(sp.q) ?? "";
   const statusFilter = parseAdminRequestsStatus(firstSearchParam(sp.status));
   const sort = parseAdminRequestsSort(firstSearchParam(sp.sort));
@@ -87,6 +105,11 @@ export default async function AdminRequestsPage({
       )
     : allOffices;
 
+  const explicitDateFilter = isExplicitBookingDateFilter({
+    dateRange,
+    hasCustomRange: dateParams.hasCustomRange,
+  });
+
   const requestListPromise = q
     ? searchRequestsForSessionPage({
         ...listArgs,
@@ -100,13 +123,20 @@ export default async function AdminRequestsPage({
         status: statusFilter === "all" ? undefined : statusFilter,
         sortKey,
         sortDirection,
-        cursor,
+        cursor: listCursor,
       });
 
-  const [requestPage, travelerStates] = await Promise.all([
-    requestListPromise,
-    listTravelerStates({ includeInactive: true }),
-  ]);
+  const bookingCountPromise =
+    explicitDateFilter && bookingDateRange
+      ? countVisibleBookingsForSession(listArgs)
+      : Promise.resolve(null);
+
+  const [requestPage, travelerStates, totalBookingsInPeriod] =
+    await Promise.all([
+      requestListPromise,
+      listTravelerStates({ includeInactive: true }),
+      bookingCountPromise,
+    ]);
   const requests = requestPage.items;
 
   const latestActivityByRequestId = await listLatestActivityLogByRequestIds(
@@ -162,6 +192,9 @@ export default async function AdminRequestsPage({
         customDateTo={dateParams.customDateTo}
         latestActivityByRequestId={latestActivityByRequestId}
         nextCursor={requestPage.nextCursor}
+        totalBookingsInPeriod={totalBookingsInPeriod}
+        currentPage={q ? 1 : currentPage}
+        pageCursors={q ? [] : pageCursors}
       />
     </div>
   );

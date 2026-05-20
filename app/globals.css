@@ -55,9 +55,9 @@
   }
 
   .zh-site {
-    --font-sans: var(--font-noto-sc), "PingFang SC", "Microsoft YaHei",
+    --font-sans: "PingFang SC", "Microsoft YaHei", "Noto Sans SC",
       ui-sans-serif, system-ui, sans-serif;
-    --font-heading: var(--font-noto-sc), "PingFang SC", "Microsoft YaHei",
+    --font-heading: "PingFang SC", "Microsoft YaHei", "Noto Sans SC",
       ui-sans-serif, sans-serif;
   }
 }

@@ -57,6 +57,10 @@ service cloud.firestore {
       allow read, write: if superAdmin();
     }
 
+    match /destination_countries/{countryId} {
+      allow read, write: if superAdmin();
+    }
+
     match /messageTemplates/{templateId} {
       allow read: if activeAdmin();
       allow write: if superAdmin();

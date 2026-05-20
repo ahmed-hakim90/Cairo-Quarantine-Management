@@ -1,5 +1,4 @@
 import type { Metadata, Viewport } from "next";
-import { Almarai, IBM_Plex_Sans_Arabic, Noto_Sans_SC } from "next/font/google";
 import { notFound } from "next/navigation";
 import "../globals.css";
 import {
@@ -9,27 +8,11 @@ import {
 } from "@/lib/i18n/config";
 import { FeedbackProvider } from "@/components/ui/FeedbackProvider";
 import { getMessages } from "@/lib/i18n/messages";
+import { arabicFontClassName } from "@/lib/fonts/arabic";
 
-const almarai = Almarai({
-  subsets: ["arabic", "latin"],
-  weight: ["400", "700", "800"],
-  variable: "--font-almarai",
-  display: "swap",
-});
-
-const ibmPlexSansArabic = IBM_Plex_Sans_Arabic({
-  subsets: ["arabic", "latin"],
-  weight: ["400", "600", "700"],
-  variable: "--font-ibm-plex-sans-arabic",
-  display: "swap",
-});
-
-const notoSansSc = Noto_Sans_SC({
-  subsets: ["latin"],
-  weight: ["400", "500", "700"],
-  variable: "--font-noto-sc",
-  display: "swap",
-});
+function localeFontClassName(locale: Locale): string {
+  return locale === "zh" ? "zh-site h-full" : arabicFontClassName();
+}
 
 export function generateStaticParams() {
   return locales.map((locale) => ({ locale }));
@@ -95,10 +78,7 @@ export default async function LocaleLayout({
         : locale === "fr"
           ? "fr"
           : "en";
-  const htmlClass =
-    locale === "zh"
-      ? `${notoSansSc.variable} zh-site h-full`
-      : `${almarai.variable} ${ibmPlexSansArabic.variable} h-full`;
+  const htmlClass = localeFontClassName(locale);
 
   return (
     <html lang={lang} dir={dir} className={htmlClass}>

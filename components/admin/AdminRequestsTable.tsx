@@ -93,6 +93,9 @@ type AdminRequestsTableProps = {
   customDateTo?: string;
   latestActivityByRequestId?: Record<string, AdminActivityLogEntry>;
   nextCursor?: string | null;
+  totalBookingsInPeriod?: number | null;
+  currentPage?: number;
+  pageCursors?: string[];
 };
 
 const statusClass: Record<OfficeRequest["status"], string> = {
@@ -264,6 +267,9 @@ export function AdminRequestsTable({
   customDateTo,
   latestActivityByRequestId = {},
   nextCursor = null,
+  totalBookingsInPeriod = null,
+  currentPage = 1,
+  pageCursors = [],
 }: AdminRequestsTableProps) {
   const router = useRouter();
   const [typeFilter, setTypeFilter] = useState<RequestTypeFilter>("all");
@@ -351,10 +357,10 @@ export function AdminRequestsTable({
     customFrom: customDateFrom,
     customTo: customDateTo,
   });
-  const bookingsInPeriod = useMemo(
-    () => requests.filter((r) => r.type === "booking").length,
-    [requests],
-  );
+  const bookingsInPeriod =
+    totalBookingsInPeriod != null
+      ? totalBookingsInPeriod
+      : requests.filter((r) => r.type === "booking").length;
   const summaryLine = hasCustomDateRange
     ? `الحجوزات بتاريخ من ${customDateFrom} إلى ${customDateTo}؛ الشكاوى والمقترحات الجديدة المُنشأة في نفس الفترة (توقيت القاهرة).`
     : dateRange === "all"
@@ -390,19 +396,56 @@ export function AdminRequestsTable({
         status: overrides.status ?? statusFilter,
         sort: overrides.sort ?? sort,
         ...dateParams,
-        ...(overrides.cursor ? { cursor: overrides.cursor } : {}),
+        ...(overrides.page != null ? { page: overrides.page } : {}),
+        ...(overrides.cursors != null ? { cursors: overrides.cursors } : {}),
       });
     },
     [dateHrefParams, requestsListHref, searchQuery, sort, statusFilter],
   );
 
+  const hasSearch = Boolean(searchQuery.trim());
+  const hasPrev = !hasSearch && currentPage > 1;
+  const hasNext = !hasSearch && Boolean(nextCursor);
+
+  const prevHref = useMemo(
+    () =>
+      hasPrev
+        ? listHref({
+            page: currentPage > 2 ? currentPage - 1 : null,
+            cursors:
+              currentPage > 2 ? pageCursors.slice(0, currentPage - 2) : [],
+          })
+        : null,
+    [currentPage, hasPrev, listHref, pageCursors],
+  );
+
   const nextHref = useMemo(
     () =>
-      nextCursor
-        ? listHref({ cursor: nextCursor })
+      hasNext && nextCursor
+        ? listHref({
+            page: currentPage + 1,
+            cursors: [...pageCursors, nextCursor],
+          })
         : null,
-    [listHref, nextCursor],
+    [currentPage, hasNext, listHref, nextCursor, pageCursors],
   );
+
+  const pageNumberHrefs = useMemo(() => {
+    if (hasSearch) return [];
+    const hrefs: (string | null)[] = [];
+    for (let p = 1; p <= currentPage; p++) {
+      hrefs.push(
+        listHref({
+          page: p > 1 ? p : null,
+          cursors: p > 1 ? pageCursors.slice(0, p - 1) : [],
+        }),
+      );
+    }
+    if (hasNext) {
+      hrefs.push(null);
+    }
+    return hrefs;
+  }, [currentPage, hasNext, hasSearch, listHref, pageCursors]);
 
   const showClearDateFilter = explicitDateFilter;
   const clearDateFilterHref = buildAdminRequestsHref(requestsListHref, {
@@ -442,6 +485,11 @@ export function AdminRequestsTable({
             <span className="font-heading text-3xl font-black tabular-nums leading-none text-gov-accent sm:text-4xl">
               {bookingsInPeriod}
             </span>
+            {totalBookingsInPeriod != null ? (
+              <span className="text-xs font-semibold text-gov-gray-500">
+                إجمالي الحجوزات في الفترة
+              </span>
+            ) : null}
           </div>
         ) : null}
         <p
@@ -910,15 +958,114 @@ export function AdminRequestsTable({
           </tbody>
         </table>
       </div>
-      {nextHref ? (
-        <div className="border-t border-gov-gray-200 px-4 py-4 text-center">
-          <Link
-            href={nextHref}
-            className="inline-flex min-h-10 items-center justify-center rounded-md border border-gov-gray-300 bg-white px-4 py-2 text-sm font-extrabold text-gov-navy transition hover:border-gov-accent hover:text-gov-accent"
-          >
-            تحميل المزيد
-          </Link>
-        </div>
+      {!hasSearch && (hasPrev || hasNext || currentPage > 1) ? (
+        <nav
+          className="flex flex-wrap items-center justify-center gap-2 border-t border-gov-gray-200 px-4 py-4"
+          aria-label="ترقيم صفحات الطلبات"
+        >
+          {prevHref ? (
+            <Link
+              href={prevHref}
+              className="inline-flex min-h-10 min-w-10 items-center justify-center rounded-md border border-gov-gray-300 bg-white px-3 text-sm font-extrabold text-gov-navy transition hover:border-gov-accent hover:text-gov-accent"
+              aria-label="الصفحة السابقة"
+            >
+              <svg
+                className="h-4 w-4"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={2}
+                viewBox="0 0 24 24"
+                aria-hidden
+              >
+                <path strokeLinecap="round" d="M9 5l7 7-7 7" />
+              </svg>
+            </Link>
+          ) : (
+            <span
+              className="inline-flex min-h-10 min-w-10 cursor-not-allowed items-center justify-center rounded-md border border-gov-gray-200 bg-gov-gray-50 px-3 text-sm font-extrabold text-gov-gray-400"
+              aria-disabled
+            >
+              <svg
+                className="h-4 w-4"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={2}
+                viewBox="0 0 24 24"
+                aria-hidden
+              >
+                <path strokeLinecap="round" d="M9 5l7 7-7 7" />
+              </svg>
+            </span>
+          )}
+
+          <div className="flex flex-wrap items-center justify-center gap-1">
+            {pageNumberHrefs.map((href, index) => {
+              const pageNum = index + 1;
+              const isCurrent = pageNum === currentPage;
+              const isEllipsis = href === null;
+              if (isEllipsis) {
+                return (
+                  <span
+                    key="next-page"
+                    className="inline-flex min-h-10 min-w-10 items-center justify-center rounded-md border border-dashed border-gov-gray-300 bg-gov-gray-50/80 px-3 text-sm font-extrabold text-gov-gray-500"
+                    aria-hidden
+                  >
+                    …
+                  </span>
+                );
+              }
+              return (
+                <Link
+                  key={pageNum}
+                  href={href}
+                  aria-current={isCurrent ? "page" : undefined}
+                  className={`inline-flex min-h-10 min-w-10 items-center justify-center rounded-md border px-3 text-sm font-extrabold tabular-nums transition ${
+                    isCurrent
+                      ? "border-gov-accent bg-gov-accent text-white"
+                      : "border-gov-gray-300 bg-white text-gov-navy hover:border-gov-accent hover:text-gov-accent"
+                  }`}
+                >
+                  {pageNum}
+                </Link>
+              );
+            })}
+          </div>
+
+          {nextHref ? (
+            <Link
+              href={nextHref}
+              className="inline-flex min-h-10 min-w-10 items-center justify-center rounded-md border border-gov-gray-300 bg-white px-3 text-sm font-extrabold text-gov-navy transition hover:border-gov-accent hover:text-gov-accent"
+              aria-label="الصفحة التالية"
+            >
+              <svg
+                className="h-4 w-4"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={2}
+                viewBox="0 0 24 24"
+                aria-hidden
+              >
+                <path strokeLinecap="round" d="M15 5l-7 7 7 7" />
+              </svg>
+            </Link>
+          ) : (
+            <span
+              className="inline-flex min-h-10 min-w-10 cursor-not-allowed items-center justify-center rounded-md border border-gov-gray-200 bg-gov-gray-50 px-3 text-sm font-extrabold text-gov-gray-400"
+              aria-disabled
+            >
+              <svg
+                className="h-4 w-4"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={2}
+                viewBox="0 0 24 24"
+                aria-hidden
+              >
+                <path strokeLinecap="round" d="M15 5l-7 7 7 7" />
+              </svg>
+            </span>
+          )}
+        </nav>
       ) : null}
     </div>
   );

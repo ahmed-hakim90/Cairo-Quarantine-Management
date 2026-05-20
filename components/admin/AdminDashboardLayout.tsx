@@ -108,15 +108,16 @@ export function AdminDashboardLayout({
               </p>
             </div>
           </div>
-          <AdminLogoutButton locale={locale} />
+          <div className="flex shrink-0 items-center gap-2">
+            <AdminNewRequestNotifier
+              locale={locale}
+              role={role}
+              officeId={officeId}
+              allowedOfficeIds={allowedOfficeIds}
+            />
+            <AdminLogoutButton locale={locale} />
+          </div>
         </header>
-
-        <AdminNewRequestNotifier
-          locale={locale}
-          role={role}
-          officeId={officeId}
-          allowedOfficeIds={allowedOfficeIds}
-        />
 
         <main id="main-content" className="flex-1 px-4 py-6 md:px-6">
           {children}

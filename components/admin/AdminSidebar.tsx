@@ -70,6 +70,11 @@ function NavLinks({
     },
     { href: "/admin/vaccines", label: "التطعيمات", roles: ["super_admin"] },
     {
+      href: "/admin/destination-countries",
+      label: "متطلبات دول المسافر",
+      roles: ["super_admin"],
+    },
+    {
       href: "/admin/users",
       label: "المستخدمون",
       roles: ["super_admin", "governorate_admin", "office_admin"],

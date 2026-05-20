@@ -53,11 +53,14 @@ import {
   type CreatedOfficeRequestPublic,
   type PublicOfficeRequestStatus,
   type TravelerCategory,
+  type DestinationCountry,
+  type DestinationCountryImportResult,
   type TravelerState,
   type VaccineCatalogEntry,
   type VaccineUserCategory,
   DEFAULT_BOOKING_SAME_DAY_CUTOFF_HOUR,
 } from "@/lib/office-requests/types";
+import type { DestinationCountryImportRow } from "@/lib/office-requests/destination-countries-import";
 import {
   adminCanAccessOffice,
   normalizeOfficeIds,
@@ -81,11 +84,12 @@ import {
   canBuildBookingDuplicateKey,
   type BookingDuplicateKeyInput,
 } from "@/lib/office-requests/booking-duplicate-key";
-import { getCairoTodayYmd } from "@/lib/cairo-today-ymd";
+import { getCairoTodayYmd, getCairoTomorrowYmd } from "@/lib/cairo-today-ymd";
 import {
   applyDailyRequestStatsOnCreate,
   applyDailyRequestStatsOnStatusChange,
   dailyRequestStatsRef,
+  listDailyRequestStatsForOffices,
   requestStatsDate,
 } from "@/lib/office-requests/daily-request-stats";
 import { isAdminVisibleBookingRequest } from "@/lib/office-requests/booking-visibility";
@@ -107,6 +111,7 @@ export { SUPER_ADMIN_EXPORT_MAX_ROWS };
 const OFFICES = "offices";
 const TRAVELER_STATES = "traveler_states";
 const VACCINES = "vaccines";
+const DESTINATION_COUNTRIES = "destination_countries";
 const REQUESTS = "requests";
 const REQUEST_NUMBERS_SETTINGS = "request_numbers";
 const SETTINGS = "settings";
@@ -121,6 +126,7 @@ export const OFFICE_REQUESTS_CACHE_TAGS = {
   publicTravelerStates: "public-traveler-states",
   publicBookingSettings: "public-booking-settings",
   publicVaccines: "public-vaccines",
+  publicDestinationCountries: "public-destination-countries",
 } as const;
 
 const VACCINE_CATEGORIES: VaccineUserCategory[] = [
@@ -544,6 +550,167 @@ export async function setVaccineActive(
     officeId: null,
     meta: { vaccineId, active },
   });
+}
+
+function destinationCountryFromDoc(
+  id: string,
+  data: FirebaseFirestore.DocumentData,
+): DestinationCountry {
+  return {
+    id,
+    nameEn: String(data.nameEn ?? ""),
+    nameAr: String(data.nameAr ?? ""),
+    requirementsAr: String(data.requirementsAr ?? ""),
+    sortOrder:
+      typeof data.sortOrder === "number" && Number.isFinite(data.sortOrder)
+        ? data.sortOrder
+        : 0,
+    createdAt: data.createdAt ? iso(data.createdAt) : undefined,
+    updatedAt: data.updatedAt ? iso(data.updatedAt) : undefined,
+  };
+}
+
+async function listDestinationCountriesUncached(): Promise<DestinationCountry[]> {
+  if (!isFirebaseAdminConfigured()) return [];
+
+  try {
+    const snap = await getAdminDb().collection(DESTINATION_COUNTRIES).get();
+    const list = snap.docs.map((d) =>
+      destinationCountryFromDoc(d.id, d.data() ?? {}),
+    );
+    list.sort((a, b) => {
+      if (a.sortOrder !== b.sortOrder) return a.sortOrder - b.sortOrder;
+      return a.nameEn.localeCompare(b.nameEn, "en");
+    });
+    return list;
+  } catch {
+    return [];
+  }
+}
+
+const listDestinationCountriesPublicCached = unstable_cache(
+  async () => listDestinationCountriesUncached(),
+  ["public-destination-countries"],
+  {
+    revalidate: PUBLIC_CACHE_SECONDS,
+    tags: [OFFICE_REQUESTS_CACHE_TAGS.publicDestinationCountries],
+  },
+);
+
+export async function listDestinationCountriesForPublic(): Promise<
+  DestinationCountry[]
+> {
+  return listDestinationCountriesPublicCached();
+}
+
+export async function listDestinationCountriesForAdmin(): Promise<
+  DestinationCountry[]
+> {
+  return listDestinationCountriesUncached();
+}
+
+export async function countDestinationCountries(): Promise<number> {
+  if (!isFirebaseAdminConfigured()) return 0;
+  try {
+    const snap = await getAdminDb().collection(DESTINATION_COUNTRIES).count().get();
+    return snap.data().count;
+  } catch {
+    const list = await listDestinationCountriesUncached();
+    return list.length;
+  }
+}
+
+const DESTINATION_COUNTRIES_BATCH_SIZE = 450;
+
+export async function importDestinationCountries(
+  rows: DestinationCountryImportRow[],
+  mode: "bootstrap" | "update",
+  actor: AdminActivityActor,
+): Promise<DestinationCountryImportResult> {
+  if (!isFirebaseAdminConfigured()) {
+    throw new Error("Firebase غير مضبوط حالياً، لا يمكن استيراد الدول.");
+  }
+
+  const result: DestinationCountryImportResult = {
+    created: 0,
+    updated: 0,
+    skipped: 0,
+    errors: [],
+  };
+
+  if (rows.length === 0) {
+    result.errors.push("لا توجد صفوف للاستيراد.");
+    return result;
+  }
+
+  const db = getAdminDb();
+  const collection = db.collection(DESTINATION_COUNTRIES);
+
+  if (mode === "update") {
+    const existingSnap = await collection.get();
+    const existingIds = new Set(existingSnap.docs.map((d) => d.id));
+
+    for (let i = 0; i < rows.length; i += DESTINATION_COUNTRIES_BATCH_SIZE) {
+      const chunk = rows.slice(i, i + DESTINATION_COUNTRIES_BATCH_SIZE);
+      const batch = db.batch();
+      let chunkUpdated = 0;
+
+      for (const row of chunk) {
+        if (!existingIds.has(row.id)) {
+          result.errors.push(
+            `صف ${row.sortOrder}: الدولة «${row.nameEn}» غير مسجّلة — لم يُنشأ سجل جديد.`,
+          );
+          result.skipped += 1;
+          continue;
+        }
+
+        const ref = collection.doc(row.id);
+        batch.update(ref, {
+          requirementsAr: row.requirementsAr.trim(),
+          updatedAt: FieldValue.serverTimestamp(),
+        });
+        chunkUpdated += 1;
+      }
+
+      if (chunkUpdated > 0) {
+        await batch.commit();
+        result.updated += chunkUpdated;
+      }
+    }
+  } else {
+    for (let i = 0; i < rows.length; i += DESTINATION_COUNTRIES_BATCH_SIZE) {
+      const chunk = rows.slice(i, i + DESTINATION_COUNTRIES_BATCH_SIZE);
+      const batch = db.batch();
+
+      for (const row of chunk) {
+        const ref = collection.doc(row.id);
+        batch.set(ref, {
+          nameEn: row.nameEn.trim(),
+          nameAr: row.nameAr.trim(),
+          requirementsAr: row.requirementsAr.trim(),
+          sortOrder: row.sortOrder,
+          createdAt: FieldValue.serverTimestamp(),
+          updatedAt: FieldValue.serverTimestamp(),
+        });
+        result.created += 1;
+      }
+
+      await batch.commit();
+    }
+  }
+
+  await appendActivityLog({
+    actor,
+    action: "destination_countries.imported",
+    summaryAr:
+      mode === "bootstrap"
+        ? `استيراد أولي لمتطلبات ${result.created} دولة`
+        : `تحديث متطلبات ${result.updated} دولة من ملف Excel`,
+    officeId: null,
+    meta: { mode, ...result },
+  });
+
+  return result;
 }
 
 export async function listTravelerStates(options?: {
@@ -1552,6 +1719,110 @@ function adminRequestOfficeScope(args: {
     return normalizeOfficeIds(args.allowedOfficeIds ?? []);
   }
   return args.officeFilter ? [args.officeFilter] : null;
+}
+
+const YMD_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+function validBookingYmd(value: string | null | undefined): string | null {
+  const v = value?.trim();
+  return v && YMD_RE.test(v) ? v : null;
+}
+
+function listYmdInclusive(fromYmd: string, toYmd: string): string[] {
+  const days: string[] = [];
+  let cur = fromYmd;
+  for (let i = 0; i < 400 && cur <= toYmd; i++) {
+    days.push(cur);
+    if (cur === toYmd) break;
+    cur = getCairoTomorrowYmd(new Date(`${cur}T12:00:00+02:00`));
+  }
+  return days;
+}
+
+function visibleBookingCountDateBounds(args: {
+  todayYmd: string;
+  bookingDateFrom?: string | null;
+  bookingDateTo?: string | null;
+}): { fromYmd: string; toYmd: string } | null {
+  const requestedFrom = validBookingYmd(args.bookingDateFrom);
+  const requestedTo = validBookingYmd(args.bookingDateTo);
+  if (!requestedFrom && !requestedTo) return null;
+
+  const fromYmd =
+    requestedFrom && requestedFrom > args.todayYmd
+      ? requestedFrom
+      : args.todayYmd;
+  const toYmd = requestedTo ?? requestedFrom ?? args.todayYmd;
+  if (fromYmd > toYmd) return null;
+  return { fromYmd, toYmd };
+}
+
+async function resolveOfficeIdsForBookingCount(
+  scope: string[] | null,
+): Promise<string[]> {
+  if (scope && scope.length > 0) return scope;
+  if (!isFirebaseAdminConfigured()) return [];
+  const snap = await getAdminDb().collection("offices").select().get();
+  return snap.docs.map((doc) => doc.id);
+}
+
+/** Total visible bookings for the active date filter (not limited to list page size). */
+export async function countVisibleBookingsForSession(args: {
+  role: AdminRole;
+  officeId: string | null;
+  allowedOfficeIds?: string[];
+  officeFilter?: string;
+  adminBookingTodayYmd: string;
+  bookingDateFrom?: string | null;
+  bookingDateTo?: string | null;
+}): Promise<number> {
+  if (!isFirebaseAdminConfigured()) return 0;
+
+  const bounds = visibleBookingCountDateBounds({
+    todayYmd: args.adminBookingTodayYmd,
+    bookingDateFrom: args.bookingDateFrom,
+    bookingDateTo: args.bookingDateTo,
+  });
+  if (!bounds) return 0;
+
+  const officeIds = await resolveOfficeIdsForBookingCount(
+    adminRequestOfficeScope(args),
+  );
+  if (officeIds.length === 0) return 0;
+
+  const days = listYmdInclusive(bounds.fromYmd, bounds.toYmd);
+  if (days.length === 0) return 0;
+
+  const statsRows = await listDailyRequestStatsForOffices({
+    officeIds,
+    fromDate: bounds.fromYmd,
+    toDate: bounds.toYmd,
+  });
+
+  const statsByKey = new Map<string, number>();
+  for (const row of statsRows) {
+    statsByKey.set(`${row.officeId}_${row.date}`, row.bookings);
+  }
+
+  let total = 0;
+  for (const officeId of officeIds) {
+    for (const date of days) {
+      const key = `${officeId}_${date}`;
+      const cached = statsByKey.get(key);
+      if (cached != null) {
+        total += cached;
+        continue;
+      }
+      const snap = await getAdminDb()
+        .collection("requests")
+        .where("officeId", "==", officeId)
+        .where("preferredDate", "==", date)
+        .where("type", "==", "booking")
+        .get();
+      total += snap.size;
+    }
+  }
+  return total;
 }
 
 export async function searchRequestsForSessionPage(args: {

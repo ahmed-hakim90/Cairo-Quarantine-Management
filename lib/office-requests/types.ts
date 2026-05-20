@@ -177,6 +177,24 @@ export type VaccineCatalogEntry = {
   updatedAt?: string;
 };
 
+/** دولة وجهة ومتطلبات التطعيم (مجموعة `destination_countries`). */
+export type DestinationCountry = {
+  id: string;
+  nameEn: string;
+  nameAr: string;
+  requirementsAr: string;
+  sortOrder: number;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
+export type DestinationCountryImportResult = {
+  created: number;
+  updated: number;
+  skipped: number;
+  errors: string[];
+};
+
 export type AdminSession = {
   uid: string;
   email: string | null;
@@ -203,6 +221,7 @@ export type AdminActivityLogAction =
   | "vaccine.active_changed"
   | "traveler_state.upserted"
   | "traveler_state.active_changed"
+  | "destination_countries.imported"
   | "template.created"
   | "template.updated"
   | "template.deleted";
