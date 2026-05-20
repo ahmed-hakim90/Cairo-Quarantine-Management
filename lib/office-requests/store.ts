@@ -61,6 +61,9 @@ import {
   DEFAULT_BOOKING_SAME_DAY_CUTOFF_HOUR,
 } from "@/lib/office-requests/types";
 import type { DestinationCountryImportRow } from "@/lib/office-requests/destination-countries-import";
+import type { OfficeImportRow } from "@/lib/office-requests/offices-excel";
+import type { VaccineImportRow } from "@/lib/office-requests/vaccines-excel";
+import type { TemplateImportRow } from "@/lib/office-requests/templates-excel";
 import {
   adminCanAccessOffice,
   normalizeOfficeIds,
@@ -277,6 +280,56 @@ function parseDailyBookingCap(raw: unknown): number | undefined {
   return n;
 }
 
+function parseWorkingHoursFromDoc(
+  data: FirebaseFirestore.DocumentData,
+): Office["workingHours"] {
+  if (data.workingHoursTwentyFourSeven === true) {
+    return { twentyFourSeven: true };
+  }
+  const from = data.workingHoursFrom
+    ? String(data.workingHoursFrom).trim()
+    : "";
+  const to = data.workingHoursTo ? String(data.workingHoursTo).trim() : "";
+  const exceptAr = data.workingHoursExceptAr
+    ? String(data.workingHoursExceptAr).trim()
+    : "";
+  if (!from && !to && !exceptAr) return undefined;
+  const hours: NonNullable<Office["workingHours"]> = {};
+  if (from) hours.from = from;
+  if (to) hours.to = to;
+  if (exceptAr) hours.exceptAr = exceptAr;
+  return hours;
+}
+
+function workingHoursFirestorePayload(
+  wh: Office["workingHours"],
+): Record<string, unknown> {
+  if (!wh) {
+    return {
+      workingHoursTwentyFourSeven: FieldValue.delete(),
+      workingHoursFrom: FieldValue.delete(),
+      workingHoursTo: FieldValue.delete(),
+      workingHoursExceptAr: FieldValue.delete(),
+    };
+  }
+  if (wh.twentyFourSeven) {
+    return {
+      workingHoursTwentyFourSeven: true,
+      workingHoursFrom: FieldValue.delete(),
+      workingHoursTo: FieldValue.delete(),
+      workingHoursExceptAr: FieldValue.delete(),
+    };
+  }
+  return {
+    workingHoursTwentyFourSeven: FieldValue.delete(),
+    workingHoursFrom: wh.from?.trim() ? wh.from.trim() : FieldValue.delete(),
+    workingHoursTo: wh.to?.trim() ? wh.to.trim() : FieldValue.delete(),
+    workingHoursExceptAr: wh.exceptAr?.trim()
+      ? wh.exceptAr.trim()
+      : FieldValue.delete(),
+  };
+}
+
 function clampBookingSameDayHour(hour: number): number {
   return Math.min(23, Math.max(0, Math.floor(hour)));
 }
@@ -332,6 +385,7 @@ export function sortOffices(offices: Office[]): Office[] {
 function officeFromDoc(id: string, data: FirebaseFirestore.DocumentData): Office {
   const cap = parseDailyBookingCap(data.dailyBookingCap);
   const travelerStateIds = parseTravelerStateIdsFromDoc(data);
+  const workingHours = parseWorkingHoursFromDoc(data);
   return {
     id,
     governorateId: normalizeGovernorateId(data.governorateId),
@@ -348,6 +402,7 @@ function officeFromDoc(id: string, data: FirebaseFirestore.DocumentData): Office
     active: data.active !== false,
     ...(travelerStateIds ? { travelerStateIds } : {}),
     ...(cap !== undefined ? { dailyBookingCap: cap } : {}),
+    ...(workingHours ? { workingHours } : {}),
     createdAt: data.createdAt ? iso(data.createdAt) : undefined,
     updatedAt: data.updatedAt ? iso(data.updatedAt) : undefined,
   };
@@ -706,6 +761,351 @@ export async function importDestinationCountries(
       mode === "bootstrap"
         ? `استيراد أولي لمتطلبات ${result.created} دولة`
         : `تحديث متطلبات ${result.updated} دولة من ملف Excel`,
+    officeId: null,
+    meta: { mode, ...result },
+  });
+
+  return result;
+}
+
+const CATALOG_IMPORT_BATCH_SIZE = 450;
+
+export async function countOfficesInFirestore(): Promise<number> {
+  if (!isFirebaseAdminConfigured()) return 0;
+  try {
+    const snap = await getAdminDb().collection(OFFICES).count().get();
+    return snap.data().count;
+  } catch {
+    const snap = await getAdminDb().collection(OFFICES).get();
+    return snap.size;
+  }
+}
+
+export async function countVaccinesInFirestore(): Promise<number> {
+  if (!isFirebaseAdminConfigured()) return 0;
+  try {
+    const snap = await getAdminDb().collection(VACCINES).count().get();
+    return snap.data().count;
+  } catch {
+    const snap = await getAdminDb().collection(VACCINES).get();
+    return snap.size;
+  }
+}
+
+export async function countTemplatesInFirestore(): Promise<number> {
+  if (!isFirebaseAdminConfigured()) return 0;
+  try {
+    const snap = await getAdminDb().collection(TEMPLATES).count().get();
+    return snap.data().count;
+  } catch {
+    const snap = await getAdminDb().collection(TEMPLATES).get();
+    return snap.size;
+  }
+}
+
+function officeImportBootstrapPayload(input: Office): Record<string, unknown> {
+  const capPayload =
+    input.dailyBookingCap != null &&
+    typeof input.dailyBookingCap === "number" &&
+    input.dailyBookingCap > 0
+      ? { dailyBookingCap: input.dailyBookingCap }
+      : { dailyBookingCap: FieldValue.delete() };
+  const stateIds =
+    Array.isArray(input.travelerStateIds) && input.travelerStateIds.length > 0
+      ? [...new Set(input.travelerStateIds.map(String).filter(Boolean))]
+      : null;
+  const statePayload = stateIds
+    ? { travelerStateIds: stateIds }
+    : { travelerStateIds: FieldValue.delete() };
+
+  return {
+    governorateId: normalizeGovernorateId(input.governorateId),
+    serialInGovernorate: parseSerialInGovernorate(input.serialInGovernorate),
+    administrationAr: input.administrationAr.trim(),
+    nameAr: input.nameAr.trim(),
+    addressAr: input.addressAr.trim(),
+    phone: input.phone?.trim() || null,
+    mapsUrl: input.mapsUrl.trim(),
+    service: input.service,
+    active: input.active,
+    ...statePayload,
+    ...capPayload,
+    ...workingHoursFirestorePayload(input.workingHours),
+    updatedAt: FieldValue.serverTimestamp(),
+    createdAt: FieldValue.serverTimestamp(),
+  };
+}
+
+function officeImportUpdatePayload(input: Office): Record<string, unknown> {
+  const capPayload =
+    input.dailyBookingCap != null &&
+    typeof input.dailyBookingCap === "number" &&
+    input.dailyBookingCap > 0
+      ? { dailyBookingCap: input.dailyBookingCap }
+      : { dailyBookingCap: FieldValue.delete() };
+  const stateIds =
+    Array.isArray(input.travelerStateIds) && input.travelerStateIds.length > 0
+      ? [...new Set(input.travelerStateIds.map(String).filter(Boolean))]
+      : null;
+  const statePayload = stateIds
+    ? { travelerStateIds: stateIds }
+    : { travelerStateIds: FieldValue.delete() };
+
+  return {
+    addressAr: input.addressAr.trim(),
+    phone: input.phone?.trim() || null,
+    mapsUrl: input.mapsUrl.trim(),
+    active: input.active,
+    ...statePayload,
+    ...capPayload,
+    ...workingHoursFirestorePayload(input.workingHours),
+    updatedAt: FieldValue.serverTimestamp(),
+  };
+}
+
+export async function importOfficesFromExcel(
+  rows: OfficeImportRow[],
+  mode: "bootstrap" | "update",
+  actor: AdminActivityActor,
+): Promise<DestinationCountryImportResult> {
+  if (!isFirebaseAdminConfigured()) {
+    throw new Error("Firebase غير مضبوط حالياً، لا يمكن استيراد المكاتب.");
+  }
+
+  const result: DestinationCountryImportResult = {
+    created: 0,
+    updated: 0,
+    skipped: 0,
+    errors: [],
+  };
+  if (rows.length === 0) {
+    result.errors.push("لا توجد صفوف للاستيراد.");
+    return result;
+  }
+
+  const db = getAdminDb();
+  const collection = db.collection(OFFICES);
+
+  if (mode === "update") {
+    const existingIds = new Set(
+      (await collection.get()).docs.map((d) => d.id),
+    );
+    for (let i = 0; i < rows.length; i += CATALOG_IMPORT_BATCH_SIZE) {
+      const chunk = rows.slice(i, i + CATALOG_IMPORT_BATCH_SIZE);
+      const batch = db.batch();
+      let chunkUpdated = 0;
+      for (const row of chunk) {
+        if (!existingIds.has(row.id)) {
+          result.errors.push(
+            `صف ${row.sortOrder}: المكتب «${row.id}» غير مسجّل.`,
+          );
+          result.skipped += 1;
+          continue;
+        }
+        batch.update(collection.doc(row.id), officeImportUpdatePayload(row));
+        chunkUpdated += 1;
+      }
+      if (chunkUpdated > 0) {
+        await batch.commit();
+        result.updated += chunkUpdated;
+      }
+    }
+  } else {
+    for (let i = 0; i < rows.length; i += CATALOG_IMPORT_BATCH_SIZE) {
+      const chunk = rows.slice(i, i + CATALOG_IMPORT_BATCH_SIZE);
+      const batch = db.batch();
+      for (const row of chunk) {
+        batch.set(collection.doc(row.id), officeImportBootstrapPayload(row));
+        result.created += 1;
+      }
+      await batch.commit();
+    }
+  }
+
+  await appendActivityLog({
+    actor,
+    action: "offices.imported",
+    summaryAr:
+      mode === "bootstrap"
+        ? `استيراد Excel أولي لـ ${result.created} مكتب`
+        : `تحديث Excel لـ ${result.updated} مكتب`,
+    officeId: null,
+    meta: { mode, ...result },
+  });
+
+  return result;
+}
+
+export async function importVaccinesFromExcel(
+  rows: VaccineImportRow[],
+  mode: "bootstrap" | "update",
+  actor: AdminActivityActor,
+): Promise<DestinationCountryImportResult> {
+  if (!isFirebaseAdminConfigured()) {
+    throw new Error("Firebase غير مضبوط حالياً، لا يمكن استيراد اللقاحات.");
+  }
+
+  const result: DestinationCountryImportResult = {
+    created: 0,
+    updated: 0,
+    skipped: 0,
+    errors: [],
+  };
+  if (rows.length === 0) {
+    result.errors.push("لا توجد صفوف للاستيراد.");
+    return result;
+  }
+
+  const db = getAdminDb();
+  const collection = db.collection(VACCINES);
+
+  if (mode === "update") {
+    const existingIds = new Set(
+      (await collection.get()).docs.map((d) => d.id),
+    );
+    for (let i = 0; i < rows.length; i += CATALOG_IMPORT_BATCH_SIZE) {
+      const chunk = rows.slice(i, i + CATALOG_IMPORT_BATCH_SIZE);
+      const batch = db.batch();
+      let chunkUpdated = 0;
+      for (const row of chunk) {
+        if (!existingIds.has(row.id)) {
+          result.errors.push(
+            `صف ${row.sortOrder}: اللقاح «${row.id}» غير مسجّل.`,
+          );
+          result.skipped += 1;
+          continue;
+        }
+        batch.update(collection.doc(row.id), {
+          nameAr: row.nameAr.trim(),
+          nameEn: row.nameEn.trim(),
+          nameFr: (row.nameFr ?? row.nameEn).trim(),
+          priceEgp: row.free ? null : row.priceEgp,
+          free: row.free,
+          sortOrder: row.sortOrder,
+          active: row.active,
+          updatedAt: FieldValue.serverTimestamp(),
+        });
+        chunkUpdated += 1;
+      }
+      if (chunkUpdated > 0) {
+        await batch.commit();
+        result.updated += chunkUpdated;
+      }
+    }
+  } else {
+    for (let i = 0; i < rows.length; i += CATALOG_IMPORT_BATCH_SIZE) {
+      const chunk = rows.slice(i, i + CATALOG_IMPORT_BATCH_SIZE);
+      const batch = db.batch();
+      for (const row of chunk) {
+        batch.set(collection.doc(row.id), {
+          category: row.category,
+          nameAr: row.nameAr.trim(),
+          nameEn: row.nameEn.trim(),
+          nameFr: (row.nameFr ?? row.nameEn).trim(),
+          priceEgp: row.free ? null : row.priceEgp,
+          free: row.free,
+          sortOrder: row.sortOrder,
+          active: row.active,
+          createdAt: FieldValue.serverTimestamp(),
+          updatedAt: FieldValue.serverTimestamp(),
+        });
+        result.created += 1;
+      }
+      await batch.commit();
+    }
+  }
+
+  await appendActivityLog({
+    actor,
+    action: "vaccines.imported",
+    summaryAr:
+      mode === "bootstrap"
+        ? `استيراد Excel أولي لـ ${result.created} لقاح`
+        : `تحديث Excel لـ ${result.updated} لقاح`,
+    officeId: null,
+    meta: { mode, ...result },
+  });
+
+  return result;
+}
+
+export async function importTemplatesFromExcel(
+  rows: TemplateImportRow[],
+  mode: "bootstrap" | "update",
+  actor: AdminActivityActor,
+): Promise<DestinationCountryImportResult> {
+  if (!isFirebaseAdminConfigured()) {
+    throw new Error("Firebase غير مضبوط حالياً، لا يمكن استيراد القوالب.");
+  }
+
+  const result: DestinationCountryImportResult = {
+    created: 0,
+    updated: 0,
+    skipped: 0,
+    errors: [],
+  };
+  if (rows.length === 0) {
+    result.errors.push("لا توجد صفوف للاستيراد.");
+    return result;
+  }
+
+  const db = getAdminDb();
+  const collection = db.collection(TEMPLATES);
+
+  if (mode === "update") {
+    const existingIds = new Set(
+      (await collection.get()).docs.map((d) => d.id),
+    );
+    for (let i = 0; i < rows.length; i += CATALOG_IMPORT_BATCH_SIZE) {
+      const chunk = rows.slice(i, i + CATALOG_IMPORT_BATCH_SIZE);
+      const batch = db.batch();
+      let chunkUpdated = 0;
+      for (const row of chunk) {
+        if (!existingIds.has(row.id)) {
+          result.errors.push(
+            `صف ${row.sortOrder}: القالب «${row.id}» غير مسجّل.`,
+          );
+          result.skipped += 1;
+          continue;
+        }
+        batch.update(collection.doc(row.id), {
+          title: row.title.trim(),
+          body: row.body,
+          active: row.active,
+          updatedAt: FieldValue.serverTimestamp(),
+        });
+        chunkUpdated += 1;
+      }
+      if (chunkUpdated > 0) {
+        await batch.commit();
+        result.updated += chunkUpdated;
+      }
+    }
+  } else {
+    for (let i = 0; i < rows.length; i += CATALOG_IMPORT_BATCH_SIZE) {
+      const chunk = rows.slice(i, i + CATALOG_IMPORT_BATCH_SIZE);
+      const batch = db.batch();
+      for (const row of chunk) {
+        batch.set(collection.doc(row.id), {
+          title: row.title.trim(),
+          body: row.body,
+          active: row.active,
+          createdAt: FieldValue.serverTimestamp(),
+          updatedAt: FieldValue.serverTimestamp(),
+        });
+        result.created += 1;
+      }
+      await batch.commit();
+    }
+  }
+
+  await appendActivityLog({
+    actor,
+    action: "templates.imported",
+    summaryAr:
+      mode === "bootstrap"
+        ? `استيراد Excel أولي لـ ${result.created} قالب`
+        : `تحديث Excel لـ ${result.updated} قالب`,
     officeId: null,
     meta: { mode, ...result },
   });
@@ -1953,6 +2353,11 @@ export type SuperAdminExportFilters = {
   /** تصفية على createdAt (شامل)؛ null = بدون حد */
   createdFrom: Timestamp | null;
   createdTo: Timestamp | null;
+  /** حالة الطلب (نفس قائمة الطلبات)؛ null = الكل */
+  status?: OfficeRequestStatus | null;
+  /** نطاق تاريخ الحجز YMD (نفس قائمة الطلبات) */
+  bookingDateFrom?: string | null;
+  bookingDateTo?: string | null;
   /** عند ضبطه تُستبعد الحجوزات التي فات تاريخها من التصدير التشغيلي. */
   adminBookingTodayYmd?: string | null;
 };
@@ -1965,13 +2370,17 @@ function requestMatchesSuperAdminExport(
     filters.types.length > 0 ? filters.types : ALL_REQUEST_TYPES,
   );
   if (!typesSet.has(request.type)) return false;
-  if (
-    filters.adminBookingTodayYmd &&
-    !isAdminVisibleBookingRequest(request, {
-      todayYmd: filters.adminBookingTodayYmd,
-    })
-  ) {
-    return false;
+  if (filters.status && request.status !== filters.status) return false;
+  if (filters.adminBookingTodayYmd) {
+    if (
+      !isAdminVisibleBookingRequest(request, {
+        todayYmd: filters.adminBookingTodayYmd,
+        bookingDateFrom: filters.bookingDateFrom,
+        bookingDateTo: filters.bookingDateTo,
+      })
+    ) {
+      return false;
+    }
   }
 
   const mergedStateKeys = new Set([
@@ -2044,6 +2453,9 @@ export async function listRequestsForSuperAdminExport(
       }
       if (filters.createdTo) {
         q = q.where("createdAt", "<=", filters.createdTo);
+      }
+      if (filters.status) {
+        q = q.where("status", "==", filters.status);
       }
       q = q.orderBy("createdAt", "desc").limit(EXPORT_PAGE_SIZE);
       if (lastDoc && usesCursorPagination) {
@@ -2613,6 +3025,7 @@ export async function upsertOffice(
       active: input.active,
       ...statePayload,
       ...capPayload,
+      ...workingHoursFirestorePayload(input.workingHours),
       updatedAt: FieldValue.serverTimestamp(),
       createdAt: FieldValue.serverTimestamp(),
     },

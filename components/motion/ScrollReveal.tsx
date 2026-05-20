@@ -31,6 +31,18 @@ export function ScrollReveal({
     const el = ref.current;
     if (!el) return;
 
+    const revealIfInView = () => {
+      const rect = el.getBoundingClientRect();
+      const vh = window.innerHeight || document.documentElement.clientHeight;
+      if (rect.top < vh * 0.92 && rect.bottom > 0) {
+        setVisible(true);
+        return true;
+      }
+      return false;
+    };
+
+    if (revealIfInView()) return;
+
     const obs = new IntersectionObserver(
       ([entry]) => {
         if (entry?.isIntersecting) {
@@ -38,7 +50,7 @@ export function ScrollReveal({
           obs.disconnect();
         }
       },
-      { rootMargin: "0px 0px -8% 0px", threshold: 0.06 }
+      { rootMargin: "0px 0px -8% 0px", threshold: 0.06 },
     );
     obs.observe(el);
     return () => obs.disconnect();

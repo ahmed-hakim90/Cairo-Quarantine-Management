@@ -2,6 +2,7 @@ import Link from "next/link";
 import { headers } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 import { governorateLabelAr } from "@/data/governorates";
+import { CatalogExcelImportPanel } from "@/components/admin/CatalogExcelImportPanel";
 import { OfficeFormDialog } from "@/components/admin/OfficeFormDialog";
 import { SetOfficeActiveForm } from "@/components/admin/SetOfficeActiveForm";
 import { OfficeQrCard } from "@/components/queue/OfficeQrCard";
@@ -12,6 +13,7 @@ import { effectiveOfficeService } from "@/lib/office-requests/office-traveler-st
 import { listOffices, listTravelerStates } from "@/lib/office-requests/store";
 import type { Office } from "@/lib/office-requests/types";
 import { getOfficeCheckinUrl } from "@/lib/queue/queue-service";
+import { getOfficeWorkingHoursAdminPreview } from "@/lib/office-working-hours";
 
 const SERVICE_LABELS: Record<Office["service"], string> = {
   hajj_umrah_travelers: "حج وعمرة ومسافرين دوليين",
@@ -38,6 +40,8 @@ export default async function AdminOfficesPage({
     headers(),
   ]);
   const siteOrigin = inferredSiteOriginFromHeaders(headerList);
+  const activeOffices = offices.filter((office) => office.active);
+  const qrSectionDefaultOpen = activeOffices.length <= 6;
 
   return (
     <div className="mx-auto max-w-7xl">
@@ -65,17 +69,34 @@ export default async function AdminOfficesPage({
           </div>
         </div>
 
-        <section className="mt-10">
-          <h2 className="font-heading text-lg font-extrabold text-gov-navy">
-            أكواد QR للحضور
-          </h2>
-          <p className="mt-1 text-sm text-gov-gray-600">
-            اطبع أو شارك رابط الحضور اليومي لكل مكتب نشط.
-          </p>
-          <div className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-            {offices
-              .filter((office) => office.active)
-              .map((office) => (
+        <div className="mt-6">
+          <CatalogExcelImportPanel
+            entity="offices"
+            title="تصدير واستيراد المكاتب (Excel)"
+            description="صدّر القائمة الحالية، عدّل في Excel، ثم ارفع الملف لمعاينة التغييرات قبل الحفظ. عند إعادة الرفع تُحدَّث العنوان والهاتف والخريطة والحجز وساعات العمل فقط؛ المعرف واسم المكتب والمحافظة ثابتة."
+            exportFileName="offices-export.xlsx"
+            templateFileName="offices-template.xlsx"
+          />
+        </div>
+
+        <details
+          className="mt-10 rounded-lg border border-gov-gray-200 bg-white shadow-sm"
+          open={qrSectionDefaultOpen}
+        >
+          <summary className="cursor-pointer list-none px-4 py-3 font-heading text-lg font-extrabold text-gov-navy marker:content-none [&::-webkit-details-marker]:hidden">
+            <span className="flex items-center justify-between gap-2">
+              أكواد QR للحضور
+              <span className="text-xs font-bold text-gov-gray-500">
+                ({activeOffices.length} مكتب نشط)
+              </span>
+            </span>
+          </summary>
+          <div className="border-t border-gov-gray-100 px-4 pb-4 pt-2">
+            <p className="text-sm text-gov-gray-600">
+              اطبع أو شارك رابط الحضور اليومي لكل مكتب نشط.
+            </p>
+            <div className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+              {activeOffices.map((office) => (
                 <OfficeQrCard
                   key={`qr-${office.id}`}
                   locale={locale}
@@ -83,8 +104,9 @@ export default async function AdminOfficesPage({
                   checkinUrl={getOfficeCheckinUrl(office.id, siteOrigin)}
                 />
               ))}
+            </div>
           </div>
-        </section>
+        </details>
 
         <div className="mt-10 overflow-x-auto rounded-lg border border-gov-gray-200 bg-white shadow-sm">
           <table className="min-w-full divide-y divide-gov-gray-200 text-sm">
@@ -96,6 +118,7 @@ export default async function AdminOfficesPage({
                 <th className="px-4 py-3 text-start">الإدارة</th>
                 <th className="px-4 py-3 text-start">العنوان</th>
                 <th className="px-4 py-3 text-start">الهاتف</th>
+                <th className="px-4 py-3 text-start">مواعيد العمل</th>
                 <th className="px-4 py-3 text-start">الخدمة</th>
                 <th className="px-4 py-3 text-start">الحالة</th>
                 <th className="px-4 py-3 text-start">إجراءات</th>
@@ -124,6 +147,11 @@ export default async function AdminOfficesPage({
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap">
                     {office.phone ?? "—"}
+                  </td>
+                  <td className="max-w-[14rem] px-4 py-3 text-xs text-gov-gray-700">
+                    <span className="line-clamp-3">
+                      {getOfficeWorkingHoursAdminPreview(office)}
+                    </span>
                   </td>
                   <td className="px-4 py-3 text-xs font-semibold text-gov-gray-700">
                     {SERVICE_LABELS[effectiveOfficeService(office)]}
@@ -180,7 +208,7 @@ export default async function AdminOfficesPage({
               {offices.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={9}
+                    colSpan={10}
                     className="px-4 py-8 text-center text-gov-gray-600"
                   >
                     لا توجد مكاتب.

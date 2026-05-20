@@ -30,6 +30,7 @@ import {
   upsertTravelerState,
   upsertVaccine,
 } from "@/lib/office-requests/store";
+import { parseOfficeWorkingHoursFromForm } from "@/lib/office-working-hours";
 import {
   checkExistingTodayQueue,
   createQueueTicket,
@@ -419,6 +420,13 @@ export async function saveOfficeAction(formData: FormData) {
   const serialInGovernorate =
     Number.isFinite(serialParsed) && serialParsed > 0 ? serialParsed : 9999;
 
+  const workingHours = parseOfficeWorkingHoursFromForm({
+    twentyFourSeven: formData.get("workingHoursTwentyFourSeven") === "on",
+    from: formValue(formData, "workingHoursFrom"),
+    to: formValue(formData, "workingHoursTo"),
+    exceptAr: formValue(formData, "workingHoursExceptAr"),
+  });
+
   await upsertOffice(
     {
       id,
@@ -433,6 +441,7 @@ export async function saveOfficeAction(formData: FormData) {
       active: formData.get("active") === "on",
       dailyBookingCap,
       travelerStateIds,
+      workingHours,
     },
     adminActorFromSession(session),
   );

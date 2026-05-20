@@ -1,4 +1,5 @@
 import type { Office, TravelerState } from "@/lib/office-requests/types";
+import { OfficeWorkingHoursFormFields } from "@/components/admin/OfficeWorkingHoursFormFields";
 import { EGYPT_GOVERNORATES, DEFAULT_GOVERNORATE_ID } from "@/data/governorates";
 import {
   defaultTravelerStatesFromLegacyLabels,
@@ -190,6 +191,7 @@ export function OfficeFormFields({ office, travelerStates }: OfficeFormFieldsPro
           الملغاة في العدّ). فارغ = لا يوجد حد.
         </span>
       </label>
+      <OfficeWorkingHoursFormFields office={office} />
       <label className="mt-3 flex items-center gap-2 text-sm font-bold text-gov-navy">
         <input
           name="active"

@@ -13,7 +13,6 @@ import {
   listDailyRequestStatsForOffices,
 } from "@/lib/office-requests/daily-request-stats";
 import {
-  buildAdminAnalyticsFromDailyStats,
   buildAdminRequestAnalytics,
   buildOfficePerformanceRatings,
 } from "@/lib/office-requests/analytics";
@@ -118,14 +117,12 @@ export default async function AdminOverviewPage({
   ]);
 
   const aggregatedStats = aggregateDailyRequestStats(dailyStatsRows);
-  const analytics =
-    aggregatedStats.totalRequests > 0
-      ? {
-          ...buildAdminAnalyticsFromDailyStats(aggregatedStats),
-          ...buildAdminRequestAnalytics(requests),
-          timelineWeeks: buildAdminRequestAnalytics(requests).timelineWeeks,
-        }
-      : buildAdminRequestAnalytics(requests);
+  const analytics = buildAdminRequestAnalytics(requests);
+  const totalRequestsValue = applyBookingDateFilter
+    ? requests.length
+    : aggregatedStats.totalRequests > 0
+      ? aggregatedStats.totalRequests
+      : requests.length;
   const officeRatings = buildOfficePerformanceRatings(
     requests,
     selectedOfficeId
@@ -213,12 +210,12 @@ export default async function AdminOverviewPage({
 
       <div className="grid gap-4 py-6 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7">
         <AdminStatCard
-          label="إجمالي الطلبات"
-          value={
-            aggregatedStats.totalRequests > 0
-              ? aggregatedStats.totalRequests
-              : requests.length
+          label={
+            applyBookingDateFilter
+              ? "إجمالي الطلبات (في النطاق)"
+              : "إجمالي الطلبات"
           }
+          value={totalRequestsValue}
         />
         <AdminStatCard label="جديد" value={analytics.byStatus.new} />
         <AdminStatCard

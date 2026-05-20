@@ -45,7 +45,7 @@ export default async function HajjUmrahPage({
       <ScrollReveal initialVisible>
         <HajjVaccinationGuide content={m.healthGuides.vaccination} />
       </ScrollReveal>
-      <ScrollReveal>
+      <ScrollReveal initialVisible>
         <section
           className="mx-auto max-w-6xl px-4 py-10"
           aria-labelledby="hajj-documents-heading"
@@ -65,7 +65,7 @@ export default async function HajjUmrahPage({
           </div>
         </section>
       </ScrollReveal>
-      <ScrollReveal>
+      <ScrollReveal initialVisible>
         <section className="mx-auto max-w-6xl px-4 py-10">
           <div className="rounded-lg border border-gov-gray-200 bg-white p-6 shadow-sm md:p-8">
             <h2 className="font-heading text-xl font-bold text-gov-navy">
@@ -75,7 +75,7 @@ export default async function HajjUmrahPage({
           </div>
         </section>
       </ScrollReveal>
-      <ScrollReveal>
+      <ScrollReveal initialVisible>
         <HajjUmrahTripPricing
           locale={locale}
           pricing={p.pricing}

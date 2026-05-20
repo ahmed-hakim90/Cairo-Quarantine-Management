@@ -10,6 +10,7 @@ import {
   type CheckinState,
 } from "@/app/[locale]/(public)/checkin/actions";
 import { getCairoTodayYmd } from "@/lib/cairo-today-ymd";
+import { checkinFormCopy } from "@/lib/i18n/checkin-copy";
 import type { Locale } from "@/lib/i18n/config";
 import {
   clearCheckinSession,
@@ -37,6 +38,7 @@ export function CheckinForm({
   travelerStates,
   iosHelp,
 }: CheckinFormProps) {
+  const t = checkinFormCopy[locale];
   const [lookupState, lookupAction, lookupPending] = useActionState(
     checkinLookupAction,
     initial,
@@ -66,7 +68,7 @@ export function CheckinForm({
 
     const restoreTimer = window.setTimeout(() => setRestoring(true), 0);
 
-    void checkinRestoreAction(officeId, session.ticketId).then((state) => {
+    void checkinRestoreAction(officeId, session.ticketId, locale).then((state) => {
       if (cancelled) return;
       if (state.ok) {
         setRestoredState({
@@ -87,7 +89,7 @@ export function CheckinForm({
       window.clearTimeout(lookupTimer);
       window.clearTimeout(restoreTimer);
     };
-  }, [officeId]);
+  }, [officeId, locale]);
 
   useEffect(() => {
     const id = window.setTimeout(() => {
@@ -139,9 +141,7 @@ export function CheckinForm({
   if (restoring && !result) {
     return (
       <div className="mx-auto max-w-lg rounded-lg border border-gov-gray-200 bg-white p-8 text-center shadow-sm">
-        <p className="text-sm font-semibold text-gov-gray-700">
-          جاري استعادة دورك…
-        </p>
+        <p className="text-sm font-semibold text-gov-gray-700">{t.restoring}</p>
       </div>
     );
   }
@@ -182,9 +182,10 @@ export function CheckinForm({
 
       <form action={lookupAction} className="space-y-4 rounded-lg border border-gov-gray-200 bg-white p-5 shadow-sm">
         <input type="hidden" name="officeId" value={officeId} />
+        <input type="hidden" name="locale" value={locale} />
         <div>
           <label htmlFor="lookup" className="block text-sm font-bold text-gov-navy">
-            رقم الطلب أو رقم الهاتف
+            {t.lookupLabel}
           </label>
           <input
             id="lookup"
@@ -195,7 +196,7 @@ export function CheckinForm({
             value={lookupValue}
             onChange={(e) => setLookupValue(e.target.value)}
             className="mt-2 w-full rounded-md border border-gov-gray-200 px-3 py-2.5 text-sm"
-            placeholder="مثال: cairo-trav-17-000001 أو CQM-000123 أو 010…"
+            placeholder={t.lookupPlaceholder}
           />
         </div>
         <button
@@ -203,16 +204,15 @@ export function CheckinForm({
           disabled={isBusy}
           className="w-full rounded-md bg-gov-accent px-4 py-2.5 text-sm font-bold text-white hover:bg-gov-navy disabled:opacity-60"
         >
-          {lookupPending ? "جاري التحقق…" : "تسجيل الحضور"}
+          {lookupPending ? t.lookupPending : t.lookupSubmit}
         </button>
       </form>
 
       {showQuick ? (
         <form action={quickAction} className="space-y-4 rounded-lg border border-amber-200 bg-amber-50/50 p-5">
-          <p className="text-sm font-bold text-gov-navy">
-            لم يُعثر على طلب — يمكنك إنشاء طلب حضور سريع
-          </p>
+          <p className="text-sm font-bold text-gov-navy">{t.quickTitle}</p>
           <input type="hidden" name="officeId" value={officeId} />
+          <input type="hidden" name="locale" value={locale} />
           <input
             type="hidden"
             name="lookup"
@@ -222,7 +222,7 @@ export function CheckinForm({
           />
           <div>
             <label htmlFor="name" className="block text-sm font-bold text-gov-navy">
-              الاسم
+              {t.name}
             </label>
             <input
               id="name"
@@ -233,7 +233,7 @@ export function CheckinForm({
           </div>
           <div>
             <label htmlFor="phone" className="block text-sm font-bold text-gov-navy">
-              رقم الهاتف
+              {t.phone}
             </label>
             <input
               id="phone"
@@ -249,7 +249,7 @@ export function CheckinForm({
               htmlFor="travelerStateId"
               className="block text-sm font-bold text-gov-navy"
             >
-              حالة المسافر
+              {t.travelerState}
             </label>
             <select
               id="travelerStateId"
@@ -259,7 +259,7 @@ export function CheckinForm({
               defaultValue=""
             >
               <option value="" disabled>
-                اختر حالة المسافر
+                {t.chooseTravelerState}
               </option>
               {travelerStates.map((state) => (
                 <option key={state.id} value={state.id}>
@@ -274,7 +274,7 @@ export function CheckinForm({
               name="hasSpecialNeeds"
               className="size-4 rounded border-gov-gray-300"
             />
-            <span>ذوي همم</span>
+            <span>{t.specialNeeds}</span>
           </label>
           <label className="flex items-center gap-2 text-sm font-semibold text-gov-gray-800">
             <input
@@ -282,11 +282,11 @@ export function CheckinForm({
               name="hasElderly"
               className="size-4 rounded border-gov-gray-300"
             />
-            <span>كبار السن</span>
+            <span>{t.elderly}</span>
           </label>
           <div>
             <label htmlFor="details" className="block text-sm font-bold text-gov-navy">
-              ملاحظات (اختياري)
+              {t.notesOptional}
             </label>
             <textarea
               id="details"
@@ -300,7 +300,7 @@ export function CheckinForm({
             disabled={isBusy}
             className="w-full rounded-md bg-gov-navy px-4 py-2.5 text-sm font-bold text-white disabled:opacity-60"
           >
-            {quickPending ? "جاري التسجيل…" : "إنشاء طلب وتسجيل الحضور"}
+            {quickPending ? t.quickPending : t.quickSubmit}
           </button>
         </form>
       ) : null}

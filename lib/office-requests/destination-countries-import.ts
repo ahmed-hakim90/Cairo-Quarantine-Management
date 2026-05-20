@@ -1,5 +1,11 @@
 import ExcelJS from "exceljs";
-import type { DestinationCountryImportResult } from "@/lib/office-requests/types";
+import { decodeCatalogExcelFileBase64 } from "@/lib/office-requests/catalog-excel-io";
+import type {
+  DestinationCountry,
+  DestinationCountryImportResult,
+} from "@/lib/office-requests/types";
+
+export { decodeCatalogExcelFileBase64 as decodeDestinationCountriesFileBase64 };
 
 export type DestinationCountryImportRow = {
   id: string;
@@ -160,8 +166,17 @@ export async function parseDestinationCountriesWorkbook(
   return parseDestinationCountriesSheet(sheet);
 }
 
-export async function buildDestinationCountriesTemplateXlsx(): Promise<Buffer> {
-  const workbook = new ExcelJS.Workbook();
+export function destinationCountryExcelLabel(
+  nameEn: string,
+  nameAr: string,
+): string {
+  return `${nameEn} - ${nameAr}`;
+}
+
+function addDestinationCountriesSheet(
+  workbook: ExcelJS.Workbook,
+  countries: DestinationCountry[],
+): ExcelJS.Worksheet {
   const sheet = workbook.addWorksheet("متطلبات الدول", {
     views: [{ rightToLeft: true }],
   });
@@ -169,15 +184,156 @@ export async function buildDestinationCountriesTemplateXlsx(): Promise<Buffer> {
     { header: "اسم الدولة", key: "country", width: 42 },
     { header: "متطلبات التطعيم", key: "requirements", width: 36 },
   ];
+  const sorted = [...countries].sort(
+    (a, b) => a.sortOrder - b.sortOrder || a.nameEn.localeCompare(b.nameEn),
+  );
+  for (const row of sorted) {
+    sheet.addRow({
+      country: destinationCountryExcelLabel(row.nameEn, row.nameAr),
+      requirements: row.requirementsAr,
+    });
+  }
+  return sheet;
+}
+
+export async function buildDestinationCountriesTemplateXlsx(): Promise<Buffer> {
+  const workbook = new ExcelJS.Workbook();
+  addDestinationCountriesSheet(workbook, []);
+  sheetWithSampleRow(workbook);
+  const raw = await workbook.xlsx.writeBuffer();
+  return Buffer.from(raw);
+}
+
+function sheetWithSampleRow(workbook: ExcelJS.Workbook): void {
+  const sheet = workbook.worksheets[0];
+  if (!sheet) return;
   sheet.addRow({
     country: "EGYPT - مصر",
     requirements: "لا يوجد",
   });
+}
+
+export async function buildDestinationCountriesExportXlsx(
+  countries: DestinationCountry[],
+): Promise<Buffer> {
+  const workbook = new ExcelJS.Workbook();
+  addDestinationCountriesSheet(workbook, countries);
   const raw = await workbook.xlsx.writeBuffer();
   return Buffer.from(raw);
 }
 
 export type DestinationCountryImportMode = "bootstrap" | "update";
+
+export type PreviewChangeKind = "create" | "update" | "unchanged" | "error";
+
+export type DestinationCountryPreviewItem = {
+  id: string;
+  nameEn: string;
+  nameAr: string;
+  sortOrder: number;
+  kind: PreviewChangeKind;
+  currentRequirementsAr?: string;
+  newRequirementsAr?: string;
+  message?: string;
+};
+
+export type DestinationCountryPreviewError = {
+  message: string;
+  sortOrder?: number;
+  nameEn?: string;
+};
+
+export type DestinationCountryImportPreview = {
+  mode: DestinationCountryImportMode;
+  summary: {
+    create: number;
+    update: number;
+    unchanged: number;
+    error: number;
+  };
+  creates: DestinationCountryPreviewItem[];
+  updates: DestinationCountryPreviewItem[];
+  unchanged: DestinationCountryPreviewItem[];
+  errors: DestinationCountryPreviewError[];
+  parseErrors: string[];
+};
+
+function requirementsEqual(a: string, b: string): boolean {
+  return a.trim() === b.trim();
+}
+
+export function buildDestinationCountriesImportPreview(
+  rows: DestinationCountryImportRow[],
+  existing: DestinationCountry[],
+  parseErrors: string[],
+): DestinationCountryImportPreview {
+  const mode: DestinationCountryImportMode =
+    existing.length === 0 ? "bootstrap" : "update";
+  const byId = new Map(existing.map((c) => [c.id, c]));
+
+  const creates: DestinationCountryPreviewItem[] = [];
+  const updates: DestinationCountryPreviewItem[] = [];
+  const unchanged: DestinationCountryPreviewItem[] = [];
+  const errors: DestinationCountryPreviewError[] = parseErrors.map(
+    (message) => ({ message }),
+  );
+
+  for (const row of rows) {
+    const newReq = row.requirementsAr.trim();
+    const base = {
+      id: row.id,
+      nameEn: row.nameEn,
+      nameAr: row.nameAr,
+      sortOrder: row.sortOrder,
+      newRequirementsAr: newReq,
+    };
+
+    if (mode === "bootstrap") {
+      creates.push({ ...base, kind: "create" as const });
+      continue;
+    }
+
+    const current = byId.get(row.id);
+    if (!current) {
+      errors.push({
+        message: `الدولة «${row.nameEn}» غير مسجّلة — لن يُنشأ سجل جديد.`,
+        sortOrder: row.sortOrder,
+        nameEn: row.nameEn,
+      });
+      continue;
+    }
+
+    const currentReq = current.requirementsAr.trim();
+    if (requirementsEqual(currentReq, newReq)) {
+      unchanged.push({
+        ...base,
+        kind: "unchanged" as const,
+        currentRequirementsAr: currentReq,
+      });
+    } else {
+      updates.push({
+        ...base,
+        kind: "update" as const,
+        currentRequirementsAr: currentReq,
+      });
+    }
+  }
+
+  return {
+    mode,
+    summary: {
+      create: creates.length,
+      update: updates.length,
+      unchanged: unchanged.length,
+      error: errors.length,
+    },
+    creates,
+    updates,
+    unchanged,
+    errors,
+    parseErrors,
+  };
+}
 
 export function mergeImportParseErrors(
   parseErrors: string[],

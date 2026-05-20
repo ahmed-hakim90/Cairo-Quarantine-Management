@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { buildOfficePerformanceRatings } from "@/lib/office-requests/analytics";
+import {
+  buildAdminRequestAnalytics,
+  buildOfficePerformanceRatings,
+} from "@/lib/office-requests/analytics";
 import type { Office, OfficeRequest } from "@/lib/office-requests/types";
 
 function office(id: string, nameAr = id): Office {
@@ -38,6 +41,19 @@ function request(
     updatedAt: "2026-05-15T00:00:00.000Z",
   };
 }
+
+describe("buildAdminRequestAnalytics", () => {
+  it("counts contacted separately from in_progress", () => {
+    const analytics = buildAdminRequestAnalytics([
+      request("1", "office-a", "new"),
+      request("2", "office-a", "contacted"),
+      request("3", "office-a", "in_progress"),
+    ]);
+    expect(analytics.byStatus.new).toBe(1);
+    expect(analytics.byStatus.contacted).toBe(1);
+    expect(analytics.byStatus.in_progress).toBe(1);
+  });
+});
 
 describe("buildOfficePerformanceRatings", () => {
   it("counts bookings and complaints per office", () => {

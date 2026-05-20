@@ -30,6 +30,15 @@ export type TravelerState = {
   updatedAt?: string;
 };
 
+export type OfficeWorkingHours = {
+  twentyFourSeven?: boolean;
+  /** "08:00" / "17:00" — 24-hour local time */
+  from?: string;
+  to?: string;
+  /** Arabic «except» line; omit = charter default per locale */
+  exceptAr?: string;
+};
+
 export type Office = {
   id: string;
   governorateId: string;
@@ -49,6 +58,7 @@ export type Office = {
   travelerStateIds?: string[];
   /** Max booking requests per calendar day for this office; omit or null = unlimited. */
   dailyBookingCap?: number | null;
+  workingHours?: OfficeWorkingHours;
   createdAt?: string;
   updatedAt?: string;
 };
@@ -222,6 +232,9 @@ export type AdminActivityLogAction =
   | "traveler_state.upserted"
   | "traveler_state.active_changed"
   | "destination_countries.imported"
+  | "offices.imported"
+  | "vaccines.imported"
+  | "templates.imported"
   | "template.created"
   | "template.updated"
   | "template.deleted";

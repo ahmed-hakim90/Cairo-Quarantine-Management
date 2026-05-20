@@ -20,6 +20,9 @@
 # production
 /build
 
+# handover docx build venv
+.venv-handover/
+
 # misc
 .DS_Store
 *.pem

@@ -1,16 +1,21 @@
 "use client";
 
 import Image from "next/image";
+import { useEffect, useState } from "react";
 import type { Messages } from "@/lib/i18n/messages";
 import { usePwaInstall } from "@/lib/pwa/use-pwa-install";
 
 const SNOOZE_KEY = "cqm:install-prompt-snoozed-until";
+const SNOOZE_MS = 30 * 24 * 60 * 60 * 1000;
+const MIN_SCROLL_Y = 400;
+const SHOW_DELAY_MS = 15_000;
 
 type InstallPromptProps = {
   pwa: Messages["pwa"];
 };
 
 export function InstallPrompt({ pwa }: InstallPromptProps) {
+  const [engagementGateOpen, setEngagementGateOpen] = useState(false);
   const {
     shouldShow,
     canPromptInstall,
@@ -20,11 +25,26 @@ export function InstallPrompt({ pwa }: InstallPromptProps) {
   } = usePwaInstall({
     snoozeKey: SNOOZE_KEY,
     useSnooze: true,
+    snoozeMs: SNOOZE_MS,
     iosHintDelayMs: 4000,
     mobileOnly: true,
   });
 
-  if (!shouldShow) return null;
+  useEffect(() => {
+    const openGate = () => setEngagementGateOpen(true);
+    const onScroll = () => {
+      if (window.scrollY >= MIN_SCROLL_Y) openGate();
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    onScroll();
+    const timer = window.setTimeout(openGate, SHOW_DELAY_MS);
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      window.clearTimeout(timer);
+    };
+  }, []);
+
+  if (!shouldShow || !engagementGateOpen) return null;
 
   return (
     <div

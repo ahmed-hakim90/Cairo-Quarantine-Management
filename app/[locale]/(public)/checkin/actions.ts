@@ -1,6 +1,11 @@
 "use server";
 
 import { headers } from "next/headers";
+import {
+  checkinActionCopy,
+  localizeCheckinError,
+} from "@/lib/i18n/checkin-copy";
+import { defaultLocale, isLocale, type Locale } from "@/lib/i18n/config";
 import { rateLimitKeyFromHeaders } from "@/lib/rate-limit";
 import { checkUnifiedRateLimit } from "@/lib/rate-limit-unified";
 import {
@@ -42,7 +47,15 @@ function formValue(formData: FormData, key: string) {
   return String(formData.get(key) ?? "").trim();
 }
 
-async function assertCheckinRateLimit(scope: string): Promise<string | null> {
+function localeFromForm(formData: FormData): Locale {
+  const raw = formValue(formData, "locale");
+  return isLocale(raw) ? raw : defaultLocale;
+}
+
+async function assertCheckinRateLimit(
+  scope: string,
+  locale: Locale,
+): Promise<string | null> {
   const headerList = await headers();
   const rateLimit = await checkUnifiedRateLimit({
     scope,
@@ -51,7 +64,7 @@ async function assertCheckinRateLimit(scope: string): Promise<string | null> {
     windowMs: 10 * 60_000,
   });
   if (!rateLimit.allowed) {
-    return "تم تجاوز عدد المحاولات. انتظر قليلاً ثم حاول مرة أخرى.";
+    return checkinActionCopy[locale].rateLimited;
   }
   return null;
 }
@@ -78,10 +91,12 @@ export async function checkinLookupAction(
   _prev: CheckinState,
   formData: FormData,
 ): Promise<CheckinState> {
+  const locale = localeFromForm(formData);
+  const t = checkinActionCopy[locale];
   const officeId = formValue(formData, "officeId");
   const lookup = formValue(formData, "lookup");
   if (!officeId || !lookup) {
-    return { ok: false, error: "يرجى إدخال رقم الطلب أو الهاتف." };
+    return { ok: false, error: t.lookupRequired };
   }
 
   try {
@@ -93,7 +108,7 @@ export async function checkinLookupAction(
     if (request.officeId !== officeId) {
       return {
         ok: false,
-        error: "هذا الطلب مسجّل لمكتب آخر. تأكد من مسح رمز QR الصحيح.",
+        error: t.wrongOffice,
       };
     }
 
@@ -113,7 +128,11 @@ export async function checkinLookupAction(
   } catch (e) {
     return {
       ok: false,
-      error: e instanceof Error ? e.message : "تعذر تسجيل الحضور.",
+      error: localizeCheckinError(
+        locale,
+        e instanceof Error ? e.message : undefined,
+        "checkinFailed",
+      ),
     };
   }
 }
@@ -121,7 +140,9 @@ export async function checkinLookupAction(
 export async function checkinRestoreAction(
   officeId: string,
   ticketId: string,
+  locale: Locale = defaultLocale,
 ): Promise<CheckinState> {
+  const t = checkinActionCopy[locale];
   if (!officeId.trim() || !ticketId.trim()) {
     return { ok: false };
   }
@@ -132,14 +153,18 @@ export async function checkinRestoreAction(
     if (!restored) {
       return {
         ok: false,
-        error: "لم يُعثر على دورك لهذا اليوم. سجّل حضورك من جديد.",
+        error: t.restoreFailed,
       };
     }
     return successFromRequest(restored.request, restored.ticket);
   } catch (e) {
     return {
       ok: false,
-      error: e instanceof Error ? e.message : "تعذر استعادة جلسة الحضور.",
+      error: localizeCheckinError(
+        locale,
+        e instanceof Error ? e.message : undefined,
+        "restoreSessionFailed",
+      ),
     };
   }
 }
@@ -148,7 +173,9 @@ export async function checkinQuickAction(
   _prev: CheckinState,
   formData: FormData,
 ): Promise<CheckinState> {
-  const rateLimited = await assertCheckinRateLimit("checkin-quick");
+  const locale = localeFromForm(formData);
+  const t = checkinActionCopy[locale];
+  const rateLimited = await assertCheckinRateLimit("checkin-quick", locale);
   if (rateLimited) return { ok: false, error: rateLimited };
 
   const officeId = formValue(formData, "officeId");
@@ -160,14 +187,14 @@ export async function checkinQuickAction(
   const details = formValue(formData, "details");
 
   if (!officeId || !name || !phone || !travelerStateId) {
-    return { ok: false, error: "يرجى إدخال الاسم ورقم الهاتف وحالة المسافر." };
+    return { ok: false, error: t.quickRequired };
   }
 
   try {
     const office = await assertActiveOffice(officeId);
     const acceptedIds = new Set(getOfficeTravelerStateIds(office));
     if (!acceptedIds.has(travelerStateId)) {
-      return { ok: false, error: "حالة المسافر غير متاحة لهذا المكتب." };
+      return { ok: false, error: t.travelerStateUnavailable };
     }
     const travelerStates = await listTravelerStatesForPublicBooking();
     const travelerStateLabel =
@@ -187,7 +214,11 @@ export async function checkinQuickAction(
   } catch (e) {
     return {
       ok: false,
-      error: e instanceof Error ? e.message : "تعذر إنشاء الطلب وتسجيل الحضور.",
+      error: localizeCheckinError(
+        locale,
+        e instanceof Error ? e.message : undefined,
+        "quickFailed",
+      ),
     };
   }
 }

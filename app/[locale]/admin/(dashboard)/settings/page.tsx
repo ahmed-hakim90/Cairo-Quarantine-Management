@@ -1,4 +1,5 @@
 import { notFound, redirect } from "next/navigation";
+import { CatalogExcelImportPanel } from "@/components/admin/CatalogExcelImportPanel";
 import { AdminBookingSettingsForm } from "@/components/admin/AdminBookingSettingsForm";
 import { AdminMessageTemplatesManager } from "@/components/admin/AdminMessageTemplatesManager";
 import { SuperAdminAdvancedSettingsGate } from "@/components/admin/SuperAdminAdvancedSettingsGate";
@@ -43,6 +44,14 @@ export default async function AdminSettingsPage({
           initialHour={bookingSettings.bookingSameDayCutoffHour}
         />
       </div>
+
+      <CatalogExcelImportPanel
+        entity="templates"
+        title="تصدير واستيراد قوالب واتساب (Excel)"
+        description="صدّر القوالب الحالية، عدّل العنوان ونص الرسالة في Excel، ثم ارفع الملف للمعاينة قبل الحفظ. عند إعادة الرفع يُحدَّث العنوان والنص والحالة فقط؛ معرف القالب ثابت."
+        exportFileName="templates-export.xlsx"
+        templateFileName="templates-template.xlsx"
+      />
 
       <AdminMessageTemplatesManager locale={locale} templates={templates} />
 

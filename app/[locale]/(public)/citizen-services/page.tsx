@@ -41,7 +41,7 @@ export default async function CitizenServicesPage({
       <ScrollReveal initialVisible>
         <PageHeading title={p.heading} description={p.description} />
       </ScrollReveal>
-      <ScrollReveal>
+      <ScrollReveal initialVisible>
         <section
           className="border-y border-gov-gray-200 bg-gov-gray-50 py-14"
           aria-labelledby="citizen-vaccines-heading"

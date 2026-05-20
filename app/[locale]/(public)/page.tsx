@@ -30,10 +30,10 @@ export default async function HomePage({
   return (
     <>
       <HeroSection content={m.hero} />
-      <ScrollReveal>
+      <ScrollReveal initialVisible>
         <ServiceCards locale={locale} content={m.services} />
       </ScrollReveal>
-      <ScrollReveal>
+      <ScrollReveal initialVisible>
         <GeneralHealthTipsGrid content={m.healthGuides.generalTips} />
       </ScrollReveal>
       <ScrollReveal>

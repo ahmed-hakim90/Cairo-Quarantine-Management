@@ -8,9 +8,17 @@
 
 عرض إداري بالعربية يشرح المميزات ومنطق العمل ولوحة التحكم (للإرسال للإدارة): [`docs/ADMIN-BRIEF-AR.md`](docs/ADMIN-BRIEF-AR.md).
 
+## مستند التسليم (Handover) | Developer handover
+
+مستند تفصيلي للمطوّر والجهة المنفذة — صفحات، فرونت/باك، سعة، ولقطات شاشة:
+
+- Markdown: [`docs/HANDOVER-AR.md`](docs/HANDOVER-AR.md)
+- Word (مع الصور): [`docs/HANDOVER-AR.docx`](docs/HANDOVER-AR.docx) — إعادة التوليد: `npm run handover:docx`
+- عرض تقديمي PDF: [`docs/Cairo-Quarantine-Presentation.pdf`](docs/Cairo-Quarantine-Presentation.pdf) — `npm run handover:pdf`
+
 ## الميزات | Features
 
-- **لغات**: العربية (افتراضي)، الإنجليزية، الصينية — مع اتجاه النص RTL/LTR حسب اللغة.
+- **لغات**: العربية (افتراضي)، الإنجليزية، الصينية، الفرنسية — مع اتجاه النص RTL/LTR حسب اللغة.
 - **صفحات**: الرئيسية، المسافر الدولي، الحج والعمرة، خدمات المواطن.
 - **محتوى**: بطاقات الخدمات، دليل اللقاحات والأسعار، إحصاءات المسافرين، روابط مهمة PDF، جدول مواقع المكاتب، زر واتساب عائم (اختياري عبر المتغير البيئي).
 
@@ -33,6 +41,7 @@ npm run dev
 - `/ar` — العربية
 - `/en` — English
 - `/zh` — 中文
+- `/fr` — Français
 
 ## الأوامر | Scripts
 
@@ -63,6 +72,7 @@ npm run dev
 | `FIREBASE_CLIENT_EMAIL` | service account client email. |
 | `FIREBASE_PRIVATE_KEY` | service account private key مع `\n` escaped في `.env.local`. |
 | `MAINTENANCE_CRON_SECRET` | سر لاستدعاء endpoint صيانة الأرشفة `POST /api/admin/maintenance/retention` من Cron خارجي عبر `Authorization: Bearer ...`. |
+| `RATE_LIMIT_BACKEND` | `memory` (افتراضي محلي) أو `firestore` أو `both` — يُفضَّل `firestore` أو `both` على الإنتاج متعدد العُقد. |
 
 إعدادات الحجز العامة (ساعة إغلاق حجز «نفس اليوم» بتوقيت القاهرة) تُحفظ في وثيقة Firestore `settings/app` ويُضبطها السوبر أدمن من `/ar/admin/settings` (افتراضي الساعة 14 إن لم تُنشأ الوثيقة).
 
@@ -81,11 +91,24 @@ npm run admin:create-profile -- <firebase-uid> admin@example.com "Super Admin"
 
 بعدها افتح `/ar/admin/login`. رابط الحجز الداخلي أصبح `/ar/booking`.
 
+### قائمة تحقق الإنتاج | Production checklist
+
+قبل التسليم للجهة المنفذة:
+
+- [ ] ضبط كل متغيرات Firebase (عامة + Admin SDK) — بدونها `/api/booking/availability` يعيد «متاح» دائماً.
+- [ ] `firebase deploy --only firestore:rules` و `firestore:indexes`.
+- [ ] `RATE_LIMIT_BACKEND=firestore` أو `both` على الاستضافة.
+- [ ] `MAINTENANCE_CRON_SECRET` + جدولة `POST /api/admin/maintenance/retention` أسبوعياً/شهرياً.
+- [ ] بذر المكاتب واللقاحات وحالات المسافرين؛ مراجعة `dailyBookingCap` لكل مكتب.
+- [ ] من `/ar/admin/offices`: تفعيل «٢٤ ساعة» لمكتب مطار القاهرة (`cairo-trav-1`) إن لزم.
+- [ ] حذف أو أرشفة طلبات اختبار الحمل (`npm run load-test:bookings` على **staging فقط**).
+- [ ] إعادة التقاط لقطات `docs/handover/screenshots/` من بيئة نظيفة (انظر [`docs/HANDOVER-AR.md`](docs/HANDOVER-AR.md) §9).
+
 ## هيكل المشروع | Project structure ( مختصر )
 
 ```
 app/
-  [locale]/          # الصفحات حسب اللغة (ar | en | zh)
+  [locale]/          # الصفحات حسب اللغة (ar | en | zh | fr)
 components/          # واجهات الصفحة والتخطيط
 lib/i18n/            # إعدادات اللغات والرسائل (messages)
 proxy.ts             # إعادة توجيه الجذر إلى اللغة الافتراضية

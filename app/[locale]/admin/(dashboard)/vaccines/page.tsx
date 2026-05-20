@@ -1,4 +1,5 @@
 import { notFound, redirect } from "next/navigation";
+import { CatalogExcelImportPanel } from "@/components/admin/CatalogExcelImportPanel";
 import { VaccineFormDialog } from "@/components/admin/VaccineFormDialog";
 import { SetVaccineActiveForm } from "@/components/admin/SetVaccineActiveForm";
 import { isLocale } from "@/lib/i18n/config";
@@ -52,6 +53,16 @@ export default async function AdminVaccinesPage({
             buttonClassName="inline-flex min-h-10 items-center justify-center rounded-md bg-gov-accent px-4 py-2 text-sm font-bold text-white transition hover:bg-gov-navy"
           />
         </div>
+      </div>
+
+      <div className="mt-6">
+        <CatalogExcelImportPanel
+          entity="vaccines"
+          title="تصدير واستيراد التطعيمات (Excel)"
+          description="صدّر كتالوج اللقاحات، عدّل في Excel، ثم ارفع الملف للمعاينة قبل الحفظ. عند إعادة الرفع تُحدَّث الأسماء والسعر والترتيب والحالة؛ المعرف والفئة ثابتان."
+          exportFileName="vaccines-export.xlsx"
+          templateFileName="vaccines-template.xlsx"
+        />
       </div>
 
       <div className="mt-6 overflow-x-auto rounded-lg border border-gov-gray-200 bg-white shadow-sm">

@@ -1,5 +1,6 @@
 import { revalidatePath, revalidateTag } from "next/cache";
 import { locales } from "@/lib/i18n/config";
+import { decodeCatalogExcelFileBase64 } from "@/lib/office-requests/catalog-excel-io";
 import {
   mergeImportParseErrors,
   parseDestinationCountriesWorkbook,
@@ -22,14 +23,6 @@ import {
 type BodyShape = {
   fileBase64?: string;
 };
-
-function decodeBase64File(payload: string): Buffer {
-  const trimmed = payload.trim();
-  const base64 = trimmed.includes(",")
-    ? (trimmed.split(",").pop() ?? trimmed)
-    : trimmed;
-  return Buffer.from(base64, "base64");
-}
 
 export async function POST(request: Request) {
   const unsafe = rejectUnsafeAdminRequest(request);
@@ -64,7 +57,7 @@ export async function POST(request: Request) {
 
   let buffer: Buffer;
   try {
-    buffer = decodeBase64File(fileBase64);
+    buffer = decodeCatalogExcelFileBase64(fileBase64);
   } catch {
     return noStoreJson({ error: "تعذّر قراءة الملف." }, { status: 400 });
   }

@@ -206,7 +206,7 @@ export function HajjTravelerOfficesTable({
             address: fields.address,
             locale,
           });
-          const workingHours = getOfficeWorkingHoursTableLabel(row.id, locale);
+          const workingHours = getOfficeWorkingHoursTableLabel(row, locale);
           return (
             <li
               key={row.id}
@@ -295,10 +295,7 @@ export function HajjTravelerOfficesTable({
                 row.serialInGovernorate > 0 && row.serialInGovernorate < 9999
                   ? row.serialInGovernorate
                   : "—";
-              const workingHours = getOfficeWorkingHoursTableLabel(
-                row.id,
-                locale,
-              );
+              const workingHours = getOfficeWorkingHoursTableLabel(row, locale);
               return (
                 <tr
                   key={row.id}

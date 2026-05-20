@@ -1,5 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import { AdminRequestsTable } from "@/components/admin/AdminRequestsTable";
+import { RequestsExcelQuickExport } from "@/components/admin/RequestsExcelQuickExport";
 import { SuperAdminExportLauncher } from "@/components/admin/SuperAdminExportLauncher";
 import { getCairoTodayYmd } from "@/lib/cairo-today-ymd";
 import { isLocale } from "@/lib/i18n/config";
@@ -155,24 +156,25 @@ export default async function AdminRequestsPage({
               عرض وتصفية طلبات الحجز والشكاوى والمقترحات.
             </p>
           </div>
-          {isSuperAdmin ? (
-            <div className="shrink-0 sm:pt-1">
+          {isSuperAdmin || isLocalAdmin || session.profile.officeId ? (
+            <div className="flex shrink-0 flex-wrap items-start justify-end gap-3 sm:pt-1">
+              <RequestsExcelQuickExport
+                status={statusFilter}
+                bookingDateFrom={bookingDateRange?.fromYmd}
+                bookingDateTo={bookingDateRange?.toYmd}
+                lockedOfficeId={
+                  session.profile.role === "office_user"
+                    ? session.profile.officeId
+                    : null
+                }
+              />
               <SuperAdminExportLauncher
                 offices={visibleOffices}
-                travelerStates={travelerStates}
-              />
-            </div>
-          ) : isLocalAdmin ? (
-            <div className="shrink-0 sm:pt-1">
-              <SuperAdminExportLauncher
-                offices={visibleOffices}
-                travelerStates={travelerStates}
-              />
-            </div>
-          ) : session.profile.officeId ? (
-            <div className="shrink-0 sm:pt-1">
-              <SuperAdminExportLauncher
-                lockedOfficeId={session.profile.officeId}
+                lockedOfficeId={
+                  session.profile.role === "office_user"
+                    ? session.profile.officeId
+                    : null
+                }
                 travelerStates={travelerStates}
               />
             </div>

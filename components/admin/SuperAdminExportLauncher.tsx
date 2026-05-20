@@ -9,9 +9,11 @@ import {
   type TravelerState,
 } from "@/lib/office-requests/types";
 import { SUPER_ADMIN_EXPORT_MAX_ROWS } from "@/lib/office-requests/export-limits";
+import {
+  buildRequestsExcelExportUrl,
+  downloadRequestsExcel,
+} from "@/lib/office-requests/requests-excel-download";
 import { feedbackToast } from "@/lib/ui/feedback-toast";
-
-const EXPORT_FETCH_TIMEOUT_MS = 120_000;
 
 type SuperAdminExportLauncherProps = {
   /** لمستخدم السوبر أدمن: قائمة المكاتب في القائمة المنسدلة */
@@ -56,19 +58,6 @@ export function SuperAdminExportLauncher({
     () => [...offices].sort((a, b) => a.nameAr.localeCompare(b.nameAr, "ar")),
     [offices],
   );
-
-  function filenameFromContentDisposition(value: string | null): string | null {
-    if (!value) return null;
-    const utf8 = value.match(/filename\*=UTF-8''([^;]+)/i)?.[1];
-    if (utf8) {
-      try {
-        return decodeURIComponent(utf8);
-      } catch {
-        return utf8;
-      }
-    }
-    return value.match(/filename="([^"]+)"/i)?.[1] ?? null;
-  }
 
   const close = useCallback(() => {
     setOpen(false);
@@ -131,117 +120,30 @@ export function SuperAdminExportLauncher({
       params.set("to", dateTo.trim());
     }
 
-    const qs = params.toString();
-    const url = `/api/admin/requests/export${qs ? `?${qs}` : ""}`;
-
     setLoading(true);
-    const abortController = new AbortController();
-    const timeoutId = window.setTimeout(
-      () => abortController.abort(),
-      EXPORT_FETCH_TIMEOUT_MS,
-    );
     try {
-      const res = await fetch(url, {
-        credentials: "include",
-        headers: { "X-CQM-Admin-Request": "1" },
-        signal: abortController.signal,
-      });
-      if (res.status === 401) {
-        const msg = "انتهت الجلسة أو غير مصرح. سجّل الدخول من جديد.";
-        setError(msg);
-        feedbackToast.error(msg);
-        return;
-      }
-      if (res.status === 403) {
-        const body = (await res.json().catch(() => null)) as {
-          error?: string;
-        } | null;
-        const msg = body?.error ?? "غير مصرح بتنفيذ هذا التصدير.";
-        setError(msg);
-        feedbackToast.error(msg);
-        return;
-      }
-      if (res.status === 400) {
-        const body = (await res.json().catch(() => null)) as { error?: string } | null;
-        const msg = body?.error ?? "طلب غير صالح.";
-        setError(msg);
-        feedbackToast.error(msg);
-        return;
-      }
-      if (res.status === 503) {
-        const body = (await res.json().catch(() => null)) as { error?: string } | null;
-        const msg =
-          body?.error ??
-          "الخادم غير مهيأ للاتصال بقاعدة البيانات. راجع إعدادات Firebase.";
-        setError(msg);
-        feedbackToast.error(msg);
-        return;
-      }
-      if (!res.ok) {
-        const contentType = res.headers.get("Content-Type") ?? "";
-        const body =
-          contentType.includes("application/json")
-            ? ((await res.json().catch(() => null)) as { error?: string } | null)
-            : null;
-        const msg = body?.error ?? "تعذر إنشاء الملف. حاول مرة أخرى.";
-        setError(msg);
-        feedbackToast.error(msg);
+      const result = await downloadRequestsExcel(
+        buildRequestsExcelExportUrl(params),
+      );
+      if (!result.ok) {
+        setError(result.error);
+        feedbackToast.error(result.error);
         return;
       }
 
-      const blob = await res.blob();
-      if (blob.size === 0) {
-        const msg = "تم إنشاء ملف فارغ. غيّر التصفية وحاول مرة أخرى.";
-        setError(msg);
-        feedbackToast.error(msg);
-        return;
-      }
-      const capped = res.headers.get("X-Export-Capped") === "true";
-      const rowCountRaw = res.headers.get("X-Export-Row-Count");
-      const maxRowsRaw = res.headers.get("X-Export-Max-Rows");
-      const rowCount = Number.parseInt(rowCountRaw ?? "", 10);
-      const maxRows = Number.parseInt(maxRowsRaw ?? "", 10);
-      const rowCountLabel = Number.isFinite(rowCount)
-        ? rowCount.toLocaleString("ar-EG")
-        : "—";
-      const maxRowsLabel =
-        Number.isFinite(maxRows) && maxRows > 0
-          ? maxRows.toLocaleString("ar-EG")
-          : SUPER_ADMIN_EXPORT_MAX_ROWS.toLocaleString("ar-EG");
-
-      const objectUrl = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = objectUrl;
-      a.download =
-        filenameFromContentDisposition(res.headers.get("Content-Disposition")) ??
-        `requests-${new Date().toISOString().slice(0, 10)}.xlsx`;
-      a.rel = "noopener";
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
-
-      if (capped) {
+      const rowCountLabel = result.rowCount.toLocaleString("ar-EG");
+      if (result.capped) {
+        const maxRowsLabel =
+          SUPER_ADMIN_EXPORT_MAX_ROWS.toLocaleString("ar-EG");
         const msg = `تم تصدير ${rowCountLabel} صفًا (الحد الأقصى ${maxRowsLabel} صفًا لكل ملف). قد توجد طلبات إضافية في قاعدة البيانات لم تُدرج في هذا الملف.`;
         setError(msg);
         feedbackToast.error(msg);
       } else {
-        const msg = Number.isFinite(rowCount)
-          ? `تم تنزيل الملف بنجاح (${rowCountLabel} صفًا).`
-          : "تم تنزيل الملف بنجاح.";
+        const msg = `تم تنزيل الملف بنجاح (${rowCountLabel} صفًا).`;
         setExportSuccessNote(msg);
         feedbackToast.success(msg);
       }
-    } catch (err) {
-      const aborted =
-        err instanceof DOMException && err.name === "AbortError";
-      const msg = aborted
-        ? "استغرق التصدير وقتاً طويلاً. ضيّق الفترة أو المكتب وحاول مرة أخرى."
-        : "تعذر تنزيل الملف. تحقق من الاتصال وحاول مرة أخرى.";
-      setError(msg);
-      feedbackToast.error(msg);
     } finally {
-      window.clearTimeout(timeoutId);
       setLoading(false);
     }
   }
@@ -255,9 +157,9 @@ export function SuperAdminExportLauncher({
           setError(null);
           setExportSuccessNote(null);
         }}
-        className="inline-flex min-h-10 items-center justify-center rounded-md bg-gov-navy px-4 py-2 text-sm font-bold text-white shadow-sm transition hover:bg-gov-navy/90"
+        className="inline-flex min-h-10 items-center justify-center rounded-md border border-gov-gray-300 bg-white px-4 py-2 text-sm font-bold text-gov-navy shadow-sm transition hover:bg-gov-gray-50"
       >
-        تصدير Excel
+        تصدير متقدم…
       </button>
 
       {open ? (

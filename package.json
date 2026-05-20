@@ -12,7 +12,10 @@
     "seed:traveler-states": "node --env-file=.env.local scripts/seed-firestore-traveler-states.mjs",
     "seed:vaccines": "node --env-file=.env.local scripts/seed-firestore-vaccines.mjs",
     "admin:create-profile": "node --env-file=.env.local scripts/create-admin-profile.mjs",
-    "backfill:booking-day-stats": "node --env-file=.env.local scripts/backfill-booking-day-stats.mjs"
+    "backfill:booking-day-stats": "node --env-file=.env.local scripts/backfill-booking-day-stats.mjs",
+    "load-test:bookings": "npx tsx --env-file=.env.local scripts/load-test-bookings.ts",
+    "handover:docx": ".venv-handover/bin/python scripts/build-handover-docx.py",
+    "handover:pdf": ".venv-handover/bin/python scripts/build-presentation-pdf.py"
   },
   "dependencies": {
     "@types/qrcode": "^1.5.6",

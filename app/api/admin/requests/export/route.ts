@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { isFirebaseAdminConfigured } from "@/lib/firebase/admin";
 import { getCairoTodayYmd } from "@/lib/cairo-today-ymd";
 import { parseExportCreatedBounds } from "@/lib/office-requests/export-date-bounds";
+import { parseAdminRequestsStatus } from "@/lib/office-requests/requests-list-params";
+import { validateYmdRange } from "@/lib/ymd-range";
 import { officeRequestsToXlsxBuffer } from "@/lib/office-requests/export-xlsx";
 import { SUPER_ADMIN_EXPORT_MAX_ROWS } from "@/lib/office-requests/export-limits";
 import {
@@ -134,6 +136,18 @@ export async function GET(request: Request) {
     return noStoreJson({ error: bounds.error }, { status: 400 });
   }
 
+  const statusFilter = parseAdminRequestsStatus(searchParams.get("status"));
+  const exportStatus =
+    statusFilter === "all" ? null : statusFilter;
+
+  const bookingBounds = validateYmdRange(
+    searchParams.get("bookingFrom") ?? searchParams.get("bookingDateFrom"),
+    searchParams.get("bookingTo") ?? searchParams.get("bookingDateTo"),
+  );
+  if (bookingBounds && "error" in bookingBounds) {
+    return noStoreJson({ error: bookingBounds.error }, { status: 400 });
+  }
+
   if (!isFirebaseAdminConfigured()) {
     return noStoreJson(
       {
@@ -154,6 +168,9 @@ export async function GET(request: Request) {
       includeUncategorizedBookings: includeUncategorized,
       createdFrom: bounds.createdFrom,
       createdTo: bounds.createdTo,
+      status: exportStatus,
+      bookingDateFrom: bookingBounds?.fromYmd ?? null,
+      bookingDateTo: bookingBounds?.toYmd ?? null,
       adminBookingTodayYmd: getCairoTodayYmd(),
     });
 
