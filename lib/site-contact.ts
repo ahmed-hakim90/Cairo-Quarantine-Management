@@ -4,6 +4,9 @@
  */
 const INLINE_WHATSAPP_COMPLAINTS = "";
 
+export const WHATSAPP_COMPLAINTS_DEFAULT_MESSAGE =
+  "السلام عليكم، أود التواصل بخصوص شكوى أو اقتراح بخصوص خدمات الحجر الصحي بالقاهرة.";
+
 export function getWhatsappComplaintsDigits(): string {
   const fromEnv =
     process.env.NEXT_PUBLIC_WHATSAPP_COMPLAINTS_PHONE?.replace(/\D/g, "") ?? "";
@@ -29,4 +32,32 @@ export function formatWhatsappDisplayPhone(): string {
   }
 
   return digits.startsWith("+") ? digits : `+${digits}`;
+}
+
+/** Opens WhatsApp chat with the complaints line; null if phone is not configured. */
+export function buildWhatsappComplaintsUrl(
+  prefillMessage: string = WHATSAPP_COMPLAINTS_DEFAULT_MESSAGE,
+): string | null {
+  const phone = getWhatsappComplaintsDigits();
+  if (!phone) return null;
+
+  const params = new URLSearchParams();
+  const text = prefillMessage.trim();
+  if (text) params.set("text", text);
+
+  const query = params.toString();
+  return query ? `https://wa.me/${phone}?${query}` : `https://wa.me/${phone}`;
+}
+
+export function isWhatsappAllowedUrl(url: string): boolean {
+  try {
+    const parsed = new URL(url.trim());
+    return (
+      parsed.hostname === "wa.me" ||
+      parsed.hostname === "api.whatsapp.com" ||
+      parsed.hostname === "www.whatsapp.com"
+    );
+  } catch {
+    return false;
+  }
 }

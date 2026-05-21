@@ -1,9 +1,7 @@
-import { ChatWidget } from "@/components/chat/ChatWidget";
 import { HashAnchorScroll } from "@/components/navigation/HashAnchorScroll";
 import { ConditionalSiteFooter } from "@/components/layout/ConditionalSiteFooter";
-import { FloatingTextToSpeechButton } from "@/components/layout/FloatingTextToSpeechButton";
-import { FloatingVaccinationBookingButton } from "@/components/layout/FloatingVaccinationBookingButton";
-import { FloatingWhatsAppButton } from "@/components/layout/FloatingWhatsAppButton";
+import { PublicFloatingChrome } from "@/components/layout/PublicFloatingChrome";
+import { PublicMainContent } from "@/components/layout/PublicMainContent";
 import { SiteHeader } from "@/components/layout/SiteHeader";
 import { InstallPrompt } from "@/components/pwa/InstallPrompt";
 import { ServiceWorkerRegistrar } from "@/components/pwa/ServiceWorkerRegistrar";
@@ -32,21 +30,12 @@ export default async function PublicLayout({
         {messages.skipLink}
       </a>
       <SiteHeader locale={locale} messages={messages} />
-      <main id="main-content" className="flex-1">
+      <PublicMainContent>
         <HashAnchorScroll />
         {children}
-      </main>
+      </PublicMainContent>
       <ConditionalSiteFooter messages={messages} />
-      <div className="fixed bottom-5 start-5 z-[60] flex flex-col items-center gap-3">
-        <ChatWidget locale={locale} messages={messages.chat} />
-        <FloatingTextToSpeechButton locale={locale} labels={messages.tts} />
-        <FloatingWhatsAppButton />
-      </div>
-      <FloatingVaccinationBookingButton
-        label={messages.nav.bookVaccination}
-        ariaLabel={messages.nav.bookVaccinationAria}
-        locale={locale}
-      />
+      <PublicFloatingChrome locale={locale} messages={messages} />
       <ServiceWorkerRegistrar />
       <InstallPrompt pwa={messages.pwa} />
     </>

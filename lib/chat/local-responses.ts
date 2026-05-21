@@ -3,6 +3,8 @@ import { VACCINES_BY_CATEGORY } from "@/data/vaccines";
 import { defaultLocale, isLocale } from "@/lib/i18n/config";
 import { getMessages } from "@/lib/i18n/messages";
 import { normalizeArabic } from "@/lib/chat/normalize-arabic";
+import { isOfficeOrAreaQuery } from "@/lib/chat/office-area-query";
+import { buildOfficeResponse } from "@/lib/chat/office-response";
 import { formatPortalUrl } from "@/lib/chat/site-knowledge";
 import {
   searchSiteKnowledge,
@@ -100,27 +102,6 @@ function buildHajjResponse(localeValue: string | undefined) {
   return `الحج والعمرة: ${hajj.basicsBody}\nالوثائق: ${hajj.documentBullets.join("، ")}.\n[الدليل الكامل](${path})`;
 }
 
-function buildOfficeResponse(
-  localeValue: string | undefined,
-  hits: SiteKnowledgeEntry[],
-) {
-  const loc = getLocale(localeValue);
-  const path = `${formatPortalUrl(loc)}#locations-heading`;
-  const officeHits = hits.filter((h) => h.category === "offices").slice(0, 2);
-
-  if (officeHits.length === 0) {
-    if (loc === "en") {
-      return `See traveller vaccination offices in the portal table.\n[Office locations](${path})`;
-    }
-    return `راجع جدول مكاتب تطعيم المسافرين في البوابة.\n[مواقع المكاتب](${path})`;
-  }
-
-  const lines = officeHits
-    .map((o) => `${o.title}: ${o.body.slice(0, 120)}`)
-    .join("\n");
-  return `${lines}\n[جدول المكاتب](${path})`;
-}
-
 function buildSearchHitResponse(
   localeValue: string | undefined,
   hit: SiteKnowledgeEntry,
@@ -145,19 +126,13 @@ export function getLocalChatResponse({
   const mentionsUmrah =
     normalized.includes("عمره") || normalized.includes("معتم");
   const mentionsHajj = normalized.includes("حج") || normalized.includes("حاج");
-  const asksForOffice =
-    normalized.includes("اقرب") ||
-    normalized.includes("مكتب") ||
-    normalized.includes("مكاتب") ||
-    normalized.includes("عنوان") ||
-    normalized.includes("office") ||
-    normalized.includes("location");
-
   if (isBookingQuestion(normalized)) return buildBookingResponse(locale);
 
   const hits = searchSiteKnowledge(message, knowledgeIndex, 5);
 
-  if (asksForOffice) return buildOfficeResponse(locale, hits);
+  if (isOfficeOrAreaQuery(normalized)) {
+    return buildOfficeResponse(locale, message, hits);
+  }
 
   if (isPriceQuestion(normalized)) {
     if (mentionsUmrah && !mentionsHajj) return buildVaccinePriceResponse(locale, "umrah");

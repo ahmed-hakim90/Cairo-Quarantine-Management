@@ -1,4 +1,5 @@
 import { enforceResponseRules } from "@/lib/chat/enforce-response";
+import { isHumanHandoffRequest } from "@/lib/chat/human-handoff";
 import { getLocalChatResponse } from "@/lib/chat/local-responses";
 import { isOutOfScopeMessage } from "@/lib/chat/out-of-scope";
 import {
@@ -9,6 +10,7 @@ import {
 } from "@/lib/chat/site-knowledge";
 import { buildSystemPrompt } from "@/lib/chat/system-prompt";
 import {
+  whatsappHumanHandoffMessage,
   whatsappOutOfScopeMessage,
   whatsappUnknownInfoMessage,
 } from "@/lib/chat/whatsapp-fallback";
@@ -225,6 +227,13 @@ export async function POST(request: Request) {
   const lastUserMessage = messages[messages.length - 1].content;
   const locale = body.locale;
 
+  if (isHumanHandoffRequest(lastUserMessage)) {
+    return new Response(
+      streamTextResponse(whatsappHumanHandoffMessage(locale)),
+      { headers: sseHeaders() },
+    );
+  }
+
   if (isOutOfScopeMessage(lastUserMessage)) {
     return new Response(
       streamTextResponse(whatsappOutOfScopeMessage(locale)),
@@ -242,8 +251,16 @@ export async function POST(request: Request) {
   });
 
   if (localResponse) {
+    const isOfficeReply =
+      localResponse.includes("tel:") ||
+      localResponse.includes("maps.app.goo.gl") ||
+      localResponse.includes("google.com/maps");
     return new Response(
-      streamTextResponse(enforceResponseRules(localResponse, locale)),
+      streamTextResponse(
+        enforceResponseRules(localResponse, locale, {
+          maxLines: isOfficeReply ? 16 : 4,
+        }),
+      ),
       { headers: sseHeaders() },
     );
   }

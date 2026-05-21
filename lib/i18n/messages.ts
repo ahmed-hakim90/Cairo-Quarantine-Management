@@ -37,6 +37,8 @@ export type Messages = {
     hotline: string;
     email: string;
     address: string;
+    whatsappLabel: string;
+    whatsappAria: string;
     copyright: string;
     creditLinkLabel: string;
   };
@@ -242,6 +244,8 @@ const ar: Messages = {
     hotline: "الخط الساخن: ١٦٥٢٨ — على مدار الساعة",
     email: "البريد الإلكتروني: cairovirology@gmail.com",
     address: "العنوان: القاهرة، جمهورية مصر العربية",
+    whatsappLabel: "واتساب — شكاوى واقتراحات",
+    whatsappAria: "فتح واتساب للشكاوى والاقتراحات",
     copyright:
       "جميع الحقوق محفوظة. المحتوى المعروض للتوعية ولا يغني عن التوجيه الطبي المباشر.",
     creditLinkLabel: "صنع ب ❣️ HAKIMO",
@@ -430,7 +434,7 @@ const ar: Messages = {
     openAria: "فتح المساعد",
     closeAria: "إغلاق المساعد",
     error:
-      "تعذر الرد الآن. للمساعدة يرجى التواصل عبر واتساب من الزر الأخضر بالأسفل.",
+      "تعذر الرد الآن. للمساعدة يرجى التواصل عبر واتساب من الفوتر أو شريط التواصل أسفل الصفحة.",
   },
   tts: {
     read: "اقرأ لي المحتوى",
@@ -488,6 +492,8 @@ const en: Messages = {
     hotline: "Hotline: 16528 — 24/7",
     email: "Email: info@cqm.gov.eg",
     address: "Address: Cairo, Arab Republic of Egypt",
+    whatsappLabel: "WhatsApp — complaints and suggestions",
+    whatsappAria: "Open WhatsApp for complaints and suggestions",
     copyright:
       "All rights reserved. Content is for awareness only and does not replace direct medical advice.",
     creditLinkLabel: "Crafted with care by Hakim",
@@ -678,7 +684,7 @@ const en: Messages = {
     openAria: "Open assistant",
     closeAria: "Close assistant",
     error:
-      "Could not reply now. For help, contact us via the green WhatsApp button below.",
+      "Could not reply now. For help, contact us via WhatsApp in the footer or the contact bar at the bottom of the page.",
   },
   tts: {
     read: "Read page aloud",
@@ -735,6 +741,8 @@ const zh: Messages = {
     hotline: "热线：16528 — 全天候",
     email: "邮箱：info@cqm.gov.eg",
     address: "地址：埃及开罗",
+    whatsappLabel: "WhatsApp — 投诉与建议",
+    whatsappAria: "打开 WhatsApp 进行投诉与建议",
     copyright:
       "保留所有权利。内容仅供宣传参考，不能替代直接医疗建议。",
     creditLinkLabel: "哈基姆用心制作",
@@ -915,7 +923,7 @@ const zh: Messages = {
     send: "发送",
     openAria: "打开助手",
     closeAria: "关闭助手",
-    error: "暂时无法回复。请使用下方绿色 WhatsApp 按钮联系我们。",
+    error: "暂时无法回复。请通过页脚或页面底部的 WhatsApp 联系栏联系我们。",
   },
   tts: {
     read: "朗读页面内容",
@@ -973,6 +981,8 @@ const fr: Messages = {
     hotline: "Ligne directe : 16528 — 24 h/24",
     email: "E-mail : info@cqm.gov.eg",
     address: "Adresse : Le Caire, Republique arabe d'Egypte",
+    whatsappLabel: "WhatsApp — plaintes et suggestions",
+    whatsappAria: "Ouvrir WhatsApp pour les plaintes et suggestions",
     copyright:
       "Tous droits reserves. Le contenu est informatif et ne remplace pas un avis medical direct.",
     creditLinkLabel: "Realise avec soin par Hakim",
@@ -1163,7 +1173,7 @@ const fr: Messages = {
     openAria: "Ouvrir l'assistant",
     closeAria: "Fermer l'assistant",
     error:
-      "Reponse indisponible pour le moment. Contactez-nous via le bouton WhatsApp vert ci-dessous.",
+      "Reponse indisponible pour le moment. Contactez-nous via WhatsApp dans le pied de page ou la barre de contact en bas.",
   },
   tts: {
     read: "Lire la page a voix haute",

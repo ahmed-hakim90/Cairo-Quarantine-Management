@@ -1,3 +1,4 @@
+import { WhatsAppContactLink } from "@/components/layout/WhatsAppContactLink";
 import type { Messages } from "@/lib/i18n/messages";
 import { PORTFOLIO_CREDIT_URL } from "@/lib/site-credits";
 
@@ -22,7 +23,11 @@ export function SiteFooter({ messages }: SiteFooterProps) {
           <div className="text-sm">
             <p className="font-semibold text-gov-navy">{f.contactTitle}</p>
             <ul className="mt-3 space-y-2">
-                {/* <li>{f.hotline}</li> */}
+              <WhatsAppContactLink
+                variant="footer"
+                label={f.whatsappLabel}
+                ariaLabel={f.whatsappAria}
+              />
               <li>{f.email}</li>
               <li>{f.address}</li>
             </ul>

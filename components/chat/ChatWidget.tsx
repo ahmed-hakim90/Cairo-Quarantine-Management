@@ -2,6 +2,13 @@
 
 import type { FormEvent } from "react";
 import { useEffect, useRef, useState } from "react";
+import { WhatsAppIcon } from "@/components/layout/WhatsAppContactLink";
+import {
+  loadChatSession,
+  saveChatSession,
+} from "@/lib/chat/chat-session-storage";
+
+type ChatLinkKind = "phone" | "whatsapp" | "map" | "page" | "external";
 
 type ChatLabels = {
   title: string;
@@ -66,13 +73,140 @@ function createId() {
   return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
 
-function getLinkLabel(href: string, labelFromMarkdown?: string) {
-  if (labelFromMarkdown) return labelFromMarkdown;
-  if (href.startsWith("/")) return "فتح الصفحة";
+function PhoneIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
+    </svg>
+  );
+}
+
+function MapIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+      <circle cx="12" cy="10" r="3" />
+    </svg>
+  );
+}
+
+function PageIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M14 3h7v7" />
+      <path d="M10 14 21 3" />
+      <path d="M5 5a2 2 0 0 1 2-2h7l5 5v12a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2z" />
+    </svg>
+  );
+}
+
+function ExternalLinkIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M15 3h6v6" />
+      <path d="M10 14 21 3" />
+      <path d="M21 3 10 14" />
+      <path d="M14 10l7-7" />
+    </svg>
+  );
+}
+
+function getLinkKind(href: string): ChatLinkKind {
+  if (href.startsWith("tel:")) return "phone";
+  if (href.startsWith("/")) return "page";
 
   try {
     const url = new URL(href);
-    if (url.hostname === "maps.app.goo.gl") return "فتح الخريطة";
+    if (
+      url.hostname === "wa.me" ||
+      url.hostname === "api.whatsapp.com" ||
+      url.hostname === "www.whatsapp.com"
+    ) {
+      return "whatsapp";
+    }
+    if (
+      url.hostname === "maps.app.goo.gl" ||
+      url.hostname === "www.google.com" ||
+      url.hostname === "maps.google.com"
+    ) {
+      return "map";
+    }
+    return "external";
+  } catch {
+    return "external";
+  }
+}
+
+function ChatLinkIcon({ href }: { href: string }) {
+  const kind = getLinkKind(href);
+  const className = "size-3.5 shrink-0";
+
+  if (kind === "phone") return <PhoneIcon className={className} />;
+  if (kind === "whatsapp") {
+    return <WhatsAppIcon className={`${className} text-[#25D366]`} />;
+  }
+  if (kind === "map") return <MapIcon className={className} />;
+  if (kind === "page") return <PageIcon className={className} />;
+  return <ExternalLinkIcon className={className} />;
+}
+
+function getLinkLabel(href: string, labelFromMarkdown?: string) {
+  if (labelFromMarkdown) return labelFromMarkdown;
+  if (href.startsWith("/")) return "فتح الصفحة";
+  if (href.startsWith("tel:")) return "اتصال";
+
+  try {
+    const url = new URL(href);
+    if (
+      url.hostname === "wa.me" ||
+      url.hostname === "api.whatsapp.com" ||
+      url.hostname === "www.whatsapp.com"
+    ) {
+      return labelFromMarkdown ?? "فتح واتساب";
+    }
+    if (
+      url.hostname === "maps.app.goo.gl" ||
+      url.hostname === "www.google.com" ||
+      url.hostname === "maps.google.com"
+    ) {
+      return labelFromMarkdown ?? "فتح الخريطة";
+    }
     return url.hostname.replace(/^www\./, "");
   } catch {
     return "فتح الرابط";
@@ -80,24 +214,20 @@ function getLinkLabel(href: string, labelFromMarkdown?: string) {
 }
 
 function renderTextWithLinks(text: string) {
-  const urlPattern =
-    /(https?:\/\/[^\s،]+|\/(?:ar|en|zh|fr)(?:\/[^\s،]*)?(?:#[^\s،]+)?)/g;
   const parts: Array<{ type: "text" | "link"; value: string; href?: string; label?: string }> = [];
+  const combinedRe =
+    /\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)|(https?:\/\/[^\s)،\]]+|tel:[^\s)،\]]+|\/(?:ar|en|zh|fr)(?:\/[^\s،]*)?(?:#[^\s،]+)?)/g;
 
   let lastIndex = 0;
   let match: RegExpExecArray | null;
 
-  const re = new RegExp(
-    `\\[([^\\]]+)\\]\\(([^)]+)\\)|(${urlPattern.source})`,
-    "g",
-  );
-
-  while ((match = re.exec(text)) !== null) {
+  while ((match = combinedRe.exec(text)) !== null) {
     if (match.index > lastIndex) {
       parts.push({ type: "text", value: text.slice(lastIndex, match.index) });
     }
     if (match[1] && match[2]) {
-      parts.push({ type: "link", label: match[1], href: match[2], value: match[0] });
+      const href = match[2].replace(/[)\]]+$/, "");
+      parts.push({ type: "link", label: match[1], href, value: match[0] });
     } else if (match[3]) {
       const href = match[3].replace(/[.)\]]+$/, "");
       parts.push({ type: "link", href, value: match[3] });
@@ -129,9 +259,10 @@ function renderTextWithLinks(text: string) {
         href={href}
         target={href.startsWith("http") ? "_blank" : undefined}
         rel={href.startsWith("http") ? "noopener noreferrer" : undefined}
-        className="inline-flex rounded-full bg-gov-accent/10 px-2 py-0.5 font-bold text-gov-accent underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gov-accent"
+        className="inline-flex items-center gap-1.5 rounded-full bg-gov-accent/10 px-2.5 py-1 text-sm font-bold text-gov-accent underline-offset-2 hover:bg-gov-accent/15 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gov-accent"
       >
-        {getLinkLabel(href, part.label)}
+        <ChatLinkIcon href={href} />
+        <span>{getLinkLabel(href, part.label)}</span>
       </a>
     );
   });
@@ -208,11 +339,34 @@ async function readAssistantStream(
 }
 
 export function ChatWidget({ locale, messages: labels }: ChatWidgetProps) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(
+    () => loadChatSession(locale)?.open ?? false,
+  );
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>(
+    () => loadChatSession(locale)?.messages ?? [],
+  );
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const session = loadChatSession(locale);
+    if (session) {
+      setOpen(session.open);
+      setChatMessages(session.messages);
+    } else {
+      setOpen(false);
+      setChatMessages([]);
+    }
+  }, [locale]);
+
+  useEffect(() => {
+    saveChatSession(locale, {
+      messages: chatMessages,
+      open,
+      updatedAt: Date.now(),
+    });
+  }, [locale, chatMessages, open]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });

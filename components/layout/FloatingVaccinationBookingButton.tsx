@@ -25,19 +25,26 @@ type FloatingVaccinationBookingButtonProps = {
   label: string;
   ariaLabel: string;
   locale: Locale;
+  /** When true, omits fixed positioning for use inside a floating column. */
+  stacked?: boolean;
 };
 
 export function FloatingVaccinationBookingButton({
   label,
   ariaLabel,
   locale,
+  stacked = false,
 }: FloatingVaccinationBookingButtonProps) {
   const href = getVaccinationBookingFormUrl(locale);
 
   return (
     <a
       href={href}
-      className="fixed bottom-5 end-5 z-[60] flex size-14 items-center justify-center rounded-full bg-gov-accent text-white shadow-lg shadow-gov-gray-900/20 transition-transform hover:scale-105 focus-visible:scale-105 active:scale-95"
+      className={
+        stacked
+          ? "flex size-14 items-center justify-center rounded-full bg-gov-accent text-white shadow-lg shadow-gov-gray-900/20 transition-transform hover:scale-105 focus-visible:scale-105 active:scale-95"
+          : "fixed bottom-5 end-5 z-[60] flex size-14 items-center justify-center rounded-full bg-gov-accent text-white shadow-lg shadow-gov-gray-900/20 transition-transform hover:scale-105 focus-visible:scale-105 active:scale-95"
+      }
       aria-label={ariaLabel}
       title={label}
     >

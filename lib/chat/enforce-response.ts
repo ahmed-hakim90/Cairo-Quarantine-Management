@@ -1,5 +1,5 @@
-import { getPublicSiteUrl } from "@/lib/env";
 import { defaultLocale, isLocale } from "@/lib/i18n/config";
+import { isChatAllowedUrl } from "@/lib/chat/allowed-links";
 
 const BANNED_PHRASES = [
   "أعتقد",
@@ -13,33 +13,16 @@ const BANNED_PHRASES = [
 ];
 
 const MARKDOWN_LINK_RE = /\[([^\]]+)\]\(([^)]+)\)/g;
-const URL_RE = /(https?:\/\/[^\s،]+|\/(?:ar|en|zh|fr)(?:\/[^\s،]*)?(?:#[^\s،]+)?)/g;
-
-function isAllowedUrl(url: string, locale: string): boolean {
-  const trimmed = url.trim();
-  if (trimmed.startsWith(`/${locale}/`) || trimmed.startsWith("/ar/")) {
-    return true;
-  }
-
-  const siteOrigin = getPublicSiteUrl();
-  if (!siteOrigin) return false;
-
-  try {
-    const parsed = new URL(trimmed, siteOrigin);
-    const origin = new URL(siteOrigin);
-    return parsed.origin === origin.origin;
-  } catch {
-    return false;
-  }
-}
+const URL_RE =
+  /(https?:\/\/[^\s)،\]]+|tel:[^\s)،\]]+|\/(?:ar|en|zh|fr)(?:\/[^\s،]*)?(?:#[^\s،]+)?)/g;
 
 function stripDisallowedLinks(content: string, locale: string): string {
   let result = content.replace(MARKDOWN_LINK_RE, (_match, label: string, url: string) => {
-    return isAllowedUrl(url, locale) ? `[${label}](${url})` : String(label);
+    return isChatAllowedUrl(url, locale) ? `[${label}](${url})` : String(label);
   });
 
   result = result.replace(URL_RE, (url) => {
-    return isAllowedUrl(url, locale) ? url : "";
+    return isChatAllowedUrl(url, locale) ? url : "";
   });
 
   return result.replace(/\s{2,}/g, " ").trim();
@@ -48,6 +31,7 @@ function stripDisallowedLinks(content: string, locale: string): string {
 export function enforceResponseRules(
   content: string,
   localeValue: string | undefined,
+  options?: { maxLines?: number },
 ): string {
   const locale =
     localeValue && isLocale(localeValue) ? localeValue : defaultLocale;
@@ -65,5 +49,6 @@ export function enforceResponseRules(
     .map((line) => line.trim())
     .filter(Boolean);
 
-  return lines.slice(0, 4).join("\n");
+  const maxLines = options?.maxLines ?? 4;
+  return lines.slice(0, maxLines).join("\n");
 }
