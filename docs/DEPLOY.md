@@ -32,19 +32,19 @@ npm run setup:production
 npm run admin:create-profile -- <firebase-uid> admin@example.com "Super Admin"
 ```
 
-## 4. Cron (مهام مجدولة)
+## 4. مهام الخلفية (بدون Vercel Cron)
 
-على **Vercel**: يُفعَّل تلقائياً عبر [`vercel.json`](../vercel.json). اضبط `MAINTENANCE_CRON_SECRET` و`DAILY_QUEUE_CRON_SECRET` و`QUEUE_NOTIFY_CRON_SECRET` (أو نفس القيمة لـ `CRON_SECRET` مع المسارات الثلاثة). Vercel يرسل طلبات **GET** مع `Authorization: Bearer …`.
-
-على استضافة أخرى، جدّل `POST` مع رأس:
+**لا يُستخدم Vercel Cron** في هذا المشروع (تجنّب حدود الخطة المجانية). المسارات التالية تبقى للاستدعاء **اليدوي** أو من مجدول خارجي (GitHub Actions، cron على سيرفر، إلخ) عبر `POST` أو `GET` مع:
 
 `Authorization: Bearer <SECRET>`
 
-| المسار | المتغير | التكرار المقترح |
-|--------|---------|-----------------|
-| `/api/admin/maintenance/retention` | `MAINTENANCE_CRON_SECRET` | أسبوعي (أحد 03:00 UTC) |
-| `/api/admin/queue/close` | `DAILY_QUEUE_CRON_SECRET` | يومي (23:05 UTC) |
-| `/api/queue/notify-scan` | `QUEUE_NOTIFY_CRON_SECRET` | كل 5 دقائق |
+| المسار | المتغير (اختياري) | الغرض | بديل تشغيلي |
+|--------|-------------------|--------|-------------|
+| `/api/admin/maintenance/retention` | `MAINTENANCE_CRON_SECRET` | أرشفة/حذف الطلبات القديمة | من لوحة السوبر أدمن (أدوات البيانات) |
+| `/api/admin/queue/close` | `DAILY_QUEUE_CRON_SECRET` | إغلاق طابور اليوم لكل المكاتب | إغلاق الطابور من لوحة المكتب نهاية اليوم |
+| `/api/queue/notify-scan` | `QUEUE_NOTIFY_CRON_SECRET` | إشعارات «اقترب دورك» | اختياري؛ يعتمد على polling عند متابعة الطابور |
+
+إن لم تُضبط أسرار الـ Cron، لا حاجة لها — المسارات ترفض الطلبات بدون `Authorization` صحيح فقط.
 
 ## 5. بناء وتشغيل
 

@@ -175,7 +175,7 @@ proxy.ts                      # توجيه الجذر → /ar
 - إنشاء/تحديث وثائق Firestore عبر Admin SDK.
 - جلسة الإدارة (Cookie `cqm_admin_session`).
 - حدود المعدل (Rate limiting) على المسارات العامة.
-- تصدير Excel وNDJSON، أرشفة، Cron صيانة.
+- تصدير Excel وNDJSON، أرشفة من اللوحة (بدون Vercel Cron).
 
 ### 4.2 REST API — 17 مسار
 
@@ -192,7 +192,7 @@ proxy.ts                      # توجيه الجذر → /ar
 | GET | `/api/firebase/public-config` | إعدادات Firebase العامة | عميل الويب |
 | GET | `/api/admin/requests/export` | تصدير `.xlsx` (سريع: حالة + تاريخ الحجز؛ متقدم: أنواع/مكتب/فئة/تاريخ الإنشاء) | لوحة الطلبات |
 | POST | `/api/admin/queue/close` | إغلاق طابور يوم | طابور المكتب |
-| POST | `/api/admin/maintenance/retention` | أرشفة (Cron) | Cron خارجي + Bearer |
+| POST | `/api/admin/maintenance/retention` | أرشفة | سوبر أدمن من اللوحة أو Bearer اختياري |
 | POST | `/api/admin/destination-countries/import` | استيراد دول Excel | سوبر أدمن |
 | GET | `/api/admin/destination-countries/template` | قالب Excel | سوبر أدمن |
 | GET | `/api/admin/destination-countries/export` | تصدير `.xlsx` للدول الحالية | سوبر أدمن |
@@ -507,7 +507,7 @@ npm run admin:create-profile -- <firebase-uid> admin@example.com "Super Admin"
 | `NEXT_PUBLIC_FIREBASE_*` | عميل Firebase (واجهة + login) |
 | `FIREBASE_PROJECT_ID` / `CLIENT_EMAIL` / `PRIVATE_KEY` | Admin SDK |
 | `NEXT_PUBLIC_WHATSAPP_COMPLAINTS_PHONE` | زر واتساب الشكاوى |
-| `MAINTENANCE_CRON_SECRET` | Cron الأرشفة |
+| `MAINTENANCE_CRON_SECRET` | *(اختياري)* سر API الأرشفة — التشغيل المعتاد من اللوحة |
 | `RATE_LIMIT_BACKEND` | `memory` \| `firestore` \| `both` |
 
 ### 10.4 نشر Firestore
@@ -517,7 +517,9 @@ firebase deploy --only firestore:rules
 firebase deploy --only firestore:indexes
 ```
 
-### 10.5 Cron أرشفة (إنتاج)
+### 10.5 صيانة الأرشفة (إنتاج)
+
+من لوحة السوبر أدمن → الإعدادات المتقدمة → تشغيل صيانة البيانات. *(اختياري)* استدعاء API يدوياً أو من مجدول خارجي — **لا يُستخدم Vercel Cron**.
 
 ```http
 POST /api/admin/maintenance/retention
@@ -548,7 +550,7 @@ Authorization: Bearer {MAINTENANCE_CRON_SECRET}
 - [ ] تسجيل دخول `/ar/admin/login`
 - [ ] تحديث طلب من `/admin/requests/[id]`
 - [ ] اختبار `/checkin?officeId=cairo-trav-1`
-- [ ] ضبط `MAINTENANCE_CRON_SECRET` + Cron أرشفة
+- [ ] تجربة صيانة الأرشفة من لوحة السوبر أدمن (مرة واحدة على الأقل في بيئة الاختبار)
 
 ### 11.4 ملفات مرجعية في الكود
 

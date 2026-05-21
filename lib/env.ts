@@ -45,9 +45,6 @@ export function missingProductionEnvKeys(): string[] {
     "FIREBASE_PROJECT_ID",
     "FIREBASE_CLIENT_EMAIL",
     "FIREBASE_PRIVATE_KEY",
-    "MAINTENANCE_CRON_SECRET",
-    "DAILY_QUEUE_CRON_SECRET",
-    "QUEUE_NOTIFY_CRON_SECRET",
   ];
   return required.filter((key) => !process.env[key]?.trim());
 }

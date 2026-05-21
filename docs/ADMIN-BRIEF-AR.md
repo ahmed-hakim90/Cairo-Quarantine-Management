@@ -376,8 +376,8 @@ npm run admin:create-profile -- <firebase-uid> admin@example.com "Super Admin"
 | أرشفة سجل النشاط | أقدم من **90 يوماً** → `activityLogsArchive` |
 | حذف الأرشيف نهائياً | بعد **6 أشهر** من تاريخ الأرشفة |
 | دفعة واحدة | حتى **400** وثيقة (حد أقصى 500) — قد يتطلب عدة تشغيلات |
-| تشغيل تلقائي | Cron خارجي: `POST /api/admin/maintenance/retention` مع `Authorization: Bearer {MAINTENANCE_CRON_SECRET}` |
-| تشغيل يدوي | من **الإعدادات المتقدمة** في لوحة السوبر أدمن |
+| تشغيل يدوي | من **الإعدادات المتقدمة** في لوحة السوبر أدمن (الطريقة المعتمدة — لا Vercel Cron) |
+| تشغيل عبر API | *(اختياري)* `POST /api/admin/maintenance/retention` مع `Authorization: Bearer {MAINTENANCE_CRON_SECRET}` من مجدول خارجي |
 
 ### 13.1 أدوات البيانات المتقدمة (سوبر أدمن فقط)
 
@@ -449,7 +449,7 @@ npm run admin:create-profile -- <firebase-uid> admin@example.com "Super Admin"
 - [ ] ضبط **ساعة قطع حجز نفس اليوم** (افتراضي 14:00)
 - [ ] إعداد **قوالب واتساب** لكل سيناريو (تأكيد، تذكير، إلغاء...)
 - [ ] إنشاء حسابات **مستخدمي المكاتب** وتفعيلها مع تعيين المكتب
-- [ ] ضبط **Cron الأرشفة** الشهري/الأسبوعي مع `MAINTENANCE_CRON_SECRET`
+- [ ] تشغيل **صيانة الأرشفة** من لوحة السوبر أدمن عند الحاجة (بدون Vercel Cron)
 - [ ] اختبار رحلة كاملة: حجز → QR → تحديث من اللوحة → «طلباتي»
 - [ ] ضبط رقم **واتساب الشكاوى** في متغيرات البيئة
 

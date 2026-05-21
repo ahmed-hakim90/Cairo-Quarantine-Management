@@ -194,7 +194,7 @@ export function SuperAdminDataToolsPanel() {
     try {
       const result = await runRetentionMaintenanceAction();
       const more = result.truncated
-        ? " — ما زالت هناك بيانات أخرى؛ كرر التشغيل أو انتظر تشغيل الـ cron التالي."
+        ? " — ما زالت هناك بيانات أخرى؛ كرر التشغيل من هنا."
         : "";
       const detail = [
         `أُرشف ${result.archivedRequests} طلباً.`,

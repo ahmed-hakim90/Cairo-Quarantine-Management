@@ -77,9 +77,9 @@ npm run dev
 | `FIREBASE_PRIVATE_KEY` | service account private key مع `\n` escaped في `.env.local`. |
 | `NEXT_PUBLIC_SITE_URL` | عنوان الموقع العام (روابط بطاقة الحجز QR وواتساب)، مثال: `https://example.com`. |
 | `NEXT_PUBLIC_FIREBASE_VAPID_KEY` | (اختياري) مفتاح Web Push لإشعارات انتظار الطابور. |
-| `MAINTENANCE_CRON_SECRET` | سر لاستدعاء `POST /api/admin/maintenance/retention` عبر `Authorization: Bearer ...`. |
-| `DAILY_QUEUE_CRON_SECRET` | سر لإغلاق طوابير اليوم: `POST /api/admin/queue/close`. |
-| `QUEUE_NOTIFY_CRON_SECRET` | سر لفحص إشعارات الطابور: `POST /api/queue/notify-scan`. |
+| `MAINTENANCE_CRON_SECRET` | *(اختياري)* سر لاستدعاء `/api/admin/maintenance/retention` يدوياً أو من مجدول خارجي — **لا يوجد Vercel Cron**. |
+| `DAILY_QUEUE_CRON_SECRET` | *(اختياري)* سر لـ `/api/admin/queue/close` — يُفضّل إغلاق الطابور من لوحة المكتب. |
+| `QUEUE_NOTIFY_CRON_SECRET` | *(اختياري)* سر لـ `/api/queue/notify-scan` — إشعارات الطابور عند تفعيل مجدول خارجي. |
 | `RATE_LIMIT_BACKEND` | `memory` (افتراضي محلي) أو `firestore` أو `both` — يُفضَّل `firestore` أو `both` على الإنتاج متعدد العُقد. |
 
 إعدادات الحجز العامة (ساعة إغلاق حجز «نفس اليوم» بتوقيت القاهرة) تُحفظ في وثيقة Firestore `settings/app` ويُضبطها السوبر أدمن من `/ar/admin/settings` (افتراضي الساعة 14 إن لم تُنشأ الوثيقة).
@@ -107,7 +107,7 @@ npm run admin:create-profile -- <firebase-uid> admin@example.com "Super Admin"
 - [ ] `firebase deploy --only firestore:rules` و `firestore:indexes`.
 - [ ] `RATE_LIMIT_BACKEND=firestore` أو `both` على الاستضافة.
 - [ ] `NEXT_PUBLIC_SITE_URL` على الاستضافة.
-- [ ] `MAINTENANCE_CRON_SECRET` + `DAILY_QUEUE_CRON_SECRET` + `QUEUE_NOTIFY_CRON_SECRET` + جدولة الـ Cron الثلاثة (انظر [`docs/DEPLOY.md`](docs/DEPLOY.md) و [`vercel.json`](vercel.json)).
+- [ ] مهام الخلفية: أرشفة من لوحة السوبر أدمن؛ إغلاق الطابور من لوحة المكتب (انظر [`docs/DEPLOY.md`](docs/DEPLOY.md) — **بدون Vercel Cron**).
 - [ ] بذر المكاتب واللقاحات وحالات المسافرين؛ مراجعة `dailyBookingCap` لكل مكتب.
 - [ ] من `/ar/admin/offices`: تفعيل «٢٤ ساعة» لمكتب مطار القاهرة (`cairo-trav-1`) إن لزم.
 - [ ] حذف أو أرشفة طلبات اختبار الحمل (`npm run load-test:bookings` على **staging فقط**).
