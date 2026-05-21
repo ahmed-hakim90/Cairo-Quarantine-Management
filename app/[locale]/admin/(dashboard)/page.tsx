@@ -140,7 +140,15 @@ export default async function AdminOverviewPage({
       }),
       listTravelerStates({ includeInactive: true }),
       applyBookingDateFilter && bookingDateRange
-        ? countVisibleBookingsForSession(sessionListArgs)
+        ? countVisibleBookingsForSession({
+            role: session.profile.role,
+            officeId: session.profile.officeId,
+            allowedOfficeIds: session.profile.allowedOfficeIds,
+            ...(officeFilter ? { officeFilter } : {}),
+            adminBookingTodayYmd: getCairoTodayYmd(),
+            bookingDateFrom: bookingDateRange.fromYmd,
+            bookingDateTo: bookingDateRange.toYmd,
+          })
         : Promise.resolve(null),
     ]);
 
