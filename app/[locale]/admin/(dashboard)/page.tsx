@@ -1,7 +1,9 @@
 import { Suspense } from "react";
 import { notFound, redirect } from "next/navigation";
 import { AdminAnalyticsCharts } from "@/components/admin/AdminAnalyticsCharts";
+import { AdminBookingQueueStatSection } from "@/components/admin/AdminBookingQueueStatSection";
 import { AdminDashboardPeriodFilter } from "@/components/admin/AdminDashboardPeriodFilter";
+import { AdminFeedbackStatSection } from "@/components/admin/AdminFeedbackStatSection";
 import { AdminStatCard } from "@/components/admin/AdminStatCard";
 import { SuperAdminDashboardOfficeFilter } from "@/components/admin/SuperAdminDashboardOfficeFilter";
 import { SuperAdminExportLauncher } from "@/components/admin/SuperAdminExportLauncher";
@@ -13,12 +15,21 @@ import {
   listDailyRequestStatsForOffices,
 } from "@/lib/office-requests/daily-request-stats";
 import {
+  buildAdminAnalyticsFromAggregatedDailyStats,
   buildAdminRequestAnalytics,
+  buildBookingQueueSection,
+  buildFeedbackSectionFromDailyStats,
+  buildFeedbackSectionFromRequests,
   buildOfficePerformanceRatings,
 } from "@/lib/office-requests/analytics";
+import {
+  aggregateDailyQueueStats,
+  listDailyQueueStatsForOfficesInRange,
+} from "@/lib/queue/daily-stats-service";
 import { adminAllowedOfficeIds } from "@/lib/office-requests/admin-access";
 import { getAdminSession } from "@/lib/office-requests/session";
 import {
+  countVisibleBookingsForSession,
   listOffices,
   listRequestsForSession,
   listTravelerStates,
@@ -44,6 +55,12 @@ export default async function AdminOverviewPage({
 
   const session = await getAdminSession();
   if (!session) redirect(`/${locale}/admin/login`);
+
+  if (session.profile.role === "office_user" && session.profile.officeId) {
+    redirect(
+      `/${locale}/office-dashboard/${session.profile.officeId}/queue`,
+    );
+  }
 
   const isSuperAdmin = session.profile.role === "super_admin";
   const isLocalAdmin =
@@ -94,35 +111,59 @@ export default async function AdminOverviewPage({
   const statsFrom = bookingDateRange?.fromYmd ?? "2020-01-01";
   const statsTo = bookingDateRange?.toYmd ?? getCairoTodayYmd();
 
-  const [requests, dailyStatsRows, travelerStates] = await Promise.all([
-    listRequestsForSession({
-      role: session.profile.role,
-      officeId: session.profile.officeId,
-      allowedOfficeIds: session.profile.allowedOfficeIds,
-      ...(officeFilter ? { officeFilter } : {}),
-      ...(applyBookingDateFilter
-        ? {
-            adminBookingTodayYmd: getCairoTodayYmd(),
-            bookingDateFrom: bookingDateRange.fromYmd,
-            bookingDateTo: bookingDateRange.toYmd,
-          }
-        : {}),
-    }),
-    listDailyRequestStatsForOffices({
-      officeIds: statsOfficeIds,
-      fromDate: statsFrom,
-      toDate: statsTo,
-    }),
-    listTravelerStates({ includeInactive: true }),
-  ]);
+  const sessionListArgs = {
+    role: session.profile.role,
+    officeId: session.profile.officeId,
+    allowedOfficeIds: session.profile.allowedOfficeIds,
+    ...(officeFilter ? { officeFilter } : {}),
+    ...(applyBookingDateFilter && bookingDateRange
+      ? {
+          adminBookingTodayYmd: getCairoTodayYmd(),
+          bookingDateFrom: bookingDateRange.fromYmd,
+          bookingDateTo: bookingDateRange.toYmd,
+        }
+      : {}),
+  };
+
+  const [requests, dailyStatsRows, queueStatsRows, travelerStates, bookingCount] =
+    await Promise.all([
+      listRequestsForSession(sessionListArgs),
+      listDailyRequestStatsForOffices({
+        officeIds: statsOfficeIds,
+        fromDate: statsFrom,
+        toDate: statsTo,
+      }),
+      listDailyQueueStatsForOfficesInRange({
+        officeIds: statsOfficeIds,
+        fromDate: statsFrom,
+        toDate: statsTo,
+      }),
+      listTravelerStates({ includeInactive: true }),
+      applyBookingDateFilter && bookingDateRange
+        ? countVisibleBookingsForSession(sessionListArgs)
+        : Promise.resolve(null),
+    ]);
 
   const aggregatedStats = aggregateDailyRequestStats(dailyStatsRows);
-  const analytics = buildAdminRequestAnalytics(requests);
-  const totalRequestsValue = applyBookingDateFilter
-    ? requests.length
-    : aggregatedStats.totalRequests > 0
-      ? aggregatedStats.totalRequests
-      : requests.length;
+  const useDailyStatsPath =
+    !applyBookingDateFilter && aggregatedStats.totalRequests > 0;
+  const analytics = useDailyStatsPath
+    ? buildAdminAnalyticsFromAggregatedDailyStats(
+        aggregatedStats,
+        dailyStatsRows,
+      )
+    : buildAdminRequestAnalytics(requests);
+  const queueAggregated = aggregateDailyQueueStats(queueStatsRows);
+  const totalBookings = applyBookingDateFilter
+    ? (bookingCount ?? 0)
+    : aggregatedStats.bookings;
+  const bookingSection = buildBookingQueueSection(
+    totalBookings,
+    queueAggregated,
+  );
+  const feedbackSection = useDailyStatsPath
+    ? buildFeedbackSectionFromDailyStats(aggregatedStats)
+    : buildFeedbackSectionFromRequests(requests);
   const officeRatings = buildOfficePerformanceRatings(
     requests,
     selectedOfficeId
@@ -208,32 +249,38 @@ export default async function AdminOverviewPage({
         </Suspense>
       </div>
 
-      <div className="grid gap-4 py-6 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7">
-        <AdminStatCard
-          label={
-            applyBookingDateFilter
-              ? "إجمالي الطلبات (في النطاق)"
-              : "إجمالي الطلبات"
+      <div className="space-y-8 py-6">
+        <AdminBookingQueueStatSection
+          title="الحجوزات"
+          totalLabel={
+            applyBookingDateFilter ? "إجمالي الحجوزات (في النطاق)" : "إجمالي الحجوزات"
           }
-          value={totalRequestsValue}
+          section={bookingSection}
         />
-        <AdminStatCard label="جديد" value={analytics.byStatus.new} />
-        <AdminStatCard
-          label="قيد المتابعة"
-          value={analytics.byStatus.in_progress}
+        <AdminFeedbackStatSection
+          title="الشكاوى والمقترحات"
+          totalLabel={
+            applyBookingDateFilter
+              ? "إجمالي الشكاوى والمقترحات (في النطاق)"
+              : "إجمالي الشكاوى والمقترحات"
+          }
+          section={feedbackSection}
         />
-        <AdminStatCard label="تم التواصل" value={analytics.byStatus.contacted} />
-        <AdminStatCard label="مكتمل" value={analytics.byStatus.completed} />
-        <AdminStatCard label="ملغي" value={analytics.byStatus.cancelled} />
-        {selectedOfficeNameAr ? (
-          <AdminStatCard label="المكتب" value={selectedOfficeNameAr} />
-        ) : (
-          <AdminStatCard label="المكاتب المتاحة" value={offices.length} />
-        )}
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {selectedOfficeNameAr ? (
+            <AdminStatCard label="المكتب" value={selectedOfficeNameAr} />
+          ) : (
+            <AdminStatCard label="المكاتب المتاحة" value={offices.length} />
+          )}
+        </div>
       </div>
 
       <div className="mb-6">
-        <AdminAnalyticsCharts analytics={analytics} />
+        <AdminAnalyticsCharts
+          analytics={analytics}
+          bookingQueue={bookingSection}
+          feedback={feedbackSection}
+        />
       </div>
 
       <section className="mb-6 rounded-lg border border-gov-gray-200 bg-white p-4 shadow-sm">
@@ -243,8 +290,8 @@ export default async function AdminOverviewPage({
               تقييم أداء المكاتب
             </h2>
             <p className="mt-1 text-xs text-gov-gray-600">
-              عدد الحجوزات والشكاوى المسجلة لكل مكتب، ويشمل الحجوزات السابقة
-              والقادمة.
+              حجوزات، شكاوى، ونسبة إنجاز الحجوزات (مكتمل ÷ حجوزات) ضمن النطاق
+              المفلتر.
             </p>
           </div>
         </div>
@@ -254,6 +301,8 @@ export default async function AdminOverviewPage({
               <tr>
                 <th className="px-4 py-3">المكتب</th>
                 <th className="px-4 py-3">حجوزات</th>
+                <th className="px-4 py-3">مكتمل</th>
+                <th className="px-4 py-3">نسبة الإنجاز</th>
                 <th className="px-4 py-3">شكاوى</th>
               </tr>
             </thead>
@@ -265,6 +314,14 @@ export default async function AdminOverviewPage({
                   </td>
                   <td className="px-4 py-3 font-semibold text-gov-gray-800">
                     {rating.bookings}
+                  </td>
+                  <td className="px-4 py-3 font-semibold text-gov-gray-800">
+                    {rating.completed}
+                  </td>
+                  <td className="px-4 py-3 font-semibold text-gov-gray-800">
+                    {rating.completionRatePercent != null
+                      ? `${rating.completionRatePercent}%`
+                      : "—"}
                   </td>
                   <td className="px-4 py-3 font-semibold text-gov-gray-800">
                     {rating.complaints}

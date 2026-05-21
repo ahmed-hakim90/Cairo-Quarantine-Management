@@ -156,10 +156,19 @@ export async function updateRequestAction(formData: FormData) {
   const status = formValue(formData, "status") as OfficeRequestStatus;
   const notes = formValue(formData, "notes");
 
+  const preferredDate =
+    formData.get("preferredDate") != null
+      ? formValue(formData, "preferredDate")
+      : undefined;
+  const phone =
+    formData.get("phone") != null ? formValue(formData, "phone") : undefined;
+
   await updateRequestForSession({
     id,
     status,
     notes,
+    ...(preferredDate !== undefined ? { preferredDate } : {}),
+    ...(phone !== undefined ? { phone } : {}),
     role: session.profile.role,
     officeId: session.profile.officeId,
     allowedOfficeIds: session.profile.allowedOfficeIds,

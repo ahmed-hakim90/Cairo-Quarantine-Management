@@ -77,6 +77,27 @@ export function RequestOfficeActionForm({
           ))}
         </select>
       </label>
+      {request.type === "booking" ? (
+        <label className="mt-4 block text-sm font-bold text-gov-navy">
+          تاريخ الحجز
+          <input
+            type="date"
+            name="preferredDate"
+            defaultValue={request.preferredDate ?? ""}
+            className={fieldClass}
+          />
+        </label>
+      ) : null}
+      <label className="mt-4 block text-sm font-bold text-gov-navy">
+        رقم الهاتف
+        <input
+          type="tel"
+          name="phone"
+          defaultValue={request.phone}
+          className={fieldClass}
+          dir="ltr"
+        />
+      </label>
       <label className="mt-4 block text-sm font-bold text-gov-navy">
         ملاحظات المتابعة
         <textarea

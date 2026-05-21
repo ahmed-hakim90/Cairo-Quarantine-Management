@@ -1,0 +1,17 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "crons": [
+    {
+      "path": "/api/admin/maintenance/retention",
+      "schedule": "0 3 * * 0"
+    },
+    {
+      "path": "/api/admin/queue/close",
+      "schedule": "5 23 * * *"
+    },
+    {
+      "path": "/api/queue/notify-scan",
+      "schedule": "*/5 * * * *"
+    }
+  ]
+}

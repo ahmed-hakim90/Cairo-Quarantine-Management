@@ -1,25 +1,30 @@
+import { authorizeCronRequest } from "@/lib/cron/authorize";
 import { scanAndNotifyQueueWatches } from "@/lib/queue/queue-notify";
-import { bearerToken, safeTokenEquals } from "@/lib/security/bearer-token";
 import { noStoreJson } from "@/lib/security/admin-request";
 
-export async function POST(request: Request) {
-  const expected = process.env.QUEUE_NOTIFY_CRON_SECRET?.trim();
-  if (!expected) {
-    return noStoreJson(
-      { error: "QUEUE_NOTIFY_CRON_SECRET غير مضبوط." },
-      { status: 500 },
-    );
+async function parseCronBody(request: Request): Promise<{
+  officeId?: string;
+  date?: string;
+}> {
+  if (request.method === "GET") {
+    const url = new URL(request.url);
+    return {
+      officeId: url.searchParams.get("officeId")?.trim() || undefined,
+      date: url.searchParams.get("date")?.trim() || undefined,
+    };
   }
-  if (!safeTokenEquals(bearerToken(request), expected)) {
-    return noStoreJson({ error: "غير مصرح." }, { status: 401 });
-  }
-
-  let body: { officeId?: string; date?: string } = {};
   try {
-    body = (await request.json()) as typeof body;
+    return (await request.json()) as { officeId?: string; date?: string };
   } catch {
-    body = {};
+    return {};
   }
+}
+
+async function handleNotifyScan(request: Request) {
+  const denied = authorizeCronRequest(request, "QUEUE_NOTIFY_CRON_SECRET");
+  if (denied) return denied;
+
+  const body = await parseCronBody(request);
 
   try {
     const result = await scanAndNotifyQueueWatches({
@@ -33,4 +38,12 @@ export async function POST(request: Request) {
       { status: 500 },
     );
   }
+}
+
+export async function POST(request: Request) {
+  return handleNotifyScan(request);
+}
+
+export async function GET(request: Request) {
+  return handleNotifyScan(request);
 }

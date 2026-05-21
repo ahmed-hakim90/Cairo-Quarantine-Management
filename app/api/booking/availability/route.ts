@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { isRequestBodyTooLarge } from "@/lib/api/request-body-limit";
 import { checkRateLimit, rateLimitKeyFromHeaders } from "@/lib/rate-limit";
+import { isProductionRuntime } from "@/lib/env";
 import { isFirebaseAdminConfigured } from "@/lib/firebase/admin";
 import { listOffices } from "@/lib/office-requests/store";
 import { getBookingDayAvailability } from "@/lib/office-requests/booking-day-stats";
@@ -41,10 +42,21 @@ export async function GET(req: Request) {
   }
 
   if (!isFirebaseAdminConfigured()) {
+    if (isProductionRuntime()) {
+      return NextResponse.json(
+        {
+          error: "service_unavailable",
+          message:
+            "خدمة الحجز غير مهيأة. راجع إعداد Firebase Admin SDK على الاستضافة.",
+        },
+        { status: 503 },
+      );
+    }
     return NextResponse.json({
       available: true,
       count: 0,
       cap: null as number | null,
+      _devFallback: true,
     });
   }
 

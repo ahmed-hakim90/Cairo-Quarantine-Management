@@ -34,7 +34,14 @@ export default async function AdminPendingReviewPage({
           </h2>
           <p className="mt-2 text-sm leading-relaxed text-gov-gray-600">
             لا يمكنك استخدام لوحة التحكم حالياً. إما أن الحساب موقوف أو أنه لم
-            يُربَط بعد بمكتب. تواصل مع مسؤول النظام أو انتظر التفعيل.
+            يُربَط بعد بمكتب. تواصل مع مسؤول النظام (سوبر أدمن) لتفعيل الحساب
+            من صفحة «المستخدمون» وربطه بمكتب أو محافظة.
+          </p>
+          <p className="mt-3 rounded-md bg-gov-gray-50 px-3 py-2 text-xs text-gov-gray-700">
+            البريد المسجّل:{" "}
+            <span className="font-bold text-gov-navy" dir="ltr">
+              {session.email}
+            </span>
           </p>
           <form action={logoutAdmin.bind(null, locale)} className="mt-6">
             <button

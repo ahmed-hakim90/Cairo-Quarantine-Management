@@ -21,6 +21,8 @@ const contentSecurityPolicy = [
     "https://www.google.com",
     "https://firebaseinstallations.googleapis.com",
     "https://firebase.googleapis.com",
+    "https://fcm.googleapis.com",
+    "https://fcmregistrations.googleapis.com",
     "https://firestore.googleapis.com",
     "wss://firestore.googleapis.com",
   ].join(" "),

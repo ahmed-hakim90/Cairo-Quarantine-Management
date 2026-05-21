@@ -1,4 +1,5 @@
 import type { DailyRequestStats } from "@/lib/office-requests/daily-request-stats";
+import type { AggregatedDailyQueueStats } from "@/lib/queue/daily-stats-service";
 import type {
   Office,
   OfficeRequest,
@@ -18,6 +19,16 @@ export type OfficePerformanceRating = {
   officeNameAr: string;
   bookings: number;
   complaints: number;
+  proposals: number;
+  completed: number;
+  /** Share of bookings marked completed (0–100), null if no bookings */
+  completionRatePercent: number | null;
+};
+
+export type QueueDailyAnalyticsSummary = {
+  totalCheckedIn: number;
+  totalCompleted: number;
+  totalNoShow: number;
 };
 
 const STATUSES: OfficeRequestStatus[] = [
@@ -29,6 +40,51 @@ const STATUSES: OfficeRequestStatus[] = [
 ];
 
 const TYPES: OfficeRequestType[] = ["booking", "complaint", "proposal"];
+
+export type AdminBookingQueueSection = {
+  totalBookings: number;
+  checkedIn: number;
+  completed: number;
+  notCompleted: number;
+};
+
+export type AdminFeedbackSection = {
+  total: number;
+  newCount: number;
+};
+
+export function buildBookingQueueSection(
+  totalBookings: number,
+  queue: AggregatedDailyQueueStats,
+): AdminBookingQueueSection {
+  return {
+    totalBookings,
+    checkedIn: queue.totalCheckedIn,
+    completed: queue.totalCompleted,
+    notCompleted: queue.totalNotCompleted,
+  };
+}
+
+export function buildFeedbackSectionFromDailyStats(
+  aggregated: DailyRequestStats,
+): AdminFeedbackSection {
+  return {
+    total: aggregated.complaints + aggregated.proposals,
+    newCount: aggregated.complaintNew + aggregated.proposalNew,
+  };
+}
+
+export function buildFeedbackSectionFromRequests(
+  requests: OfficeRequest[],
+): AdminFeedbackSection {
+  const feedback = requests.filter(
+    (r) => r.type === "complaint" || r.type === "proposal",
+  );
+  return {
+    total: feedback.length,
+    newCount: feedback.filter((r) => r.status === "new").length,
+  };
+}
 
 function startOfWeekUtc(d: Date): Date {
   const day = d.getUTCDay();
@@ -42,24 +98,76 @@ function formatDay(d: Date): string {
   return d.toISOString().slice(0, 10);
 }
 
-export function buildAdminAnalyticsFromDailyStats(
-  stats: DailyRequestStats,
+function buildTimelineWeeksFromDailyRows(
+  rows: DailyRequestStats[],
+  options?: { timelineDays?: number },
+): { weekStart: string; count: number }[] {
+  const timelineDays = options?.timelineDays ?? 90;
+  const cutoff = Date.now() - timelineDays * 24 * 60 * 60 * 1000;
+  const weekCounts = new Map<string, number>();
+
+  for (const row of rows) {
+    const created = Date.parse(`${row.date}T12:00:00.000Z`);
+    if (Number.isNaN(created) || created < cutoff) continue;
+    const weekStart = formatDay(startOfWeekUtc(new Date(created)));
+    weekCounts.set(weekStart, (weekCounts.get(weekStart) ?? 0) + row.totalRequests);
+  }
+
+  return [...weekCounts.keys()]
+    .sort()
+    .map((weekStart) => ({
+      weekStart,
+      count: weekCounts.get(weekStart) ?? 0,
+    }));
+}
+
+/** Aggregated daily_request_stats → dashboard analytics (fast path). */
+export function buildAdminAnalyticsFromAggregatedDailyStats(
+  aggregated: DailyRequestStats,
+  dailyRows?: DailyRequestStats[],
+  options?: { timelineDays?: number },
 ): AdminRequestAnalytics {
   return {
     byStatus: {
-      new: stats.new,
-      in_progress: stats.inProgress,
+      new: aggregated.new,
+      in_progress: aggregated.inProgress,
       contacted: 0,
-      completed: stats.completed,
-      cancelled: stats.cancelled,
+      completed: aggregated.completed,
+      cancelled: aggregated.cancelled,
     },
     byType: {
-      booking: stats.bookings,
-      complaint: stats.complaints,
-      proposal: stats.proposals,
+      booking: aggregated.bookings,
+      complaint: aggregated.complaints,
+      proposal: aggregated.proposals,
     },
-    timelineWeeks: [],
+    timelineWeeks: dailyRows
+      ? buildTimelineWeeksFromDailyRows(dailyRows, options)
+      : [],
   };
+}
+
+/** @deprecated Use buildAdminAnalyticsFromAggregatedDailyStats */
+export function buildAdminAnalyticsFromDailyStats(
+  stats: DailyRequestStats,
+): AdminRequestAnalytics {
+  return buildAdminAnalyticsFromAggregatedDailyStats(stats);
+}
+
+export function buildQueueDailyAnalyticsSummary(
+  rows: {
+    totalCheckedIn: number;
+    totalCompleted: number;
+    totalNoShow: number;
+  }[],
+): QueueDailyAnalyticsSummary {
+  return rows.reduce(
+    (acc, row) => ({
+      totalCheckedIn: acc.totalCheckedIn + row.totalCheckedIn,
+      totalCompleted: acc.totalCompleted + row.totalCompleted,
+      totalNoShow: acc.totalNoShow + row.totalNoShow,
+    }),
+    { totalCheckedIn: 0, totalCompleted: 0, totalNoShow: 0 },
+  );
 }
 
 export function buildAdminRequestAnalytics(
@@ -112,6 +220,9 @@ export function buildOfficePerformanceRatings(
       officeNameAr: office.nameAr,
       bookings: 0,
       complaints: 0,
+      proposals: 0,
+      completed: 0,
+      completionRatePercent: null,
     });
   }
 
@@ -124,10 +235,16 @@ export function buildOfficePerformanceRatings(
         officeNameAr: request.officeNameAr || request.officeId,
         bookings: 0,
         complaints: 0,
+        proposals: 0,
+        completed: 0,
+        completionRatePercent: null,
       };
 
     if (request.type === "booking") {
       rating.bookings += 1;
+      if (request.status === "completed") rating.completed += 1;
+    } else if (request.type === "proposal") {
+      rating.proposals += 1;
     } else {
       rating.complaints += 1;
     }
@@ -136,9 +253,16 @@ export function buildOfficePerformanceRatings(
 
   const ratings = [...byOffice.values()];
 
+  for (const rating of ratings) {
+    rating.completionRatePercent =
+      rating.bookings > 0
+        ? Math.round((rating.completed / rating.bookings) * 100)
+        : null;
+  }
+
   ratings.sort((a, b) => {
-    const aTotal = a.bookings + a.complaints;
-    const bTotal = b.bookings + b.complaints;
+    const aTotal = a.bookings + a.complaints + a.proposals;
+    const bTotal = b.bookings + b.complaints + b.proposals;
     if (aTotal !== bTotal) return bTotal - aTotal;
     if (a.bookings !== b.bookings) return b.bookings - a.bookings;
     return a.officeNameAr.localeCompare(b.officeNameAr, "ar");

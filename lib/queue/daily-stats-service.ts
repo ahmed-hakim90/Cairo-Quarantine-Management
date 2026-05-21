@@ -67,6 +67,66 @@ export async function getDailyStats(
   return dailyStatsFromDoc(snap.id, snap.data() ?? {});
 }
 
+export async function listDailyQueueStatsForOffices(args: {
+  officeIds: string[];
+  date: string;
+}): Promise<DailyStats[]> {
+  if (!isFirebaseAdminConfigured() || args.officeIds.length === 0) {
+    return args.officeIds.map((officeId) =>
+      emptyDailyStats(args.date, officeId),
+    );
+  }
+  return Promise.all(
+    args.officeIds.map((officeId) => getDailyStats(officeId, args.date)),
+  );
+}
+
+export async function listDailyQueueStatsForOfficesInRange(args: {
+  officeIds: string[];
+  fromDate: string;
+  toDate: string;
+}): Promise<DailyStats[]> {
+  if (!isFirebaseAdminConfigured() || args.officeIds.length === 0) return [];
+  const db = getAdminDb();
+  const out: DailyStats[] = [];
+  for (const officeId of args.officeIds) {
+    const snap = await db
+      .collection(DAILY_STATS)
+      .where("officeId", "==", officeId)
+      .where("date", ">=", args.fromDate)
+      .where("date", "<=", args.toDate)
+      .get();
+    for (const doc of snap.docs) {
+      out.push(dailyStatsFromDoc(doc.id, doc.data() ?? {}));
+    }
+  }
+  return out;
+}
+
+export type AggregatedDailyQueueStats = {
+  totalCheckedIn: number;
+  totalCompleted: number;
+  totalNotCompleted: number;
+};
+
+export function aggregateDailyQueueStats(
+  rows: DailyStats[],
+): AggregatedDailyQueueStats {
+  return rows.reduce(
+    (acc, row) => {
+      const notCompleted = row.closed
+        ? row.totalNoShow
+        : Math.max(0, row.totalCheckedIn - row.totalCompleted);
+      return {
+        totalCheckedIn: acc.totalCheckedIn + row.totalCheckedIn,
+        totalCompleted: acc.totalCompleted + row.totalCompleted,
+        totalNotCompleted: acc.totalNotCompleted + notCompleted,
+      };
+    },
+    { totalCheckedIn: 0, totalCompleted: 0, totalNotCompleted: 0 },
+  );
+}
+
 export function dailyStatsCreatePayload(date: string, officeId: string) {
   return {
     date,

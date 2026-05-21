@@ -1,27 +1,31 @@
 import { listOffices } from "@/lib/office-requests/store";
+import { authorizeCronRequest } from "@/lib/cron/authorize";
 import { closeDailyQueue, getTodayKey } from "@/lib/queue/queue-service";
-import { bearerToken, safeTokenEquals } from "@/lib/security/bearer-token";
 import { noStoreJson } from "@/lib/security/admin-request";
 
-export async function POST(request: Request) {
-  const expected = process.env.DAILY_QUEUE_CRON_SECRET?.trim();
-  if (!expected) {
-    return noStoreJson(
-      { error: "DAILY_QUEUE_CRON_SECRET غير مضبوط." },
-      { status: 500 },
-    );
+async function parseCronBody(request: Request): Promise<{
+  officeId?: string;
+  date?: string;
+}> {
+  if (request.method === "GET") {
+    const url = new URL(request.url);
+    return {
+      officeId: url.searchParams.get("officeId")?.trim() || undefined,
+      date: url.searchParams.get("date")?.trim() || undefined,
+    };
   }
-  if (!safeTokenEquals(bearerToken(request), expected)) {
-    return noStoreJson({ error: "غير مصرح." }, { status: 401 });
-  }
-
-  let body: { officeId?: string; date?: string } = {};
   try {
-    body = (await request.json()) as typeof body;
+    return (await request.json()) as { officeId?: string; date?: string };
   } catch {
-    body = {};
+    return {};
   }
+}
 
+async function handleQueueClose(request: Request) {
+  const denied = authorizeCronRequest(request, "DAILY_QUEUE_CRON_SECRET");
+  if (denied) return denied;
+
+  const body = await parseCronBody(request);
   const date = body.date?.trim() || getTodayKey();
   const officeId = body.officeId?.trim();
 
@@ -42,4 +46,12 @@ export async function POST(request: Request) {
       { status: 500 },
     );
   }
+}
+
+export async function POST(request: Request) {
+  return handleQueueClose(request);
+}
+
+export async function GET(request: Request) {
+  return handleQueueClose(request);
 }

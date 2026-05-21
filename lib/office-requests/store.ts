@@ -1759,6 +1759,56 @@ export async function getPublicRequestStatus(args: {
   return publicRequestStatus(request);
 }
 
+const CITIZEN_CANCELLABLE_STATUSES: OfficeRequestStatus[] = [
+  "new",
+  "in_progress",
+  "contacted",
+];
+
+export async function cancelRequestByCitizen(args: {
+  id: string;
+  phone: string;
+}): Promise<{ ok: true } | { ok: false; error: string }> {
+  if (!isFirebaseAdminConfigured()) {
+    return { ok: false, error: "service_unavailable" };
+  }
+
+  const request = await getPublicRequestStatus({
+    id: args.id.trim(),
+    phone: args.phone.trim(),
+  });
+  if (!request) {
+    return { ok: false, error: "not_found" };
+  }
+  if (request.status === "cancelled") {
+    return { ok: true };
+  }
+  if (request.status === "completed") {
+    return { ok: false, error: "already_completed" };
+  }
+  if (!CITIZEN_CANCELLABLE_STATUSES.includes(request.status)) {
+    return { ok: false, error: "not_cancellable" };
+  }
+
+  try {
+    await updateRequestForSession({
+      id: request.id,
+      role: "super_admin",
+      officeId: null,
+      status: "cancelled",
+      notes: request.notes,
+      actor: {
+        uid: "citizen",
+        label: "المواطن (إلغاء ذاتي)",
+      },
+      _citizenCancel: true,
+    });
+    return { ok: true };
+  } catch {
+    return { ok: false, error: "update_failed" };
+  }
+}
+
 export async function listRequestsForSession(args: {
   role: AdminRole;
   officeId: string | null;
@@ -2561,10 +2611,39 @@ export async function updateRequestForSession(args: {
   allowedOfficeIds?: string[];
   status: OfficeRequestStatus;
   notes: string;
+  preferredDate?: string;
+  phone?: string;
   actor: AdminActivityActor;
+  /** Internal: citizen self-cancel bypasses office scope checks */
+  _citizenCancel?: boolean;
 }) {
-  const request = await getRequestForSession(args);
+  let request: OfficeRequest | null = null;
+  if (args._citizenCancel) {
+    const snap = await getAdminDb().collection(REQUESTS).doc(args.id).get();
+    request = snap.exists
+      ? requestFromDoc(snap.id, snap.data() ?? {})
+      : null;
+  } else {
+    request = await getRequestForSession(args);
+  }
   if (!request) throw new Error("الطلب غير موجود أو غير مصرح.");
+
+  const nextPreferredDate =
+    args.preferredDate !== undefined
+      ? args.preferredDate.trim() || undefined
+      : request.preferredDate;
+  const nextPhone =
+    args.phone !== undefined
+      ? normalizePhoneForStorage(args.phone)
+      : request.phone;
+
+  if (
+    nextPreferredDate &&
+    request.type === "booking" &&
+    !/^\d{4}-\d{2}-\d{2}$/.test(nextPreferredDate)
+  ) {
+    throw new Error("تاريخ الحجز غير صالح.");
+  }
 
   const db = getAdminDb();
   const requestRef = db.collection(REQUESTS).doc(args.id);
@@ -2606,15 +2685,23 @@ export async function updateRequestForSession(args: {
   await db.runTransaction(async (tx) => {
     const statsSnap = statsRef ? await tx.get(statsRef) : null;
     const dailyStatsSnap = await tx.get(dailyStatsRef);
-    tx.update(requestRef, {
+    const patch: Record<string, unknown> = {
       status: args.status,
       notes: args.notes.trim(),
       updatedAt: FieldValue.serverTimestamp(),
-    });
+    };
+    if (args.preferredDate !== undefined && request.type === "booking") {
+      patch.preferredDate = nextPreferredDate ?? FieldValue.delete();
+    }
+    if (args.phone !== undefined) {
+      patch.phone = nextPhone;
+    }
+    tx.update(requestRef, patch);
     if (args.status !== request.status) {
       applyDailyRequestStatsOnStatusChange(tx, dailyStatsRef, dailyStatsSnap, {
         date: requestStatsDay,
         officeId: request.officeId,
+        type: request.type,
         prevStatus: request.status,
         nextStatus: args.status,
       });

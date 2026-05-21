@@ -9,23 +9,29 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import type { AdminRequestAnalytics } from "@/lib/office-requests/analytics";
-import {
-  REQUEST_STATUS_LABELS,
-  REQUEST_TYPE_LABELS,
-} from "@/lib/office-requests/types";
+import type {
+  AdminBookingQueueSection,
+  AdminFeedbackSection,
+  AdminRequestAnalytics,
+} from "@/lib/office-requests/analytics";
+import { REQUEST_TYPE_LABELS } from "@/lib/office-requests/types";
 
 type AdminAnalyticsChartsProps = {
   analytics: AdminRequestAnalytics;
+  bookingQueue: AdminBookingQueueSection;
+  feedback: AdminFeedbackSection;
 };
 
-export function AdminAnalyticsCharts({ analytics }: AdminAnalyticsChartsProps) {
-  const statusData = (
-    Object.entries(analytics.byStatus) as [keyof typeof analytics.byStatus, number][]
-  ).map(([key, count]) => ({
-    name: REQUEST_STATUS_LABELS[key],
-    count,
-  }));
+export function AdminAnalyticsCharts({
+  analytics,
+  bookingQueue,
+  feedback,
+}: AdminAnalyticsChartsProps) {
+  const queueData = [
+    { name: "حضر", count: bookingQueue.checkedIn },
+    { name: "انتهاء فعلي", count: bookingQueue.completed },
+    { name: "لم يُكمَّل", count: bookingQueue.notCompleted },
+  ];
 
   const typeData = (
     Object.entries(analytics.byType) as [keyof typeof analytics.byType, number][]
@@ -46,13 +52,16 @@ export function AdminAnalyticsCharts({ analytics }: AdminAnalyticsChartsProps) {
     <div className="grid gap-6 lg:grid-cols-2">
       <div className={chartCardClass}>
         <h3 className="font-heading text-sm font-extrabold text-gov-navy">
-          الطلبات حسب الحالة
+          الحجوزات — حضور وإنهاء
         </h3>
+        <p className="mt-1 text-xs text-gov-gray-600">
+          ضمن النطاق المفلتر؛ «لم يُكمَّل» = حضر الطابور ولم يُنهَ عند المكتب.
+        </p>
         <div className="mt-4 h-64 w-full min-w-0" dir="ltr">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={statusData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+            <BarChart data={queueData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" className="stroke-gov-gray-200" />
-              <XAxis dataKey="name" tick={{ fontSize: 11 }} interval={0} angle={-25} textAnchor="end" height={70} />
+              <XAxis dataKey="name" tick={{ fontSize: 11 }} interval={0} angle={-20} textAnchor="end" height={56} />
               <YAxis allowDecimals={false} tick={{ fontSize: 11 }} width={36} />
               <Tooltip
                 contentStyle={{ direction: "rtl", textAlign: "right" }}
@@ -71,6 +80,9 @@ export function AdminAnalyticsCharts({ analytics }: AdminAnalyticsChartsProps) {
         <h3 className="font-heading text-sm font-extrabold text-gov-navy">
           الطلبات حسب النوع
         </h3>
+        <p className="mt-1 text-xs text-gov-gray-600">
+          الشكاوى والمقترحات الجديدة: {feedback.newCount} من {feedback.total}.
+        </p>
         <div className="mt-4 h-64 w-full min-w-0" dir="ltr">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={typeData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>

@@ -58,6 +58,11 @@ function NavLinks({
 
   const superItems: NavItem[] = [
     {
+      href: "/admin/reports",
+      label: "التقارير",
+      roles: ["super_admin", "governorate_admin", "office_admin"],
+    },
+    {
       href: "/admin/queue",
       label: "طوابير المكاتب",
       roles: ["super_admin", "governorate_admin", "office_admin"],

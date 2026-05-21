@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { BookingPassQrImage } from "@/components/booking/BookingPassQrImage";
 import { bookingRequestCopy } from "@/lib/i18n/booking-request-copy";
 import { bookingPassFormCopy } from "@/lib/i18n/booking-pass-copy";
@@ -54,6 +54,12 @@ const copy = {
     missing: "لم يتم العثور على الطلب بهذا الرقم ورقم الهاتف.",
     loadError: "تعذر تحديث الطلبات حالياً.",
     qrSectionTitle: "رمز بطاقة الحجز",
+    cancel: "إلغاء الطلب",
+    cancelling: "جاري الإلغاء...",
+    cancelConfirm: "هل تريد إلغاء هذا الطلب؟",
+    cancelOk: "تم إلغاء الطلب.",
+    cancelFail: "تعذر إلغاء الطلب.",
+    statusChanged: "تم تحديث حالة أحد طلباتك.",
   },
   en: {
     title: "My requests",
@@ -74,6 +80,12 @@ const copy = {
     missing: "No request was found for this number and phone.",
     loadError: "Requests could not be refreshed right now.",
     qrSectionTitle: "Booking pass QR",
+    cancel: "Cancel request",
+    cancelling: "Cancelling...",
+    cancelConfirm: "Cancel this request?",
+    cancelOk: "Request cancelled.",
+    cancelFail: "Could not cancel the request.",
+    statusChanged: "A request status was updated.",
   },
   zh: {
     title: "我的申请",
@@ -94,6 +106,12 @@ const copy = {
     missing: "未找到与该编号和电话匹配的申请。",
     loadError: "目前无法刷新申请。",
     qrSectionTitle: "预约凭证二维码",
+    cancel: "取消申请",
+    cancelling: "正在取消...",
+    cancelConfirm: "确定要取消此申请吗？",
+    cancelOk: "已取消申请。",
+    cancelFail: "无法取消申请。",
+    statusChanged: "某条申请的状态已更新。",
   },
   fr: {
     title: "Mes demandes",
@@ -114,8 +132,20 @@ const copy = {
     missing: "Aucune demande n'a ete trouvee pour ce numero et ce telephone.",
     loadError: "Les demandes ne peuvent pas etre actualisees maintenant.",
     qrSectionTitle: "QR du pass de reservation",
+    cancel: "Annuler la demande",
+    cancelling: "Annulation...",
+    cancelConfirm: "Annuler cette demande ?",
+    cancelOk: "Demande annulee.",
+    cancelFail: "Impossible d'annuler la demande.",
+    statusChanged: "Le statut d'une demande a ete mis a jour.",
   },
 } satisfies Record<Locale, Record<string, string>>;
+
+const CANCELLABLE: PublicOfficeRequestStatus["status"][] = [
+  "new",
+  "in_progress",
+  "contacted",
+];
 
 function readStoredRequests(): StoredRequest[] {
   if (typeof window === "undefined") return [];
@@ -179,9 +209,13 @@ export function MyRequestsPanel({ locale }: MyRequestsPanelProps) {
     readStoredRequests(),
   );
   const [loading, setLoading] = useState(false);
+  const [cancellingId, setCancellingId] = useState<string | null>(null);
   const [error, setError] = useState("");
+  const statusByIdRef = useRef<Map<string, PublicOfficeRequestStatus["status"]>>(
+    new Map(),
+  );
 
-  const refreshRequests = useCallback(async (items: StoredRequest[]) => {
+  const refreshRequests = useCallback(async (items: StoredRequest[], silent = false) => {
     if (items.length === 0) return;
 
     setLoading(true);
@@ -209,16 +243,63 @@ export function MyRequestsPanel({ locale }: MyRequestsPanelProps) {
       );
       writeStoredRequests(next);
       setRequests(next);
-      feedbackToast.success(
-        bookingRequestCopy[locale].statusesUpdated,
-      );
+
+      let statusChanged = false;
+      for (const item of next) {
+        if (item.missing) continue;
+        const prev = statusByIdRef.current.get(item.id);
+        if (prev && prev !== item.status) statusChanged = true;
+        statusByIdRef.current.set(item.id, item.status);
+      }
+
+      if (!silent) {
+        feedbackToast.success(bookingRequestCopy[locale].statusesUpdated);
+      } else if (statusChanged) {
+        feedbackToast.success(t.statusChanged);
+      }
     } catch {
       setError(t.loadError);
       feedbackToast.error(t.loadError);
     } finally {
       setLoading(false);
     }
-  }, [locale, t.loadError]);
+  }, [locale, t.loadError, t.statusChanged]);
+
+  useEffect(() => {
+    if (requests.length === 0) return;
+    for (const r of requests) {
+      if (!r.missing) statusByIdRef.current.set(r.id, r.status);
+    }
+    const tick = () => {
+      if (document.visibilityState === "visible") {
+        void refreshRequests(requests, true);
+      }
+    };
+    const id = window.setInterval(tick, 60_000);
+    return () => window.clearInterval(id);
+  }, [requests, refreshRequests]);
+
+  async function cancelRequest(request: StoredRequest) {
+    if (!window.confirm(t.cancelConfirm)) return;
+    setCancellingId(request.id);
+    setError("");
+    try {
+      const response = await fetch("/api/office-requests/cancel", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: request.id, phone: request.phone }),
+      });
+      const data = (await response.json()) as { ok?: boolean; error?: string };
+      if (!response.ok || !data.ok) throw new Error(data.error ?? "failed");
+      feedbackToast.success(t.cancelOk);
+      await refreshRequests(requests);
+    } catch {
+      setError(t.cancelFail);
+      feedbackToast.error(t.cancelFail);
+    } finally {
+      setCancellingId(null);
+    }
+  }
 
   const sortedRequests = useMemo(
     () =>
@@ -381,7 +462,18 @@ export function MyRequestsPanel({ locale }: MyRequestsPanelProps) {
                   </p>
                 </div>
 
-                <div className="mt-4 flex justify-end">
+                <div className="mt-4 flex flex-wrap justify-end gap-2">
+                  {!request.missing &&
+                  CANCELLABLE.includes(request.status) ? (
+                    <button
+                      type="button"
+                      disabled={cancellingId === request.id}
+                      onClick={() => void cancelRequest(request)}
+                      className="inline-flex min-h-10 items-center justify-center rounded-md border border-red-200 bg-red-50 px-4 text-sm font-bold text-red-800 transition hover:bg-red-100 disabled:opacity-60"
+                    >
+                      {cancellingId === request.id ? t.cancelling : t.cancel}
+                    </button>
+                  ) : null}
                   <button
                     type="button"
                     onClick={() => removeRequest(request.id)}

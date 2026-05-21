@@ -54,8 +54,12 @@ npm run dev
 | `npm run seed:offices` | استيراد المكاتب إلى Firestore |
 | `npm run seed:traveler-states` | زرع حالات المسافرين الثلاث الافتراضية في Firestore |
 | `npm run seed:vaccines` | استيراد جدول اللقاحات إلى Firestore |
+| `npm run setup:production` | تشغيل كل عمليات البذر بالترتيب |
+| `npm run deploy:firestore` | نشر `firestore.rules` والفهارس |
 
 ## متغيرات البيئة | Environment variables
+
+انسخ [`.env.example`](.env.example) إلى `.env.local` واملأ القيم:
 
 أنشئ ملف `.env.local` في جذر المشروع عند الحاجة:
 
@@ -71,7 +75,11 @@ npm run dev
 | `FIREBASE_PROJECT_ID` | Firebase project id للـ Admin SDK. |
 | `FIREBASE_CLIENT_EMAIL` | service account client email. |
 | `FIREBASE_PRIVATE_KEY` | service account private key مع `\n` escaped في `.env.local`. |
-| `MAINTENANCE_CRON_SECRET` | سر لاستدعاء endpoint صيانة الأرشفة `POST /api/admin/maintenance/retention` من Cron خارجي عبر `Authorization: Bearer ...`. |
+| `NEXT_PUBLIC_SITE_URL` | عنوان الموقع العام (روابط بطاقة الحجز QR وواتساب)، مثال: `https://example.com`. |
+| `NEXT_PUBLIC_FIREBASE_VAPID_KEY` | (اختياري) مفتاح Web Push لإشعارات انتظار الطابور. |
+| `MAINTENANCE_CRON_SECRET` | سر لاستدعاء `POST /api/admin/maintenance/retention` عبر `Authorization: Bearer ...`. |
+| `DAILY_QUEUE_CRON_SECRET` | سر لإغلاق طوابير اليوم: `POST /api/admin/queue/close`. |
+| `QUEUE_NOTIFY_CRON_SECRET` | سر لفحص إشعارات الطابور: `POST /api/queue/notify-scan`. |
 | `RATE_LIMIT_BACKEND` | `memory` (افتراضي محلي) أو `firestore` أو `both` — يُفضَّل `firestore` أو `both` على الإنتاج متعدد العُقد. |
 
 إعدادات الحجز العامة (ساعة إغلاق حجز «نفس اليوم» بتوقيت القاهرة) تُحفظ في وثيقة Firestore `settings/app` ويُضبطها السوبر أدمن من `/ar/admin/settings` (افتراضي الساعة 14 إن لم تُنشأ الوثيقة).
@@ -98,7 +106,8 @@ npm run admin:create-profile -- <firebase-uid> admin@example.com "Super Admin"
 - [ ] ضبط كل متغيرات Firebase (عامة + Admin SDK) — بدونها `/api/booking/availability` يعيد «متاح» دائماً.
 - [ ] `firebase deploy --only firestore:rules` و `firestore:indexes`.
 - [ ] `RATE_LIMIT_BACKEND=firestore` أو `both` على الاستضافة.
-- [ ] `MAINTENANCE_CRON_SECRET` + جدولة `POST /api/admin/maintenance/retention` أسبوعياً/شهرياً.
+- [ ] `NEXT_PUBLIC_SITE_URL` على الاستضافة.
+- [ ] `MAINTENANCE_CRON_SECRET` + `DAILY_QUEUE_CRON_SECRET` + `QUEUE_NOTIFY_CRON_SECRET` + جدولة الـ Cron الثلاثة (انظر [`docs/DEPLOY.md`](docs/DEPLOY.md) و [`vercel.json`](vercel.json)).
 - [ ] بذر المكاتب واللقاحات وحالات المسافرين؛ مراجعة `dailyBookingCap` لكل مكتب.
 - [ ] من `/ar/admin/offices`: تفعيل «٢٤ ساعة» لمكتب مطار القاهرة (`cairo-trav-1`) إن لزم.
 - [ ] حذف أو أرشفة طلبات اختبار الحمل (`npm run load-test:bookings` على **staging فقط**).
@@ -119,6 +128,8 @@ proxy.ts             # إعادة توجيه الجذر إلى اللغة الا
 ## النشر | Deploy
 
 يمكن نشر التطبيق على أي منصة تدعم Next.js، مثل [Vercel](https://vercel.com/docs/frameworks/nextjs). تأكد من ضبط متغيرات البيئة في لوحة التحكم قبل الإنتاج.
+
+دليل النشر التفصيلي: [`docs/DEPLOY.md`](docs/DEPLOY.md).
 
 ## ملاحظة للمساهمين | Note for contributors
 

@@ -1,18 +1,10 @@
 import { runRetentionMaintenance } from "@/lib/office-requests/retention";
-import { bearerToken, safeTokenEquals } from "@/lib/security/bearer-token";
+import { authorizeCronRequest } from "@/lib/cron/authorize";
 import { noStoreJson } from "@/lib/security/admin-request";
 
-export async function POST(request: Request) {
-  const expected = process.env.MAINTENANCE_CRON_SECRET?.trim();
-  if (!expected) {
-    return noStoreJson(
-      { error: "MAINTENANCE_CRON_SECRET غير مضبوط." },
-      { status: 500 },
-    );
-  }
-  if (!safeTokenEquals(bearerToken(request), expected)) {
-    return noStoreJson({ error: "غير مصرح." }, { status: 401 });
-  }
+async function handleRetention(request: Request) {
+  const denied = authorizeCronRequest(request, "MAINTENANCE_CRON_SECRET");
+  if (denied) return denied;
 
   try {
     const result = await runRetentionMaintenance();
@@ -23,4 +15,13 @@ export async function POST(request: Request) {
       { status: 500 },
     );
   }
+}
+
+export async function POST(request: Request) {
+  return handleRetention(request);
+}
+
+/** Vercel Cron and external schedulers often use GET. */
+export async function GET(request: Request) {
+  return handleRetention(request);
 }

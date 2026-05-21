@@ -18,6 +18,18 @@ export type DailyRequestStats = {
   inProgress: number;
   completed: number;
   cancelled: number;
+  bookingNew: number;
+  bookingInProgress: number;
+  bookingCompleted: number;
+  bookingCancelled: number;
+  complaintNew: number;
+  complaintInProgress: number;
+  complaintCompleted: number;
+  complaintCancelled: number;
+  proposalNew: number;
+  proposalInProgress: number;
+  proposalCompleted: number;
+  proposalCancelled: number;
 };
 
 export function dailyRequestStatsDocId(date: string, officeId: string): string {
@@ -40,6 +52,18 @@ function emptyStats(date: string, officeId: string): DailyRequestStats {
     inProgress: 0,
     completed: 0,
     cancelled: 0,
+    bookingNew: 0,
+    bookingInProgress: 0,
+    bookingCompleted: 0,
+    bookingCancelled: 0,
+    complaintNew: 0,
+    complaintInProgress: 0,
+    complaintCompleted: 0,
+    complaintCancelled: 0,
+    proposalNew: 0,
+    proposalInProgress: 0,
+    proposalCompleted: 0,
+    proposalCancelled: 0,
   };
 }
 
@@ -59,6 +83,18 @@ export function parseDailyRequestStats(
     inProgress: num(data?.inProgress),
     completed: num(data?.completed),
     cancelled: num(data?.cancelled),
+    bookingNew: num(data?.bookingNew),
+    bookingInProgress: num(data?.bookingInProgress),
+    bookingCompleted: num(data?.bookingCompleted),
+    bookingCancelled: num(data?.bookingCancelled),
+    complaintNew: num(data?.complaintNew),
+    complaintInProgress: num(data?.complaintInProgress),
+    complaintCompleted: num(data?.complaintCompleted),
+    complaintCancelled: num(data?.complaintCancelled),
+    proposalNew: num(data?.proposalNew),
+    proposalInProgress: num(data?.proposalInProgress),
+    proposalCompleted: num(data?.proposalCompleted),
+    proposalCancelled: num(data?.proposalCancelled),
   };
 }
 
@@ -76,6 +112,33 @@ const STATUS_FIELD: Record<OfficeRequestStatus, keyof DailyRequestStats | null> 
     completed: "completed",
     cancelled: "cancelled",
   };
+
+const TYPE_STATUS_FIELD: Record<
+  OfficeRequestType,
+  Record<OfficeRequestStatus, keyof DailyRequestStats | null>
+> = {
+  booking: {
+    new: "bookingNew",
+    in_progress: "bookingInProgress",
+    contacted: "bookingInProgress",
+    completed: "bookingCompleted",
+    cancelled: "bookingCancelled",
+  },
+  complaint: {
+    new: "complaintNew",
+    in_progress: "complaintInProgress",
+    contacted: "complaintInProgress",
+    completed: "complaintCompleted",
+    cancelled: "complaintCancelled",
+  },
+  proposal: {
+    new: "proposalNew",
+    in_progress: "proposalInProgress",
+    contacted: "proposalInProgress",
+    completed: "proposalCompleted",
+    cancelled: "proposalCancelled",
+  },
+};
 
 function statsDateFromRequest(createdAtIso: string, preferredDate?: string): string {
   if (preferredDate && /^\d{4}-\d{2}-\d{2}$/.test(preferredDate)) {
@@ -108,6 +171,7 @@ export function applyDailyRequestStatsOnCreate(
 ): void {
   const typeField = TYPE_FIELD[args.type];
   const statusField = STATUS_FIELD[args.status];
+  const typeStatusField = TYPE_STATUS_FIELD[args.type][args.status];
   if (!snap.exists) {
     const base = emptyStats(args.date, args.officeId);
     tx.set(ref, {
@@ -115,6 +179,7 @@ export function applyDailyRequestStatsOnCreate(
       totalRequests: 1,
       [typeField]: 1,
       ...(statusField ? { [statusField]: 1 } : {}),
+      ...(typeStatusField ? { [typeStatusField]: 1 } : {}),
       updatedAt: FieldValue.serverTimestamp(),
     });
     return;
@@ -125,6 +190,7 @@ export function applyDailyRequestStatsOnCreate(
     updatedAt: FieldValue.serverTimestamp(),
   };
   if (statusField) inc[statusField] = FieldValue.increment(1);
+  if (typeStatusField) inc[typeStatusField] = FieldValue.increment(1);
   tx.set(ref, inc, { merge: true });
 }
 
@@ -135,18 +201,22 @@ export function applyDailyRequestStatsOnStatusChange(
   args: {
     date: string;
     officeId: string;
+    type: OfficeRequestType;
     prevStatus: OfficeRequestStatus;
     nextStatus: OfficeRequestStatus;
   },
 ): void {
   const prevField = STATUS_FIELD[args.prevStatus];
   const nextField = STATUS_FIELD[args.nextStatus];
-  if (prevField === nextField) return;
+  const prevTypeField = TYPE_STATUS_FIELD[args.type][args.prevStatus];
+  const nextTypeField = TYPE_STATUS_FIELD[args.type][args.nextStatus];
+  if (prevField === nextField && prevTypeField === nextTypeField) return;
   if (!snap.exists) {
     const base = emptyStats(args.date, args.officeId);
     tx.set(ref, {
       ...base,
       ...(nextField ? { [nextField]: 1 } : {}),
+      ...(nextTypeField ? { [nextTypeField]: 1 } : {}),
       updatedAt: FieldValue.serverTimestamp(),
     });
     return;
@@ -156,6 +226,8 @@ export function applyDailyRequestStatsOnStatusChange(
   };
   if (prevField) inc[prevField] = FieldValue.increment(-1);
   if (nextField) inc[nextField] = FieldValue.increment(1);
+  if (prevTypeField) inc[prevTypeField] = FieldValue.increment(-1);
+  if (nextTypeField) inc[nextTypeField] = FieldValue.increment(1);
   tx.set(ref, inc, { merge: true });
 }
 
@@ -201,6 +273,18 @@ export function aggregateDailyRequestStats(
     base.inProgress += row.inProgress;
     base.completed += row.completed;
     base.cancelled += row.cancelled;
+    base.bookingNew += row.bookingNew;
+    base.bookingInProgress += row.bookingInProgress;
+    base.bookingCompleted += row.bookingCompleted;
+    base.bookingCancelled += row.bookingCancelled;
+    base.complaintNew += row.complaintNew;
+    base.complaintInProgress += row.complaintInProgress;
+    base.complaintCompleted += row.complaintCompleted;
+    base.complaintCancelled += row.complaintCancelled;
+    base.proposalNew += row.proposalNew;
+    base.proposalInProgress += row.proposalInProgress;
+    base.proposalCompleted += row.proposalCompleted;
+    base.proposalCancelled += row.proposalCancelled;
   }
   return base;
 }
