@@ -5,13 +5,14 @@ import { getMessages } from "@/lib/i18n/messages";
 import { normalizeArabic } from "@/lib/chat/normalize-arabic";
 import { buildDestinationCountryResponse } from "@/lib/chat/destination-country-response";
 import { classifyChatIntent } from "@/lib/chat/intent";
+import { buildOfficeHoursResponse } from "@/lib/chat/office-hours-response";
 import { buildOfficeResponse } from "@/lib/chat/office-response";
 import { formatPortalUrl } from "@/lib/chat/site-knowledge";
 import {
   searchSiteKnowledge,
   type SiteKnowledgeEntry,
 } from "@/lib/chat/site-knowledge";
-import type { DestinationCountry } from "@/lib/office-requests/types";
+import type { DestinationCountry, Office } from "@/lib/office-requests/types";
 
 function getLocale(localeValue: string | undefined) {
   return localeValue && isLocale(localeValue) ? localeValue : defaultLocale;
@@ -123,11 +124,13 @@ export function getLocalChatResponse({
   message,
   knowledgeIndex,
   destinationCountries = [],
+  portalOffices = [],
 }: {
   locale: string | undefined;
   message: string;
   knowledgeIndex: SiteKnowledgeEntry[];
   destinationCountries?: DestinationCountry[];
+  portalOffices?: Office[];
 }): string | null {
   const normalized = normalizeArabic(message);
   const mentionsUmrah =
@@ -148,6 +151,8 @@ export function getLocalChatResponse({
       return buildVaccinePriceResponse(locale, "both");
     case "booking":
       return buildBookingResponse(locale);
+    case "office_hours":
+      return buildOfficeHoursResponse(locale, message, portalOffices);
     case "services":
       return buildServicesResponse(locale, knowledgeIndex);
     case "destination_vaccines":

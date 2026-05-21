@@ -14,7 +14,10 @@ import {
   whatsappOutOfScopeMessage,
   whatsappUnknownInfoMessage,
 } from "@/lib/chat/whatsapp-fallback";
-import { listDestinationCountriesForPublic } from "@/lib/office-requests/store";
+import {
+  listDestinationCountriesForPublic,
+  listOffices,
+} from "@/lib/office-requests/store";
 import { rateLimitKeyFromHeaders } from "@/lib/rate-limit";
 import { checkUnifiedRateLimit } from "@/lib/rate-limit-unified";
 
@@ -242,10 +245,12 @@ export async function POST(request: Request) {
     );
   }
 
-  const [knowledgeIndex, destinationCountries] = await Promise.all([
-    buildSiteKnowledgeIndex(locale),
-    listDestinationCountriesForPublic(),
-  ]);
+  const [knowledgeIndex, destinationCountries, portalOffices] =
+    await Promise.all([
+      buildSiteKnowledgeIndex(locale),
+      listDestinationCountriesForPublic(),
+      listOffices(),
+    ]);
   const searchHits = searchSiteKnowledge(lastUserMessage, knowledgeIndex, 5);
 
   const localResponse = getLocalChatResponse({
@@ -253,6 +258,7 @@ export async function POST(request: Request) {
     message: lastUserMessage,
     knowledgeIndex,
     destinationCountries,
+    portalOffices,
   });
 
   if (localResponse) {
@@ -263,7 +269,8 @@ export async function POST(request: Request) {
     const isLongLocalReply =
       isOfficeReply ||
       localResponse.includes("international-traveler") ||
-      localResponse.includes("متطلبات التطعيم");
+      localResponse.includes("متطلبات التطعيم") ||
+      localResponse.includes("مواعيد العمل");
     return new Response(
       streamTextResponse(
         enforceResponseRules(localResponse, locale, {

@@ -5,7 +5,8 @@ import { isHumanHandoffRequest } from "@/lib/chat/human-handoff";
 import { classifyChatIntent } from "@/lib/chat/intent";
 import { isOfficeOrAreaQuery } from "@/lib/chat/office-area-query";
 import { getLocalChatResponse } from "@/lib/chat/local-responses";
-import type { DestinationCountry } from "@/lib/office-requests/types";
+import type { DestinationCountry, Office } from "@/lib/office-requests/types";
+import { isBookingQuestion } from "@/lib/chat/intent";
 import { isOutOfScopeMessage } from "@/lib/chat/out-of-scope";
 import { buildOfficeResponse } from "@/lib/chat/office-response";
 import {
@@ -258,6 +259,52 @@ describe("chat rules", () => {
     });
     expect(reply).toContain("التجمع");
     expect(reply).toContain("maps.app.goo.gl");
+  });
+
+  const mockHelwanOffice: Office = {
+    id: "test-helwan",
+    governorateId: "cairo",
+    serialInGovernorate: 1,
+    administrationAr: "حلوان",
+    nameAr: "الست خضرة",
+    addressAr: "شارع راغب من شارع برهان حلوان",
+    phone: "0225550000",
+    mapsUrl: "https://maps.app.goo.gl/test",
+    service: "hajj_umrah_travelers",
+    active: true,
+    workingHours: { from: "08:00", to: "17:00" },
+  };
+
+  it("does not treat مواعيد as booking (موعد token only)", () => {
+    expect(isBookingQuestion(normalizeArabic("مواعيد شغل مكتب حلوان"))).toBe(
+      false,
+    );
+    expect(isBookingQuestion(normalizeArabic("كيف احجز موعد"))).toBe(true);
+  });
+
+  it("returns office hours for Helwan hours question", () => {
+    expect(classifyChatIntent("مواعيد شغل مكتب حلوان")).toBe("office_hours");
+    const reply = getLocalChatResponse({
+      locale: "ar",
+      message: "مواعيد شغل مكتب حلوان",
+      knowledgeIndex: [],
+      portalOffices: [mockHelwanOffice],
+    });
+    expect(reply).toContain("مواعيد العمل");
+    expect(reply).toContain("حلوان");
+    expect(reply).not.toContain("/ar/booking");
+  });
+
+  it("returns location not hours line for bare office query", () => {
+    expect(classifyChatIntent("مكتب في حلوان")).toBe("office");
+    const reply = getLocalChatResponse({
+      locale: "ar",
+      message: "مكتب في حلوان",
+      knowledgeIndex: [],
+      portalOffices: [mockHelwanOffice],
+    });
+    expect(reply).toContain("maps.app.goo.gl");
+    expect(reply).not.toMatch(/مواعيد العمل:/);
   });
 
   it("returns services overview not offices for services question", () => {

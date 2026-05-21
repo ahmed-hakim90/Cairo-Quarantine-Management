@@ -6,6 +6,7 @@ import type { DestinationCountry } from "@/lib/office-requests/types";
 export type ChatIntent =
   | "price"
   | "booking"
+  | "office_hours"
   | "services"
   | "destination_vaccines"
   | "office"
@@ -28,13 +29,25 @@ export function isPriceQuestion(normalized: string): boolean {
 }
 
 export function isBookingQuestion(normalized: string): boolean {
+  const tokens = normalized.split(" ").filter((t) => t.length >= 2);
   return (
     normalized.includes("حجز") ||
-    normalized.includes("موعد") ||
+    tokens.some((t) => t === "موعد") ||
     normalized.includes("booking") ||
     normalized.includes("appointment")
   );
 }
+
+const HOURS_SIGNALS = [
+  "مواعيد",
+  "دوام",
+  "شغل",
+  "مفتوح",
+  "ساعات",
+  "working",
+  "hours",
+  "open",
+];
 
 const QUESTION_STOP_TOKENS = new Set([
   "ايه",
@@ -102,6 +115,46 @@ function isExplicitOfficeQuery(normalized: string): boolean {
     normalized.includes("office") ||
     normalized.includes("location")
   );
+}
+
+function hasHoursSignal(normalized: string): boolean {
+  return HOURS_SIGNALS.some((signal) => normalized.includes(signal));
+}
+
+/** Office or area named in the message (for hours/location routing). */
+export function hasOfficeLocationContext(
+  normalized: string,
+  options?: { destinationCountries?: DestinationCountry[] },
+): boolean {
+  if (!normalized) return false;
+  if (isExplicitOfficeQuery(normalized)) return true;
+
+  const countries = options?.destinationCountries ?? [];
+  if (
+    findDestinationCountry(normalized, countries) &&
+    hasDestinationSignal(normalized)
+  ) {
+    return false;
+  }
+
+  const tokens = normalized
+    .split(" ")
+    .filter((t) => t.length >= 3 && !QUESTION_STOP_TOKENS.has(t));
+  if (tokens.length === 0 || tokens.length > 5) return false;
+
+  const areaTokens = getChatOfficeAreaTokens();
+  return tokens.some((token) =>
+    areaTokens.some((area) => areaMatchesToken(area, token)),
+  );
+}
+
+export function isOfficeHoursQuestion(
+  normalized: string,
+  options?: { destinationCountries?: DestinationCountry[] },
+): boolean {
+  if (!normalized || !hasHoursSignal(normalized)) return false;
+  if (isPriceQuestion(normalized) || isBookingQuestion(normalized)) return false;
+  return hasOfficeLocationContext(normalized, options);
 }
 
 function isServicesQuestion(normalized: string): boolean {
@@ -182,6 +235,9 @@ export function classifyChatIntent(
 
   if (isPriceQuestion(normalized)) return "price";
   if (isBookingQuestion(normalized)) return "booking";
+  if (isOfficeHoursQuestion(normalized, { destinationCountries: countries })) {
+    return "office_hours";
+  }
   if (isServicesQuestion(normalized)) return "services";
   if (isDestinationVaccineQuestion(normalized, countries)) {
     return "destination_vaccines";
