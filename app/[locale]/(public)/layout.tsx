@@ -1,3 +1,4 @@
+import { ChatWidget } from "@/components/chat/ChatWidget";
 import { HashAnchorScroll } from "@/components/navigation/HashAnchorScroll";
 import { ConditionalSiteFooter } from "@/components/layout/ConditionalSiteFooter";
 import { FloatingTextToSpeechButton } from "@/components/layout/FloatingTextToSpeechButton";
@@ -37,6 +38,7 @@ export default async function PublicLayout({
       </main>
       <ConditionalSiteFooter messages={messages} />
       <div className="fixed bottom-5 start-5 z-[60] flex flex-col items-center gap-3">
+        <ChatWidget locale={locale} messages={messages.chat} />
         <FloatingTextToSpeechButton locale={locale} labels={messages.tts} />
         <FloatingWhatsAppButton />
       </div>

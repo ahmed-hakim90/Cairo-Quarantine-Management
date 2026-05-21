@@ -1,13 +1,20 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { useActionState, useEffect, useMemo, useRef, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import {
+  useActionState,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { DEFAULT_GOVERNORATE_ID } from "@/data/governorates";
 import {
   submitOfficeRequest,
   type BookingFormState,
 } from "@/app/[locale]/(public)/booking/actions";
-import { BookingPassSuccessBlock } from "@/components/booking/BookingPassSuccessBlock";
+import { BookingRequestSuccessView } from "@/components/booking/BookingRequestSuccessView";
 import { LocaleLink } from "@/components/i18n/LocaleLink";
 import { getCairoMinBookingYmd } from "@/lib/cairo-today-ymd";
 import { bookingRequestCopy } from "@/lib/i18n/booking-request-copy";
@@ -30,19 +37,22 @@ import { feedbackToast } from "@/lib/ui/feedback-toast";
 
 type BookingRequestFormProps = {
   offices: Office[];
-  /** حالات المسافرين النشطة لنموذج الحجز؛ إن وُجدت فارغة يُستخدم الافتراضي الثلاثي. */
   travelerStates?: TravelerState[];
   locale: Locale;
   mode: "booking" | "complaint";
-  /** Cairo same-day cutoff hour (0–23), from `settings/app` on booking page. */
   sameDayCutoffHour?: number;
-  /** Public site origin from request headers (for QR / pass URL). */
   serverSiteOrigin: string;
 };
 
 type StoredRequest = PublicOfficeRequestStatus & {
   phone: string;
   passToken?: string;
+};
+
+type LastSuccess = {
+  message: string;
+  request: StoredRequest;
+  contactName?: string;
 };
 
 const initialState: BookingFormState = {
@@ -78,14 +88,62 @@ function saveRequestToDevice(request: StoredRequest) {
   }
 }
 
-export function BookingRequestForm({
+export function BookingRequestForm(props: BookingRequestFormProps) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const { locale } = props;
+
+  const [formKey, setFormKey] = useState(0);
+  const [showForm, setShowForm] = useState(true);
+  const [lastSuccess, setLastSuccess] = useState<LastSuccess | null>(null);
+
+  const handleSuccess = useCallback((success: LastSuccess) => {
+    setLastSuccess(success);
+    setShowForm(false);
+  }, []);
+
+  useEffect(() => {
+    if (searchParams.get("new") !== "1") return;
+    setShowForm(true);
+    setLastSuccess(null);
+    setFormKey((k) => k + 1);
+    router.replace(pathname);
+  }, [searchParams, pathname, router]);
+
+  if (!showForm && lastSuccess) {
+    return (
+      <BookingRequestSuccessView
+        locale={locale}
+        message={lastSuccess.message}
+        request={lastSuccess.request}
+        contactName={lastSuccess.contactName}
+        serverSiteOrigin={props.serverSiteOrigin}
+      />
+    );
+  }
+
+  return (
+    <BookingRequestFormFields
+      key={formKey}
+      {...props}
+      onSuccess={handleSuccess}
+    />
+  );
+}
+
+type BookingRequestFormFieldsProps = BookingRequestFormProps & {
+  onSuccess: (success: LastSuccess) => void;
+};
+
+function BookingRequestFormFields({
   offices,
   travelerStates = [],
   locale,
   mode,
   sameDayCutoffHour = DEFAULT_BOOKING_SAME_DAY_CUTOFF_HOUR,
-  serverSiteOrigin,
-}: BookingRequestFormProps) {
+  onSuccess,
+}: BookingRequestFormFieldsProps) {
   const router = useRouter();
   const t = bookingRequestCopy[locale];
   const bookingStates = useMemo(
@@ -167,6 +225,15 @@ export function BookingRequestForm({
     }
     return state.labelAr;
   }
+
+  useEffect(() => {
+    if (!state.ok || !state.request) return;
+    onSuccess({
+      message: state.message,
+      request: state.request,
+      contactName: state.values?.name,
+    });
+  }, [state.ok, state.request, state.message, state.values?.name, onSuccess]);
 
   useEffect(() => {
     if (!travelerChosen) return;
@@ -335,17 +402,13 @@ export function BookingRequestForm({
         </div>
       </div>
 
-      {state.message ? (
+      {state.message && !state.ok ? (
         <div
-          className={`mx-5 mt-5 rounded-md border px-4 py-3 text-sm font-bold md:mx-7 ${
-            state.ok
-              ? "border-emerald-200 bg-emerald-50 text-emerald-800"
-              : "border-red-200 bg-red-50 text-red-800"
-          }`}
+          className="mx-5 mt-5 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-800 md:mx-7"
           role="status"
         >
           {state.message}
-          {state.duplicate && !state.ok ? (
+          {state.duplicate ? (
             <LocaleLink
               locale={locale}
               href="/my-requests"
@@ -353,26 +416,6 @@ export function BookingRequestForm({
             >
               {t.duplicateLink}
             </LocaleLink>
-          ) : null}
-          {state.ok && state.request ? (
-            <div className="mt-3 rounded-md bg-white/70 p-3 text-gov-navy">
-              <p>
-                {t.requestId}:{" "}
-                <span className="font-extrabold">#{state.request.id}</span>
-              </p>
-              <LocaleLink
-                locale={locale}
-                href="/my-requests"
-                className="mt-2 inline-flex min-h-10 items-center rounded-md bg-gov-accent px-4 text-sm font-bold text-white transition hover:bg-gov-navy"
-              >
-                {t.followRequests}
-              </LocaleLink>
-              <BookingPassSuccessBlock
-                locale={locale}
-                request={state.request}
-                serverSiteOrigin={serverSiteOrigin}
-              />
-            </div>
           ) : null}
         </div>
       ) : null}

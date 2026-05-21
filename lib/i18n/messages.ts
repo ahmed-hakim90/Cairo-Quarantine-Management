@@ -178,6 +178,16 @@ export type Messages = {
       tocTitle: string;
     };
   };
+  chat: {
+    title: string;
+    subtitle: string;
+    greeting: string;
+    placeholder: string;
+    send: string;
+    openAria: string;
+    closeAria: string;
+    error: string;
+  };
   tts: {
     read: string;
     pause: string;
@@ -409,6 +419,18 @@ const ar: Messages = {
         "ميثاق مكتب تطعيمات المسافرين: التزامات المكتب وحقوق وواجبات المتعاملين وآلية الشكاوى والمقترحات.",
       tocTitle: "في هذه الوثيقة",
     },
+  },
+  chat: {
+    title: "مساعد المنصة",
+    subtitle: "إدارة الحجر الصحي بالقاهرة",
+    greeting:
+      "مساعد منصة الحجر الصحي. اسأل عن الخدمات أو الحجز أو المكاتب.",
+    placeholder: "اكتب سؤالك...",
+    send: "إرسال",
+    openAria: "فتح المساعد",
+    closeAria: "إغلاق المساعد",
+    error:
+      "تعذر الرد الآن. للمساعدة يرجى التواصل عبر واتساب من الزر الأخضر بالأسفل.",
   },
   tts: {
     read: "اقرأ لي المحتوى",
@@ -646,6 +668,18 @@ const en: Messages = {
       tocTitle: "In this document",
     },
   },
+  chat: {
+    title: "Portal assistant",
+    subtitle: "Cairo Quarantine Administration",
+    greeting:
+      "Cairo Quarantine portal assistant. Ask about services, booking, or offices.",
+    placeholder: "Type your question...",
+    send: "Send",
+    openAria: "Open assistant",
+    closeAria: "Close assistant",
+    error:
+      "Could not reply now. For help, contact us via the green WhatsApp button below.",
+  },
   tts: {
     read: "Read page aloud",
     pause: "Pause reading",
@@ -872,6 +906,16 @@ const zh: Messages = {
         "旅客接种门诊章程：对公众的承诺、权利与义务，以及投诉与建议处理机制。",
       tocTitle: "本文档结构",
     },
+  },
+  chat: {
+    title: "平台助手",
+    subtitle: "开罗检疫管理处",
+    greeting: "开罗检疫平台助手。可咨询服务项目、预约或办事处。",
+    placeholder: "输入您的问题...",
+    send: "发送",
+    openAria: "打开助手",
+    closeAria: "关闭助手",
+    error: "暂时无法回复。请使用下方绿色 WhatsApp 按钮联系我们。",
   },
   tts: {
     read: "朗读页面内容",
@@ -1108,6 +1152,18 @@ const fr: Messages = {
         "Charte du bureau de vaccination des voyageurs : engagements envers le public, droits et devoirs des usagers, et traitement des plaintes et suggestions.",
       tocTitle: "Dans ce document",
     },
+  },
+  chat: {
+    title: "Assistant du portail",
+    subtitle: "Administration de la quarantaine du Caire",
+    greeting:
+      "Assistant du portail de quarantaine du Caire. Posez vos questions sur les services, la reservation ou les bureaux.",
+    placeholder: "Saisissez votre question...",
+    send: "Envoyer",
+    openAria: "Ouvrir l'assistant",
+    closeAria: "Fermer l'assistant",
+    error:
+      "Reponse indisponible pour le moment. Contactez-nous via le bouton WhatsApp vert ci-dessous.",
   },
   tts: {
     read: "Lire la page a voix haute",
