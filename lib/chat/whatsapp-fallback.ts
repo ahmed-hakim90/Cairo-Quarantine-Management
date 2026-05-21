@@ -29,7 +29,7 @@ export function whatsappUnknownInfoMessage(locale: string | undefined): string {
   if (locale === "fr") {
     return `Je ne dispose pas de cette information dans le systeme pour le moment.\n${whatsappMarkdownLink(locale, "Ouvrir WhatsApp")}`;
   }
-  return `حالياً لا أملك هذه المعلومة داخل النظام.\nللتواصل: ${whatsappMarkdownLink(locale, "تواصل عبر واتساب")}`;
+  return `تعذر العثور على المعلومات داخل المنصة.\nيرجى التواصل عبر واتساب أو المكتب المختص.\n${whatsappMarkdownLink(locale, "تواصل عبر واتساب")}`;
 }
 
 export function whatsappHumanHandoffMessage(locale: string | undefined): string {

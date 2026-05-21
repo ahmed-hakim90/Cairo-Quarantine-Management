@@ -3,6 +3,7 @@
 import type { FormEvent } from "react";
 import { useEffect, useRef, useState } from "react";
 import { WhatsAppIcon } from "@/components/layout/WhatsAppContactLink";
+import type { PortalAssistantMeta } from "@/lib/chat/portal-assistant-types";
 import {
   loadChatSession,
   saveChatSession,
@@ -25,6 +26,7 @@ type ChatMessage = {
   id: string;
   role: "user" | "assistant";
   content: string;
+  meta?: PortalAssistantMeta;
 };
 
 type ChatWidgetProps = {
@@ -286,7 +288,11 @@ function MessageContent({ content }: { content: string }) {
 
 async function readAssistantStream(
   response: Response,
-  onUpdate: (content: string, replace?: boolean) => void,
+  onUpdate: (
+    content: string,
+    replace?: boolean,
+    meta?: PortalAssistantMeta,
+  ) => void,
 ) {
   if (!response.ok) {
     throw new Error("Chat request failed");
@@ -322,10 +328,11 @@ async function readAssistantStream(
         const parsed = JSON.parse(data) as {
           content?: string;
           replace?: boolean;
+          meta?: PortalAssistantMeta;
         };
         if (parsed.replace && parsed.content != null) {
           accumulated = parsed.content;
-          onUpdate(accumulated, true);
+          onUpdate(accumulated, true, parsed.meta);
           continue;
         }
         if (parsed.content) {
@@ -434,11 +441,15 @@ export function ChatWidget({
         }),
       });
 
-      await readAssistantStream(response, (text, replace) => {
+      await readAssistantStream(response, (text, replace, meta) => {
         setChatMessages((current) =>
           current.map((message) =>
             message.id === assistantMessage.id
-              ? { ...message, content: replace ? text : text }
+              ? {
+                  ...message,
+                  content: text,
+                  ...(replace && meta ? { meta } : {}),
+                }
               : message,
           ),
         );

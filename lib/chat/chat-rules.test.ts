@@ -1,10 +1,15 @@
 import { describe, expect, it } from "vitest";
+import { VACCINES_BY_CATEGORY } from "@/data/vaccines";
 import { isChatAllowedUrl } from "@/lib/chat/allowed-links";
 import { enforceResponseRules } from "@/lib/chat/enforce-response";
 import { isHumanHandoffRequest } from "@/lib/chat/human-handoff";
 import { classifyChatIntent } from "@/lib/chat/intent";
 import { isOfficeOrAreaQuery } from "@/lib/chat/office-area-query";
 import { getLocalChatResponse } from "@/lib/chat/local-responses";
+import {
+  applyPortalAssistantRules,
+  resolvePortalAssistant,
+} from "@/lib/chat/portal-assistant";
 import type { DestinationCountry, Office } from "@/lib/office-requests/types";
 import { isBookingQuestion } from "@/lib/chat/intent";
 import { isOutOfScopeMessage } from "@/lib/chat/out-of-scope";
@@ -25,6 +30,24 @@ import {
   formatWhatsappDisplayPhone,
 } from "@/lib/site-contact";
 import { normalizeArabic } from "@/lib/chat/normalize-arabic";
+
+function localAr(
+  message: string,
+  extra: {
+    knowledgeIndex?: SiteKnowledgeEntry[];
+    destinationCountries?: DestinationCountry[];
+    portalOffices?: Office[];
+  } = {},
+) {
+  return getLocalChatResponse({
+    locale: "ar",
+    message,
+    knowledgeIndex: extra.knowledgeIndex ?? [],
+    destinationCountries: extra.destinationCountries,
+    portalOffices: extra.portalOffices,
+    vaccinesByCategory: VACCINES_BY_CATEGORY,
+  });
+}
 
 describe("chat rules", () => {
   it("detects out-of-scope medical questions", () => {
@@ -69,13 +92,10 @@ describe("chat rules", () => {
   });
 
   it("returns booking local response with markdown link", () => {
-    const reply = getLocalChatResponse({
-      locale: "ar",
-      message: "كيف احجز موعد",
-      knowledgeIndex: [],
-    });
-    expect(reply).toContain("[");
-    expect(reply).toContain("/ar/booking");
+    const reply = localAr("كيف احجز موعد");
+    expect(reply?.type).toBe("booking");
+    expect(reply?.answer).toContain("[");
+    expect(reply?.answer).toContain("/ar/booking");
   });
 
   it("finds booking in knowledge search", () => {
@@ -102,14 +122,10 @@ describe("chat rules", () => {
   });
 
   it("returns multiple offices for bare Helwan query", () => {
-    const reply = getLocalChatResponse({
-      locale: "ar",
-      message: "حلوان",
-      knowledgeIndex: [],
-    });
-    expect(reply).toContain("حدائق حلوان");
-    expect(reply).toContain("الست خضرة");
-    expect(reply).toContain("maps.app.goo.gl");
+    const reply = localAr("حلوان");
+    expect(reply?.answer).toContain("حدائق حلوان");
+    expect(reply?.answer).toContain("الست خضرة");
+    expect(reply?.answer).toContain("maps.app.goo.gl");
   });
 
   it("returns all Tagamoa offices in New Cairo", () => {
@@ -121,26 +137,18 @@ describe("chat rules", () => {
   });
 
   it("office response includes tel and map links for Helwan", () => {
-    const reply = getLocalChatResponse({
-      locale: "ar",
-      message: "مكتب تطعيم في حلوان ؟",
-      knowledgeIndex: [],
-    });
-    expect(reply).toContain("tel:");
-    expect(reply).toContain("maps.app.goo.gl");
-    expect(reply).toContain("[اتصال]");
-    expect(reply).toContain("[فتح الخريطة]");
+    const reply = localAr("مكتب تطعيم في حلوان ؟");
+    expect(reply?.answer).toContain("tel:");
+    expect(reply?.answer).toContain("maps.app.goo.gl");
+    expect(reply?.answer).toContain("[اتصال]");
+    expect(reply?.answer).toContain("[فتح الخريطة]");
   });
 
   it("office response lists multiple centres in the same area", () => {
-    const reply = getLocalChatResponse({
-      locale: "ar",
-      message: "التجمع فيها مكاتب تاني",
-      knowledgeIndex: [],
-    });
-    expect(reply).toContain("التجمع الاول");
-    expect(reply).toContain("التجمع الثالث");
-    expect(reply).toContain("التجمع الخامس");
+    const reply = localAr("التجمع فيها مكاتب تاني");
+    expect(reply?.answer).toContain("التجمع الاول");
+    expect(reply?.answer).toContain("التجمع الثالث");
+    expect(reply?.answer).toContain("التجمع الخامس");
   });
 
   it("buildOfficeResponse keeps clickable links after enforce", () => {
@@ -185,6 +193,7 @@ describe("chat rules", () => {
     const out = whatsappOutOfScopeMessage("ar");
     const unknown = whatsappUnknownInfoMessage("ar");
     expect(out).toContain("[فتح واتساب](https://wa.me/");
+    expect(unknown).toContain("تعذر العثور على المعلومات داخل المنصة");
     expect(unknown).toContain("[تواصل عبر واتساب](https://wa.me/");
     process.env.NEXT_PUBLIC_WHATSAPP_COMPLAINTS_PHONE = prev;
   });
@@ -200,13 +209,30 @@ describe("chat rules", () => {
   it("classifies umrah price question as price not office", () => {
     const intent = classifyChatIntent("مسافر عمرة التطعيم بكام");
     expect(intent).toBe("price");
-    const reply = getLocalChatResponse({
-      locale: "ar",
-      message: "مسافر عمرة التطعيم بكام",
-      knowledgeIndex: [],
-    });
-    expect(reply).toContain("أسعار");
-    expect(reply).not.toContain("مكاتب في المنطقة");
+    const reply = localAr("مسافر عمرة التطعيم بكام");
+    expect(reply?.type).toBe("price");
+    expect(reply?.answer).toContain("استرشادية");
+    expect(reply?.answer).not.toContain("مكاتب في المنطقة");
+  });
+
+  it("returns specific bivalent meningococcal price", () => {
+    const reply = localAr("بكم السحائي الثنائي");
+    expect(reply?.type).toBe("price");
+    expect(reply?.answer).toContain("200");
+    expect(reply?.answer).toContain("الأسعار استرشادية");
+  });
+
+  it("returns seasonal influenza price", () => {
+    const reply = localAr("سعر الإنفلونزا");
+    expect(reply?.type).toBe("price");
+    expect(reply?.answer).toContain("260");
+  });
+
+  it("returns hepatitis vaccination office hint", () => {
+    const reply = localAr("أين يوجد تطعيم الكبد");
+    expect(reply?.type).toBe("office");
+    expect(reply?.answer).toContain("يمكن الحصول عليه من");
+    expect(reply?.answer).toMatch(/مطار|الخريطة/);
   });
 
   it("returns destination vaccines for Afghanistan not offices", () => {
@@ -214,51 +240,43 @@ describe("chat rules", () => {
       destinationCountries: [mockAfghanistan],
     });
     expect(intent).toBe("destination_vaccines");
-    const reply = getLocalChatResponse({
-      locale: "ar",
-      message: "مسافر افغانستان هتطعم ايه",
-      knowledgeIndex: [],
+    const reply = localAr("مسافر افغانستان هتطعم ايه", {
       destinationCountries: [mockAfghanistan],
     });
-    expect(reply).toContain("حمى صفراء");
-    expect(reply).toContain("/ar/international-traveler");
-    expect(reply).not.toContain("مكاتب في المنطقة");
+    expect(reply?.answer).toContain("حمى صفراء");
+    expect(reply?.answer).toContain("/ar/international-traveler");
+    expect(reply?.answer).not.toContain("مكاتب في المنطقة");
   });
 
   it("returns hajj guide for instructions question not offices", () => {
     expect(isOfficeOrAreaQuery(normalizeArabic("ايه هي تعليمات الحج والعمرة"))).toBe(
       false,
     );
-    const reply = getLocalChatResponse({
-      locale: "ar",
-      message: "ايه هي تعليمات الحج والعمرة",
-      knowledgeIndex: [],
-    });
-    expect(reply).toContain("الحج والعمرة");
-    expect(reply).toContain("/ar/hajj-umrah");
-    expect(reply).not.toContain("مكاتب في المنطقة");
+    const reply = localAr("ايه هي تعليمات الحج والعمرة");
+    expect(reply?.type).toBe("vaccine");
+    expect(reply?.answer).toContain("الحج والعمرة");
+    expect(reply?.answer).toContain("/ar/hajj-umrah");
+    expect(reply?.answer).not.toContain("مكاتب في المنطقة");
   });
 
   it("returns hajj guide for hajj vaccinations question not offices", () => {
     expect(classifyChatIntent("التطعيمات للحج")).toBe("hajj_umrah");
-    const reply = getLocalChatResponse({
-      locale: "ar",
-      message: "التطعيمات للحج",
-      knowledgeIndex: [],
-    });
-    expect(reply).toContain("الحج والعمرة");
-    expect(reply).not.toContain("مكاتب في المنطقة");
+    const reply = localAr("التطعيمات للحج");
+    expect(reply?.answer).toContain("الحج والعمرة");
+    expect(reply?.answer).not.toContain("مكاتب في المنطقة");
+  });
+
+  it("returns hajj requirements with vaccine type", () => {
+    const reply = localAr("متطلبات الحج");
+    expect(reply?.type).toBe("vaccine");
+    expect(reply?.source).toContain("حج");
   });
 
   it("returns Tagamoa offices for explicit office area query", () => {
     expect(classifyChatIntent("مكتب في التجمع")).toBe("office");
-    const reply = getLocalChatResponse({
-      locale: "ar",
-      message: "مكتب في التجمع",
-      knowledgeIndex: [],
-    });
-    expect(reply).toContain("التجمع");
-    expect(reply).toContain("maps.app.goo.gl");
+    const reply = localAr("مكتب في التجمع");
+    expect(reply?.answer).toContain("التجمع");
+    expect(reply?.answer).toContain("maps.app.goo.gl");
   });
 
   const mockHelwanOffice: Office = {
@@ -284,38 +302,30 @@ describe("chat rules", () => {
 
   it("returns office hours for Helwan hours question", () => {
     expect(classifyChatIntent("مواعيد شغل مكتب حلوان")).toBe("office_hours");
-    const reply = getLocalChatResponse({
-      locale: "ar",
-      message: "مواعيد شغل مكتب حلوان",
-      knowledgeIndex: [],
+    const reply = localAr("مواعيد شغل مكتب حلوان", {
       portalOffices: [mockHelwanOffice],
     });
-    expect(reply).toContain("مواعيد العمل");
-    expect(reply).toContain("حلوان");
-    expect(reply).not.toContain("/ar/booking");
+    expect(reply?.answer).toContain("مواعيد العمل");
+    expect(reply?.answer).toContain("حلوان");
+    expect(reply?.answer).not.toContain("/ar/booking");
   });
 
   it("returns location not hours line for bare office query", () => {
     expect(classifyChatIntent("مكتب في حلوان")).toBe("office");
-    const reply = getLocalChatResponse({
-      locale: "ar",
-      message: "مكتب في حلوان",
-      knowledgeIndex: [],
+    const reply = localAr("مكتب في حلوان", {
       portalOffices: [mockHelwanOffice],
     });
-    expect(reply).toContain("maps.app.goo.gl");
-    expect(reply).not.toMatch(/مواعيد العمل:/);
+    expect(reply?.answer).toContain("maps.app.goo.gl");
+    expect(reply?.answer).not.toMatch(/مواعيد العمل:/);
   });
 
   it("returns services overview not offices for services question", () => {
     expect(classifyChatIntent("ايه هي الخدمات")).toBe("services");
-    const reply = getLocalChatResponse({
-      locale: "ar",
-      message: "ايه هي الخدمات",
+    const reply = localAr("ايه هي الخدمات", {
       knowledgeIndex: [
         {
           id: "services",
-          category: "pages",
+          category: "services",
           title: "الخدمات",
           body: "خدمات المسافرين والحج والمواطنين.",
           path: "/ar",
@@ -323,8 +333,23 @@ describe("chat rules", () => {
         },
       ],
     });
-    expect(reply).toContain("خدمات");
-    expect(reply).not.toContain("مكاتب في المنطقة");
+    expect(reply?.answer).toContain("خدمات");
+    expect(reply?.answer).not.toContain("مكاتب في المنطقة");
+  });
+
+  it("resolvePortalAssistant returns unknown message without LLM", () => {
+    const resolved = resolvePortalAssistant({
+      locale: "ar",
+      message: "ما هو رقم الطوارئ في اليابان",
+      knowledgeIndex: [],
+      destinationCountries: [],
+      portalOffices: [],
+      vaccinesByCategory: VACCINES_BY_CATEGORY,
+    });
+    const final = applyPortalAssistantRules(resolved, "ar");
+    expect(final.confidence).toBe(0.5);
+    expect(final.answer).toContain("تعذر العثور على المعلومات داخل المنصة");
+    expect(final.type).toBe("contact");
   });
 
   it("enforce-response keeps wa.me links", () => {

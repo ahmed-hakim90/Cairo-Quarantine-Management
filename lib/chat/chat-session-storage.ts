@@ -1,7 +1,10 @@
+import type { PortalAssistantMeta } from "@/lib/chat/portal-assistant-types";
+
 export type StoredChatMessage = {
   id: string;
   role: "user" | "assistant";
   content: string;
+  meta?: PortalAssistantMeta;
 };
 
 export type StoredChatSession = {

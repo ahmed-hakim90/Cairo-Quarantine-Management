@@ -1,13 +1,25 @@
+import type { UserCategory } from "@/data/vaccines";
 import { getTravelerVaccinationsOfficeCharter } from "@/data/traveler-vaccinations-office-charter";
 import { defaultLocale, isLocale, type Locale } from "@/lib/i18n/config";
+import { bookingRequestCopy } from "@/lib/i18n/booking-request-copy";
 import { getMessages } from "@/lib/i18n/messages";
 import { normalizeArabic, tokenizeForSearch } from "@/lib/chat/normalize-arabic";
-import { listOffices } from "@/lib/office-requests/store";
+import {
+  listOffices,
+  listVaccinesByCategoryForPublic,
+} from "@/lib/office-requests/store";
 import type { Office } from "@/lib/office-requests/types";
 
 export type SiteKnowledgeEntry = {
   id: string;
-  category: "pages" | "services" | "faq" | "policies" | "offices" | "announcements";
+  category:
+    | "pages"
+    | "services"
+    | "faq"
+    | "policies"
+    | "offices"
+    | "announcements"
+    | "vaccine";
   title: string;
   body: string;
   path: string;
@@ -45,7 +57,13 @@ export async function buildSiteKnowledgeIndex(
     : defaultLocale) as Locale;
   const m = getMessages(locale);
   const charter = getTravelerVaccinationsOfficeCharter(locale);
-  const offices = await listOffices();
+  const [offices, vaccinesByCategory] = await Promise.all([
+    listOffices(),
+    listVaccinesByCategoryForPublic(),
+  ]);
+  const bookingCopy =
+    bookingRequestCopy[locale as keyof typeof bookingRequestCopy] ??
+    bookingRequestCopy.ar;
   const entries: SiteKnowledgeEntry[] = [];
 
   pushEntry(entries, {
@@ -123,6 +141,102 @@ export async function buildSiteKnowledgeIndex(
     tags: ["ميثاق", "charter", "سياسه", "شكوى"],
   });
 
+  const charterSections = [
+    charter.vision,
+    charter.mission,
+    charter.rights,
+    charter.duties,
+    charter.complaints,
+    charter.workingHours,
+  ] as const;
+
+  for (const section of charterSections) {
+    const heading = "heading" in section ? section.heading : charter.workingHours.heading;
+    const bodyParts: string[] = [];
+    if ("text" in section && section.text) bodyParts.push(section.text);
+    if ("intro" in section && section.intro) bodyParts.push(section.intro);
+    if ("items" in section && section.items) bodyParts.push(section.items.join("، "));
+    if ("channels" in section && section.channels)
+      bodyParts.push(section.channels.join("، "));
+    if ("note" in section && section.note) bodyParts.push(section.note);
+    pushEntry(entries, {
+      id: `charter-${normalizeArabic(heading).slice(0, 20)}`,
+      category: "policies",
+      title: `${charter.title} — ${heading}`,
+      body: bodyParts.join(" "),
+      path: formatPortalUrl(locale, "charter"),
+      tags: ["ميثاق", normalizeArabic(heading)],
+    });
+  }
+
+  pushEntry(entries, {
+    id: "booking-fields",
+    category: "pages",
+    title: bookingCopy.bookingTitle,
+    body: `${bookingCopy.bookingIntro} ${bookingCopy.travelerState} ${bookingCopy.officeName} ${bookingCopy.preferredDate} ${bookingCopy.name} ${bookingCopy.phone}`,
+    path: formatPortalUrl(locale, "booking"),
+    tags: ["حجز", "نموذج", "booking", "form"],
+  });
+
+  for (const bullet of intl.bullets) {
+    pushEntry(entries, {
+      id: `intl-bullet-${normalizeArabic(bullet).slice(0, 16)}`,
+      category: "pages",
+      title: intl.heading,
+      body: bullet,
+      path: formatPortalUrl(locale, "international-traveler"),
+      tags: ["دولي", normalizeArabic(bullet)],
+    });
+  }
+
+  for (const bullet of citizen.docsBullets) {
+    pushEntry(entries, {
+      id: `citizen-doc-${normalizeArabic(bullet).slice(0, 16)}`,
+      category: "pages",
+      title: citizen.docsTitle,
+      body: bullet,
+      path: formatPortalUrl(locale, "citizen-services"),
+      tags: ["مواطن", "مستندات", normalizeArabic(bullet)],
+    });
+  }
+
+  const categoryLabels: Record<UserCategory, string> = {
+    international: intl.heading,
+    hajj: hajj.heading,
+    umrah: hajj.heading,
+    citizen: citizen.heading,
+  };
+
+  for (const category of Object.keys(vaccinesByCategory) as UserCategory[]) {
+    for (const vaccine of vaccinesByCategory[category]) {
+      const pricePart =
+        vaccine.free
+          ? "مجاناً"
+          : vaccine.priceEgp != null
+            ? `${vaccine.priceEgp} جنيه`
+            : "—";
+      pushEntry(entries, {
+        id: `vaccine-${vaccine.id}`,
+        category: "vaccine",
+        title: vaccine.nameAr,
+        body: `${vaccine.nameAr} — ${categoryLabels[category]} — ${pricePart}`,
+        path:
+          category === "international"
+            ? formatPortalUrl(locale, "international-traveler")
+            : category === "citizen"
+              ? formatPortalUrl(locale, "citizen-services")
+              : formatPortalUrl(locale, "hajj-umrah"),
+        tags: [
+          normalizeArabic(vaccine.nameAr),
+          category,
+          "لقاح",
+          "سعر",
+          "تطعيم",
+        ],
+      });
+    }
+  }
+
   pushEntry(entries, {
     id: "services",
     category: "services",
@@ -174,7 +288,7 @@ export async function buildSiteKnowledgeIndex(
     tags: ["تواصل", "هاتف", "عنوان"],
   });
 
-  for (const office of offices.slice(0, 40)) {
+  for (const office of offices) {
     const hours = officeHoursLine(office);
     pushEntry(entries, {
       id: `office-${office.id}`,

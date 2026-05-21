@@ -56,12 +56,6 @@ export default async function AdminOverviewPage({
   const session = await getAdminSession();
   if (!session) redirect(`/${locale}/admin/login`);
 
-  if (session.profile.role === "office_user" && session.profile.officeId) {
-    redirect(
-      `/${locale}/office-dashboard/${session.profile.officeId}/queue`,
-    );
-  }
-
   const isSuperAdmin = session.profile.role === "super_admin";
   const isLocalAdmin =
     session.profile.role === "office_admin" ||
