@@ -238,6 +238,28 @@ describe("chat rules", () => {
     expect(reply).not.toContain("مكاتب في المنطقة");
   });
 
+  it("returns hajj guide for hajj vaccinations question not offices", () => {
+    expect(classifyChatIntent("التطعيمات للحج")).toBe("hajj_umrah");
+    const reply = getLocalChatResponse({
+      locale: "ar",
+      message: "التطعيمات للحج",
+      knowledgeIndex: [],
+    });
+    expect(reply).toContain("الحج والعمرة");
+    expect(reply).not.toContain("مكاتب في المنطقة");
+  });
+
+  it("returns Tagamoa offices for explicit office area query", () => {
+    expect(classifyChatIntent("مكتب في التجمع")).toBe("office");
+    const reply = getLocalChatResponse({
+      locale: "ar",
+      message: "مكتب في التجمع",
+      knowledgeIndex: [],
+    });
+    expect(reply).toContain("التجمع");
+    expect(reply).toContain("maps.app.goo.gl");
+  });
+
   it("returns services overview not offices for services question", () => {
     expect(classifyChatIntent("ايه هي الخدمات")).toBe("services");
     const reply = getLocalChatResponse({

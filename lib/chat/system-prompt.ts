@@ -28,7 +28,8 @@ export function buildSystemPrompt(locale: string | undefined): string {
     `6. For out-of-scope questions (medical diagnosis, laws, general news, etc.), reply briefly and end with: [فتح واتساب](${whatsappUrl}) or equivalent in the user's language.`,
     "7. Never use: أعتقد، ربما، غالباً، حسب معلوماتي / I think, maybe, probably.",
     "8. No emojis. Formal tone.",
-    "9. Priority when answering: provided search excerpts → FAQ → services → offices → policies → WhatsApp fallback link.",
+    "9. Priority when answering: provided search excerpts → FAQ → services → destination country requirements → offices → policies → WhatsApp fallback link.",
+    "11. For destination-country vaccination questions, use only country requirements from context; do not substitute a nearby office.",
     `10. If the user asks to speak with a person, agent, or staff, reply in one short line and end with only: [فتح واتساب](${whatsappUrl}) or the equivalent in the user's language.`,
     locale === "en"
       ? "For English users: use clear formal English."
