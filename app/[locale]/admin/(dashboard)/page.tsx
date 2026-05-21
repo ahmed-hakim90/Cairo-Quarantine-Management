@@ -298,8 +298,7 @@ export default async function AdminOverviewPage({
               تقييم أداء المكاتب
             </h2>
             <p className="mt-1 text-xs text-gov-gray-600">
-              حجوزات، شكاوى، ونسبة إنجاز الحجوزات (مكتمل ÷ حجوزات) ضمن النطاق
-              المفلتر.
+              حجوزات وشكاوى ضمن النطاق المفلتر.
             </p>
           </div>
         </div>
@@ -310,7 +309,6 @@ export default async function AdminOverviewPage({
                 <th className="px-4 py-3">المكتب</th>
                 <th className="px-4 py-3">حجوزات</th>
                 <th className="px-4 py-3">مكتمل</th>
-                <th className="px-4 py-3">نسبة الإنجاز</th>
                 <th className="px-4 py-3">شكاوى</th>
               </tr>
             </thead>
@@ -325,11 +323,6 @@ export default async function AdminOverviewPage({
                   </td>
                   <td className="px-4 py-3 font-semibold text-gov-gray-800">
                     {rating.completed}
-                  </td>
-                  <td className="px-4 py-3 font-semibold text-gov-gray-800">
-                    {rating.completionRatePercent != null
-                      ? `${rating.completionRatePercent}%`
-                      : "—"}
                   </td>
                   <td className="px-4 py-3 font-semibold text-gov-gray-800">
                     {rating.complaints}

@@ -99,7 +99,6 @@ describe("buildOfficePerformanceRatings", () => {
       complaints: 1,
       proposals: 1,
       completed: 1,
-      completionRatePercent: 50,
     });
   });
 
@@ -110,7 +109,6 @@ describe("buildOfficePerformanceRatings", () => {
       officeId: "office-a",
       bookings: 0,
       complaints: 0,
-      completionRatePercent: null,
     });
   });
 

@@ -21,8 +21,6 @@ export type OfficePerformanceRating = {
   complaints: number;
   proposals: number;
   completed: number;
-  /** Share of bookings marked completed (0–100), null if no bookings */
-  completionRatePercent: number | null;
 };
 
 export type QueueDailyAnalyticsSummary = {
@@ -222,7 +220,6 @@ export function buildOfficePerformanceRatings(
       complaints: 0,
       proposals: 0,
       completed: 0,
-      completionRatePercent: null,
     });
   }
 
@@ -237,7 +234,6 @@ export function buildOfficePerformanceRatings(
         complaints: 0,
         proposals: 0,
         completed: 0,
-        completionRatePercent: null,
       };
 
     if (request.type === "booking") {
@@ -252,13 +248,6 @@ export function buildOfficePerformanceRatings(
   }
 
   const ratings = [...byOffice.values()];
-
-  for (const rating of ratings) {
-    rating.completionRatePercent =
-      rating.bookings > 0
-        ? Math.round((rating.completed / rating.bookings) * 100)
-        : null;
-  }
 
   ratings.sort((a, b) => {
     const aTotal = a.bookings + a.complaints + a.proposals;
