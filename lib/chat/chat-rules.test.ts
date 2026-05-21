@@ -2,8 +2,10 @@ import { describe, expect, it } from "vitest";
 import { isChatAllowedUrl } from "@/lib/chat/allowed-links";
 import { enforceResponseRules } from "@/lib/chat/enforce-response";
 import { isHumanHandoffRequest } from "@/lib/chat/human-handoff";
+import { classifyChatIntent } from "@/lib/chat/intent";
 import { isOfficeOrAreaQuery } from "@/lib/chat/office-area-query";
 import { getLocalChatResponse } from "@/lib/chat/local-responses";
+import type { DestinationCountry } from "@/lib/office-requests/types";
 import { isOutOfScopeMessage } from "@/lib/chat/out-of-scope";
 import { buildOfficeResponse } from "@/lib/chat/office-response";
 import {
@@ -184,6 +186,76 @@ describe("chat rules", () => {
     expect(out).toContain("[فتح واتساب](https://wa.me/");
     expect(unknown).toContain("[تواصل عبر واتساب](https://wa.me/");
     process.env.NEXT_PUBLIC_WHATSAPP_COMPLAINTS_PHONE = prev;
+  });
+
+  const mockAfghanistan: DestinationCountry = {
+    id: "af",
+    nameEn: "Afghanistan",
+    nameAr: "أفغانستان",
+    requirementsAr: "حمى صفراء إلزامية قبل السفر.",
+    sortOrder: 1,
+  };
+
+  it("classifies umrah price question as price not office", () => {
+    const intent = classifyChatIntent("مسافر عمرة التطعيم بكام");
+    expect(intent).toBe("price");
+    const reply = getLocalChatResponse({
+      locale: "ar",
+      message: "مسافر عمرة التطعيم بكام",
+      knowledgeIndex: [],
+    });
+    expect(reply).toContain("أسعار");
+    expect(reply).not.toContain("مكاتب في المنطقة");
+  });
+
+  it("returns destination vaccines for Afghanistan not offices", () => {
+    const intent = classifyChatIntent("مسافر افغانستان هتطعم ايه", {
+      destinationCountries: [mockAfghanistan],
+    });
+    expect(intent).toBe("destination_vaccines");
+    const reply = getLocalChatResponse({
+      locale: "ar",
+      message: "مسافر افغانستان هتطعم ايه",
+      knowledgeIndex: [],
+      destinationCountries: [mockAfghanistan],
+    });
+    expect(reply).toContain("حمى صفراء");
+    expect(reply).toContain("/ar/international-traveler");
+    expect(reply).not.toContain("مكاتب في المنطقة");
+  });
+
+  it("returns hajj guide for instructions question not offices", () => {
+    expect(isOfficeOrAreaQuery(normalizeArabic("ايه هي تعليمات الحج والعمرة"))).toBe(
+      false,
+    );
+    const reply = getLocalChatResponse({
+      locale: "ar",
+      message: "ايه هي تعليمات الحج والعمرة",
+      knowledgeIndex: [],
+    });
+    expect(reply).toContain("الحج والعمرة");
+    expect(reply).toContain("/ar/hajj-umrah");
+    expect(reply).not.toContain("مكاتب في المنطقة");
+  });
+
+  it("returns services overview not offices for services question", () => {
+    expect(classifyChatIntent("ايه هي الخدمات")).toBe("services");
+    const reply = getLocalChatResponse({
+      locale: "ar",
+      message: "ايه هي الخدمات",
+      knowledgeIndex: [
+        {
+          id: "services",
+          category: "pages",
+          title: "الخدمات",
+          body: "خدمات المسافرين والحج والمواطنين.",
+          path: "/ar",
+          tags: ["خدمات"],
+        },
+      ],
+    });
+    expect(reply).toContain("خدمات");
+    expect(reply).not.toContain("مكاتب في المنطقة");
   });
 
   it("enforce-response keeps wa.me links", () => {

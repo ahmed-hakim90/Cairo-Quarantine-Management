@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { CompactWhatsAppBar } from "@/components/layout/CompactWhatsAppBar";
 import { ChatWidget } from "@/components/chat/ChatWidget";
 import { FloatingTextToSpeechButton } from "@/components/layout/FloatingTextToSpeechButton";
@@ -22,6 +23,7 @@ export function PublicFloatingChrome({
   const pathname = usePathname();
   const [, , pageSegment] = pathname.split("/");
   const showCompactWhatsapp = footerHiddenSegments.has(pageSegment);
+  const [chatOpen, setChatOpen] = useState(false);
 
   return (
     <>
@@ -33,11 +35,17 @@ export function PublicFloatingChrome({
       ) : null}
 
       <div className="fixed bottom-5 start-5 z-[60]">
-        <ChatWidget locale={locale} messages={messages.chat} />
+        <ChatWidget
+          locale={locale}
+          messages={messages.chat}
+          onOpenChange={setChatOpen}
+        />
       </div>
 
       <div className="fixed bottom-5 end-5 z-[60] flex flex-col items-center gap-3">
-        <FloatingTextToSpeechButton locale={locale} labels={messages.tts} />
+        <div className={chatOpen ? "max-sm:hidden" : undefined}>
+          <FloatingTextToSpeechButton locale={locale} labels={messages.tts} />
+        </div>
         <FloatingVaccinationBookingButton
           label={messages.nav.bookVaccination}
           ariaLabel={messages.nav.bookVaccinationAria}

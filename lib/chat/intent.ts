@@ -1,0 +1,196 @@
+import { normalizeArabic } from "@/lib/chat/normalize-arabic";
+import { findDestinationCountry } from "@/lib/chat/destination-country-response";
+import { getChatOfficeAreaTokens } from "@/lib/chat/office-catalog";
+import type { DestinationCountry } from "@/lib/office-requests/types";
+
+export type ChatIntent =
+  | "price"
+  | "booking"
+  | "services"
+  | "destination_vaccines"
+  | "office"
+  | "hajj_umrah"
+  | "general";
+
+export function isPriceQuestion(normalized: string): boolean {
+  return (
+    normalized.includes("تكلف") ||
+    normalized.includes("سعر") ||
+    normalized.includes("بكم") ||
+    normalized.includes("بكام") ||
+    normalized.includes("كام") ||
+    normalized.includes("جنيه") ||
+    normalized.includes("egp") ||
+    normalized.includes("مصاريف") ||
+    normalized.includes("price") ||
+    normalized.includes("cost")
+  );
+}
+
+export function isBookingQuestion(normalized: string): boolean {
+  return (
+    normalized.includes("حجز") ||
+    normalized.includes("موعد") ||
+    normalized.includes("booking") ||
+    normalized.includes("appointment")
+  );
+}
+
+const QUESTION_STOP_TOKENS = new Set([
+  "ايه",
+  "ايه",
+  "هي",
+  "هو",
+  "هم",
+  "التي",
+  "الذي",
+  "تعليمات",
+  "الخدمات",
+  "خدمات",
+]);
+
+const BLOCKED_AREA_SUBSTRINGS = new Set([
+  "مصر",
+  "نصر",
+  "طفل",
+  "رعايه",
+  "تطعيم",
+  "مطار",
+  "مسافر",
+  "سافر",
+  "دولي",
+  "دوله",
+  "خدمات",
+]);
+
+const DESTINATION_SIGNALS = [
+  "مسافر",
+  "سافر",
+  "دوله",
+  "لقاح",
+  "تطعيم",
+  "هتطعم",
+  "هاخد",
+  "محتاج",
+  "متطلب",
+  "شهاده",
+  "فاكسين",
+  "vaccine",
+  "travel",
+  "متطلبات",
+];
+
+function hasDestinationSignal(normalized: string): boolean {
+  return DESTINATION_SIGNALS.some((signal) => normalized.includes(signal));
+}
+
+function mentionsHajjOrUmrah(normalized: string): boolean {
+  return (
+    normalized.includes("عمره") ||
+    normalized.includes("معتم") ||
+    normalized.includes("حج") ||
+    normalized.includes("حاج")
+  );
+}
+
+function isExplicitOfficeQuery(normalized: string): boolean {
+  return (
+    normalized.includes("اقرب") ||
+    normalized.includes("مكتب") ||
+    normalized.includes("مكاتب") ||
+    normalized.includes("عنوان") ||
+    normalized.includes("office") ||
+    normalized.includes("location")
+  );
+}
+
+function isServicesQuestion(normalized: string): boolean {
+  if (!normalized.includes("خدمات") && !normalized.includes("services")) {
+    return false;
+  }
+  return !isExplicitOfficeQuery(normalized);
+}
+
+function areaMatchesToken(area: string, token: string): boolean {
+  if (QUESTION_STOP_TOKENS.has(token)) return false;
+  if (token === area) return true;
+  if (BLOCKED_AREA_SUBSTRINGS.has(area) || BLOCKED_AREA_SUBSTRINGS.has(token)) {
+    return false;
+  }
+  if (token.length < 4 || area.length < 4) return false;
+  return area.includes(token) || token.includes(area);
+}
+
+export function isDestinationVaccineQuestion(
+  normalized: string,
+  countries: DestinationCountry[],
+): boolean {
+  if (!normalized || countries.length === 0) return false;
+  if (isPriceQuestion(normalized) || isBookingQuestion(normalized)) return false;
+  if (isExplicitOfficeQuery(normalized)) return false;
+
+  const country = findDestinationCountry(normalized, countries);
+  if (!country) return false;
+
+  return (
+    hasDestinationSignal(normalized) ||
+    normalized.includes("ايه") ||
+    normalized.includes("what") ||
+    normalized.includes("which")
+  );
+}
+
+export function isOfficeOrAreaQuery(
+  normalized: string,
+  options?: { destinationCountries?: DestinationCountry[] },
+): boolean {
+  if (!normalized) return false;
+  if (isPriceQuestion(normalized) || isBookingQuestion(normalized)) return false;
+  if (isServicesQuestion(normalized)) return false;
+
+  const countries = options?.destinationCountries ?? [];
+  if (
+    findDestinationCountry(normalized, countries) &&
+    hasDestinationSignal(normalized)
+  ) {
+    return false;
+  }
+
+  if (mentionsHajjOrUmrah(normalized) && !isExplicitOfficeQuery(normalized)) {
+    return false;
+  }
+
+  if (isExplicitOfficeQuery(normalized)) return true;
+
+  const tokens = normalized
+    .split(" ")
+    .filter((t) => t.length >= 3 && !QUESTION_STOP_TOKENS.has(t));
+  if (tokens.length === 0 || tokens.length > 4) return false;
+
+  const areaTokens = getChatOfficeAreaTokens();
+  return tokens.some((token) =>
+    areaTokens.some((area) => areaMatchesToken(area, token)),
+  );
+}
+
+export function classifyChatIntent(
+  message: string,
+  options?: { destinationCountries?: DestinationCountry[] },
+): ChatIntent {
+  const normalized = normalizeArabic(message);
+  const countries = options?.destinationCountries ?? [];
+
+  if (isPriceQuestion(normalized)) return "price";
+  if (isBookingQuestion(normalized)) return "booking";
+  if (isServicesQuestion(normalized)) return "services";
+  if (isDestinationVaccineQuestion(normalized, countries)) {
+    return "destination_vaccines";
+  }
+  if (mentionsHajjOrUmrah(normalized) && !isExplicitOfficeQuery(normalized)) {
+    return "hajj_umrah";
+  }
+  if (isOfficeOrAreaQuery(normalized, { destinationCountries: countries })) {
+    return "office";
+  }
+  return "general";
+}

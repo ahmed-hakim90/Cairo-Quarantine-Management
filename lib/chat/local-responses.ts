@@ -3,39 +3,18 @@ import { VACCINES_BY_CATEGORY } from "@/data/vaccines";
 import { defaultLocale, isLocale } from "@/lib/i18n/config";
 import { getMessages } from "@/lib/i18n/messages";
 import { normalizeArabic } from "@/lib/chat/normalize-arabic";
-import { isOfficeOrAreaQuery } from "@/lib/chat/office-area-query";
+import { buildDestinationCountryResponse } from "@/lib/chat/destination-country-response";
+import { classifyChatIntent } from "@/lib/chat/intent";
 import { buildOfficeResponse } from "@/lib/chat/office-response";
 import { formatPortalUrl } from "@/lib/chat/site-knowledge";
 import {
   searchSiteKnowledge,
   type SiteKnowledgeEntry,
 } from "@/lib/chat/site-knowledge";
+import type { DestinationCountry } from "@/lib/office-requests/types";
 
 function getLocale(localeValue: string | undefined) {
   return localeValue && isLocale(localeValue) ? localeValue : defaultLocale;
-}
-
-function isPriceQuestion(normalized: string) {
-  return (
-    normalized.includes("تكلف") ||
-    normalized.includes("سعر") ||
-    normalized.includes("بكم") ||
-    normalized.includes("كام") ||
-    normalized.includes("جنيه") ||
-    normalized.includes("egp") ||
-    normalized.includes("مصاريف") ||
-    normalized.includes("price") ||
-    normalized.includes("cost")
-  );
-}
-
-function isBookingQuestion(normalized: string) {
-  return (
-    normalized.includes("حجز") ||
-    normalized.includes("موعد") ||
-    normalized.includes("booking") ||
-    normalized.includes("appointment")
-  );
 }
 
 function vaccineDisplayName(record: VaccineRecord, locale: string) {
@@ -102,6 +81,32 @@ function buildHajjResponse(localeValue: string | undefined) {
   return `الحج والعمرة: ${hajj.basicsBody}\nالوثائق: ${hajj.documentBullets.join("، ")}.\n[الدليل الكامل](${path})`;
 }
 
+function buildServicesResponse(
+  localeValue: string | undefined,
+  knowledgeIndex: SiteKnowledgeEntry[],
+) {
+  const loc = getLocale(localeValue);
+  const servicesHit =
+    knowledgeIndex.find((entry) => entry.id === "services") ??
+    searchSiteKnowledge(
+      loc === "en" ? "services" : "خدمات",
+      knowledgeIndex,
+      3,
+    )[0];
+
+  const m = getMessages(loc).services;
+  const path = formatPortalUrl(loc);
+
+  if (servicesHit) {
+    return `${servicesHit.body.slice(0, 280)}\n[${servicesHit.title}](${servicesHit.path || path})`;
+  }
+
+  if (loc === "en") {
+    return `${m.intro}\n${m.internationalTitle}: ${m.internationalDesc}\n${m.hajjTitle}: ${m.hajjDesc}\n[Services](${path})`;
+  }
+  return `${m.intro}\n${m.internationalTitle}: ${m.internationalDesc}\n${m.hajjTitle}: ${m.hajjDesc}\n[الخدمات](${path})`;
+}
+
 function buildSearchHitResponse(
   localeValue: string | undefined,
   hit: SiteKnowledgeEntry,
@@ -117,32 +122,42 @@ export function getLocalChatResponse({
   locale,
   message,
   knowledgeIndex,
+  destinationCountries = [],
 }: {
   locale: string | undefined;
   message: string;
   knowledgeIndex: SiteKnowledgeEntry[];
+  destinationCountries?: DestinationCountry[];
 }): string | null {
   const normalized = normalizeArabic(message);
   const mentionsUmrah =
     normalized.includes("عمره") || normalized.includes("معتم");
   const mentionsHajj = normalized.includes("حج") || normalized.includes("حاج");
-  if (isBookingQuestion(normalized)) return buildBookingResponse(locale);
 
+  const intent = classifyChatIntent(message, { destinationCountries });
   const hits = searchSiteKnowledge(message, knowledgeIndex, 5);
 
-  if (isOfficeOrAreaQuery(normalized)) {
-    return buildOfficeResponse(locale, message, hits);
+  switch (intent) {
+    case "price":
+      if (mentionsUmrah && !mentionsHajj) {
+        return buildVaccinePriceResponse(locale, "umrah");
+      }
+      if (mentionsHajj && !mentionsUmrah) {
+        return buildVaccinePriceResponse(locale, "hajj");
+      }
+      return buildVaccinePriceResponse(locale, "both");
+    case "booking":
+      return buildBookingResponse(locale);
+    case "services":
+      return buildServicesResponse(locale, knowledgeIndex);
+    case "destination_vaccines":
+      return buildDestinationCountryResponse(locale, message, destinationCountries);
+    case "hajj_umrah":
+      return buildHajjResponse(locale);
+    case "office":
+      return buildOfficeResponse(locale, message, hits);
+    case "general":
+      if (hits.length > 0) return buildSearchHitResponse(locale, hits[0]);
+      return null;
   }
-
-  if (isPriceQuestion(normalized)) {
-    if (mentionsUmrah && !mentionsHajj) return buildVaccinePriceResponse(locale, "umrah");
-    if (mentionsHajj && !mentionsUmrah) return buildVaccinePriceResponse(locale, "hajj");
-    return buildVaccinePriceResponse(locale, "both");
-  }
-
-  if (mentionsHajj || mentionsUmrah) return buildHajjResponse(locale);
-
-  if (hits.length > 0) return buildSearchHitResponse(locale, hits[0]);
-
-  return null;
 }

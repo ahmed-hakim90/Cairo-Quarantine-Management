@@ -30,6 +30,7 @@ type ChatMessage = {
 type ChatWidgetProps = {
   locale: string;
   messages: ChatLabels;
+  onOpenChange?: (open: boolean) => void;
 };
 
 function ChatIcon({ className }: { className?: string }) {
@@ -216,7 +217,7 @@ function getLinkLabel(href: string, labelFromMarkdown?: string) {
 function renderTextWithLinks(text: string) {
   const parts: Array<{ type: "text" | "link"; value: string; href?: string; label?: string }> = [];
   const combinedRe =
-    /\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)|(https?:\/\/[^\s)،\]]+|tel:[^\s)،\]]+|\/(?:ar|en|zh|fr)(?:\/[^\s،]*)?(?:#[^\s،]+)?)/g;
+    /\[([^\]]+)\]\((tel:[^)\s]+|\/[^)\s]+|https?:\/\/[^)\s]+)\)|(https?:\/\/[^\s)،\]]+|tel:[^\s)،\]]+|\/(?:ar|en|zh|fr)(?:\/[^\s،]*)?(?:#[^\s،]+)?)/g;
 
   let lastIndex = 0;
   let match: RegExpExecArray | null;
@@ -338,7 +339,11 @@ async function readAssistantStream(
   }
 }
 
-export function ChatWidget({ locale, messages: labels }: ChatWidgetProps) {
+export function ChatWidget({
+  locale,
+  messages: labels,
+  onOpenChange,
+}: ChatWidgetProps) {
   const [open, setOpen] = useState(
     () => loadChatSession(locale)?.open ?? false,
   );
@@ -366,7 +371,8 @@ export function ChatWidget({ locale, messages: labels }: ChatWidgetProps) {
       open,
       updatedAt: Date.now(),
     });
-  }, [locale, chatMessages, open]);
+    onOpenChange?.(open);
+  }, [locale, chatMessages, open, onOpenChange]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });

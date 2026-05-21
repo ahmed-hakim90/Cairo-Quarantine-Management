@@ -14,6 +14,7 @@ import {
   whatsappOutOfScopeMessage,
   whatsappUnknownInfoMessage,
 } from "@/lib/chat/whatsapp-fallback";
+import { listDestinationCountriesForPublic } from "@/lib/office-requests/store";
 import { rateLimitKeyFromHeaders } from "@/lib/rate-limit";
 import { checkUnifiedRateLimit } from "@/lib/rate-limit-unified";
 
@@ -241,13 +242,17 @@ export async function POST(request: Request) {
     );
   }
 
-  const knowledgeIndex = await buildSiteKnowledgeIndex(locale);
+  const [knowledgeIndex, destinationCountries] = await Promise.all([
+    buildSiteKnowledgeIndex(locale),
+    listDestinationCountriesForPublic(),
+  ]);
   const searchHits = searchSiteKnowledge(lastUserMessage, knowledgeIndex, 5);
 
   const localResponse = getLocalChatResponse({
     locale,
     message: lastUserMessage,
     knowledgeIndex,
+    destinationCountries,
   });
 
   if (localResponse) {
@@ -255,10 +260,14 @@ export async function POST(request: Request) {
       localResponse.includes("tel:") ||
       localResponse.includes("maps.app.goo.gl") ||
       localResponse.includes("google.com/maps");
+    const isLongLocalReply =
+      isOfficeReply ||
+      localResponse.includes("international-traveler") ||
+      localResponse.includes("متطلبات التطعيم");
     return new Response(
       streamTextResponse(
         enforceResponseRules(localResponse, locale, {
-          maxLines: isOfficeReply ? 16 : 4,
+          maxLines: isLongLocalReply ? 16 : 6,
         }),
       ),
       { headers: sseHeaders() },

@@ -2,6 +2,12 @@ import { CAIRO_TRAVELER_VACCINATION_OFFICES } from "@/data/hajj-traveler-offices
 import { VACCINATION_CENTERS } from "@/data/locations";
 import { normalizeArabic } from "@/lib/chat/normalize-arabic";
 
+/** Expand region tokens (e.g. تجمع → also match القاهرة الجديدة). */
+export const REGION_SYNONYMS: Record<string, string[]> = {
+  تجمع: ["تجمع", "القاهره الجديده", "القاهرة الجديدة"],
+  حلوان: ["حلوان", "حدائق حلوان"],
+};
+
 export type ChatOffice = {
   id: string;
   centerNameAr: string;
@@ -91,42 +97,31 @@ export function buildChatOfficeCatalog(): ChatOffice[] {
   return offices;
 }
 
-/** Tokens for matching bare area names like «حلوان» or «التجمع». */
+/** Tokens for matching bare area names like «حلوان» or «التجمع» (administrations + region synonyms only). */
 export function getChatOfficeAreaTokens(): string[] {
   if (cachedAreaTokens) return cachedAreaTokens;
 
   const tokens = new Set<string>();
-  const extra = [
-    "تجمع",
-    "حلوان",
-    "معادي",
-    "نصر",
-    "شروق",
-    "مطار",
-    "helwan",
-    "maadi",
-    "tagamoa",
-    "new cairo",
-  ];
 
   for (const office of buildChatOfficeCatalog()) {
-    for (const value of [
-      office.administrationAr,
-      office.administrationEn,
-      office.centerNameAr,
-    ]) {
+    for (const value of [office.administrationAr, office.administrationEn]) {
       const normalized = normalizeArabic(value);
       for (const part of normalized.split(" ")) {
-        if (part.length >= 3) tokens.add(part);
+        if (part.length >= 4) tokens.add(part);
       }
+      if (normalized.length >= 4) tokens.add(normalized);
     }
   }
 
-  for (const item of extra) {
-    tokens.add(normalizeArabic(item));
+  for (const key of Object.keys(REGION_SYNONYMS)) {
+    tokens.add(normalizeArabic(key));
+    for (const synonym of REGION_SYNONYMS[key] ?? []) {
+      const normalized = normalizeArabic(synonym);
+      if (normalized.length >= 4) tokens.add(normalized);
+    }
   }
 
-  cachedAreaTokens = [...tokens].filter((t) => t.length >= 3);
+  cachedAreaTokens = [...tokens].filter((t) => t.length >= 4);
   return cachedAreaTokens;
 }
 

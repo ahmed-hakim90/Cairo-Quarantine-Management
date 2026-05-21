@@ -1,6 +1,7 @@
 import {
   buildChatOfficeCatalog,
   officeHaystack,
+  REGION_SYNONYMS,
   type ChatOffice,
 } from "@/lib/chat/office-catalog";
 import { normalizeArabic, tokenizeForSearch } from "@/lib/chat/normalize-arabic";
@@ -27,17 +28,21 @@ const STOP_TOKENS = new Set([
   "offices",
   "location",
   "locations",
+  "ايه",
+  "ايه",
+  "هي",
+  "تعليمات",
+  "الخدمات",
+  "خدمات",
+  "مسافر",
+  "سافر",
   "؟",
 ]);
 
-/** Expand region tokens (e.g. تجمع → also match القاهرة الجديدة). */
-const REGION_SYNONYMS: Record<string, string[]> = {
-  تجمع: ["تجمع", "القاهره الجديده", "القاهرة الجديدة"],
-  حلوان: ["حلوان", "حدائق حلوان"],
-};
-
 function meaningfulTokens(query: string): string[] {
-  return tokenizeForSearch(query).filter((token) => !STOP_TOKENS.has(token));
+  return tokenizeForSearch(query).filter(
+    (token) => !STOP_TOKENS.has(token) && token.length >= 4,
+  );
 }
 
 function expandTokens(tokens: string[]): string[] {
