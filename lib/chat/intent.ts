@@ -1,6 +1,10 @@
 import { normalizeArabic } from "@/lib/chat/normalize-arabic";
 import { findDestinationCountry } from "@/lib/chat/destination-country-response";
-import { getChatOfficeAreaTokens } from "@/lib/chat/office-catalog";
+import {
+  getChatOfficeAreaTokens,
+  getChatOfficeNameTokens,
+  messageMatchesChatOfficeCatalog,
+} from "@/lib/chat/office-catalog";
 import type { DestinationCountry } from "@/lib/office-requests/types";
 
 export type ChatIntent =
@@ -142,6 +146,8 @@ export function hasOfficeLocationContext(
     .filter((t) => t.length >= 3 && !QUESTION_STOP_TOKENS.has(t));
   if (tokens.length === 0 || tokens.length > 5) return false;
 
+  if (matchesOfficeNameInMessage(normalized)) return true;
+
   const areaTokens = getChatOfficeAreaTokens();
   return tokens.some((token) =>
     areaTokens.some((area) => areaMatchesToken(area, token)),
@@ -172,6 +178,18 @@ function areaMatchesToken(area: string, token: string): boolean {
   }
   if (token.length < 4 || area.length < 4) return false;
   return area.includes(token) || token.includes(area);
+}
+
+function matchesOfficeNameInMessage(normalized: string): boolean {
+  if (messageMatchesChatOfficeCatalog(normalized)) return true;
+
+  const tokens = normalized
+    .split(" ")
+    .filter((t) => t.length >= 4 && !QUESTION_STOP_TOKENS.has(t));
+  const nameTokens = getChatOfficeNameTokens();
+  return tokens.some((token) =>
+    nameTokens.some((name) => areaMatchesToken(name, token)),
+  );
 }
 
 export function isDestinationVaccineQuestion(
@@ -214,6 +232,7 @@ export function isOfficeOrAreaQuery(
   }
 
   if (isExplicitOfficeQuery(normalized)) return true;
+  if (matchesOfficeNameInMessage(normalized)) return true;
 
   const tokens = normalized
     .split(" ")

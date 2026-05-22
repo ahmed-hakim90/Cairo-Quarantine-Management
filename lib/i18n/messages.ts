@@ -205,7 +205,47 @@ export type Messages = {
     iosHelp: string;
     installAria: string;
   };
+  splash: {
+    loading: string;
+    ariaLabel: string;
+  };
+  admin: {
+    meta: {
+      loginTitle: string;
+      pendingReviewTitle: string;
+    };
+    auth: {
+      loginTitle: string;
+      loginSubtitle: string;
+      emailLabel: string;
+      emailPlaceholder: string;
+      passwordLabel: string;
+      passwordShow: string;
+      passwordHide: string;
+      submit: string;
+      submitting: string;
+      backToPortal: string;
+      firebaseNotConfigured: string;
+      errors: {
+        generic: string;
+        invalidCredentials: string;
+        tooManyRequests: string;
+        noProfile: string;
+        rateLimited: string;
+        datastoreUnavailable: string;
+        serverMisconfigured: string;
+      };
+    };
+    pendingReview: {
+      title: string;
+      body: string;
+      registeredEmail: string;
+      logout: string;
+    };
+  };
 };
+
+export type AdminAuthMessages = Messages["admin"]["auth"];
 
 const ar: Messages = {
   meta: {
@@ -452,6 +492,45 @@ const ar: Messages = {
     iosHelp:
       "للتثبيت على iPhone: اضغط زر «المشاركة» في Safari ثم اختر «أضف إلى الشاشة الرئيسية».",
     installAria: "اقتراح تثبيت التطبيق على الجهاز",
+  },
+  splash: {
+    loading: "جاري التحميل…",
+    ariaLabel: "جاري تحميل البوابة",
+  },
+  admin: {
+    meta: {
+      loginTitle: "تسجيل دخول الإدارة",
+      pendingReviewTitle: "بانتظار مراجعة المسؤول",
+    },
+    auth: {
+      loginTitle: "تسجيل الدخول",
+      loginSubtitle: "لوحة تحكم إدارة الحجر الصحي — استخدم البريد وكلمة المرور المخصّصين لك.",
+      emailLabel: "البريد الإلكتروني",
+      emailPlaceholder: "admin@example.com",
+      passwordLabel: "كلمة المرور",
+      passwordShow: "إظهار كلمة المرور",
+      passwordHide: "إخفاء كلمة المرور",
+      submit: "دخول لوحة التحكم",
+      submitting: "جاري الدخول…",
+      backToPortal: "العودة إلى البوابة العامة",
+      firebaseNotConfigured:
+        "إعدادات Firebase على المتصفح غير مكتملة. أضف متغيرات NEXT_PUBLIC_FIREBASE_*.",
+      errors: {
+        generic: "تعذر تسجيل الدخول، حاول مرة أخرى.",
+        invalidCredentials: "البريد أو كلمة المرور غير صحيحة.",
+        tooManyRequests: "محاولات كثيرة. انتظر قليلاً ثم أعد المحاولة.",
+        noProfile: "لا يوجد حساب مسؤول مرتبط بهذا المستخدم.",
+        rateLimited: "محاولات دخول كثيرة. انتظر ثم أعد المحاولة.",
+        datastoreUnavailable: "خدمة البيانات غير متاحة مؤقتاً. حاول لاحقاً.",
+        serverMisconfigured: "خطأ في إعدادات الخادم. تواصل مع الدعم الفني.",
+      },
+    },
+    pendingReview: {
+      title: "بانتظار مراجعة المسؤول",
+      body: "لا يمكنك استخدام لوحة التحكم حالياً. إما أن الحساب موقوف أو أنه لم يُربَط بعد بمكتب. تواصل مع مسؤول النظام (سوبر أدمن) لتفعيل الحساب من صفحة «المستخدمون» وربطه بمكتب أو محافظة.",
+      registeredEmail: "البريد المسجّل:",
+      logout: "تسجيل خروج",
+    },
   },
 };
 
@@ -703,6 +782,48 @@ const en: Messages = {
       "To install on iPhone: tap the Share button in Safari, then choose “Add to Home Screen”.",
     installAria: "Install app suggestion",
   },
+  splash: {
+    loading: "Loading…",
+    ariaLabel: "Loading portal",
+  },
+  admin: {
+    meta: {
+      loginTitle: "Admin sign in",
+      pendingReviewTitle: "Account pending review",
+    },
+    auth: {
+      loginTitle: "Sign in",
+      loginSubtitle:
+        "Quarantine administration console — use your assigned email and password.",
+      emailLabel: "Email",
+      emailPlaceholder: "admin@example.com",
+      passwordLabel: "Password",
+      passwordShow: "Show password",
+      passwordHide: "Hide password",
+      submit: "Sign in to console",
+      submitting: "Signing in…",
+      backToPortal: "Back to public portal",
+      firebaseNotConfigured:
+        "Firebase client environment is not configured. Add NEXT_PUBLIC_FIREBASE_* variables.",
+      errors: {
+        generic: "Could not sign in. Please try again.",
+        invalidCredentials: "Incorrect email or password.",
+        tooManyRequests: "Too many attempts. Wait a moment and try again.",
+        noProfile: "No admin account is linked to this user.",
+        rateLimited: "Too many sign-in attempts. Wait and try again.",
+        datastoreUnavailable:
+          "Data service is temporarily unavailable. Try again later.",
+        serverMisconfigured:
+          "Server configuration error. Contact technical support.",
+      },
+    },
+    pendingReview: {
+      title: "Account pending review",
+      body: "You cannot use the console yet. Your account may be inactive or not assigned to an office. Contact a super admin to activate your account on the Users page and link it to an office or governorate.",
+      registeredEmail: "Registered email:",
+      logout: "Sign out",
+    },
+  },
 };
 
 const zh: Messages = {
@@ -941,6 +1062,45 @@ const zh: Messages = {
     iosHelp:
       "在 iPhone 上安装：点按 Safari 的「分享」按钮，然后选择「添加到主屏幕」。",
     installAria: "应用安装建议",
+  },
+  splash: {
+    loading: "加载中…",
+    ariaLabel: "正在加载门户",
+  },
+  admin: {
+    meta: {
+      loginTitle: "管理端登录",
+      pendingReviewTitle: "账号待审核",
+    },
+    auth: {
+      loginTitle: "登录",
+      loginSubtitle: "检疫管理控制台 — 请使用分配的邮箱和密码。",
+      emailLabel: "电子邮箱",
+      emailPlaceholder: "admin@example.com",
+      passwordLabel: "密码",
+      passwordShow: "显示密码",
+      passwordHide: "隐藏密码",
+      submit: "进入控制台",
+      submitting: "正在登录…",
+      backToPortal: "返回公众门户",
+      firebaseNotConfigured:
+        "未配置 Firebase 客户端环境。请添加 NEXT_PUBLIC_FIREBASE_* 变量。",
+      errors: {
+        generic: "无法登录，请重试。",
+        invalidCredentials: "邮箱或密码不正确。",
+        tooManyRequests: "尝试次数过多，请稍后再试。",
+        noProfile: "该用户未关联管理账号。",
+        rateLimited: "登录尝试过多，请稍后再试。",
+        datastoreUnavailable: "数据服务暂时不可用，请稍后重试。",
+        serverMisconfigured: "服务器配置错误，请联系技术支持。",
+      },
+    },
+    pendingReview: {
+      title: "账号待审核",
+      body: "您暂时无法使用控制台。账号可能未激活或未分配办事处。请联系超级管理员在「用户」页面激活并关联办事处或省份。",
+      registeredEmail: "注册邮箱：",
+      logout: "退出登录",
+    },
   },
 };
 
@@ -1191,6 +1351,50 @@ const fr: Messages = {
     iosHelp:
       "Pour installer sur iPhone : touchez le bouton Partager dans Safari, puis choisissez Ajouter a l'ecran d'accueil.",
     installAria: "Suggestion d'installation de l'application",
+  },
+  splash: {
+    loading: "Chargement…",
+    ariaLabel: "Chargement du portail",
+  },
+  admin: {
+    meta: {
+      loginTitle: "Connexion administration",
+      pendingReviewTitle: "Compte en attente de validation",
+    },
+    auth: {
+      loginTitle: "Connexion",
+      loginSubtitle:
+        "Console d'administration de la quarantaine — utilisez votre e-mail et mot de passe attribués.",
+      emailLabel: "E-mail",
+      emailPlaceholder: "admin@example.com",
+      passwordLabel: "Mot de passe",
+      passwordShow: "Afficher le mot de passe",
+      passwordHide: "Masquer le mot de passe",
+      submit: "Accéder à la console",
+      submitting: "Connexion en cours…",
+      backToPortal: "Retour au portail public",
+      firebaseNotConfigured:
+        "L'environnement client Firebase n'est pas configuré. Ajoutez les variables NEXT_PUBLIC_FIREBASE_*.",
+      errors: {
+        generic: "Connexion impossible. Réessayez.",
+        invalidCredentials: "E-mail ou mot de passe incorrect.",
+        tooManyRequests:
+          "Trop de tentatives. Patientez puis réessayez.",
+        noProfile: "Aucun compte administrateur n'est lié à cet utilisateur.",
+        rateLimited:
+          "Trop de tentatives de connexion. Patientez puis réessayez.",
+        datastoreUnavailable:
+          "Service de données temporairement indisponible. Réessayez plus tard.",
+        serverMisconfigured:
+          "Erreur de configuration serveur. Contactez le support technique.",
+      },
+    },
+    pendingReview: {
+      title: "Compte en attente de validation",
+      body: "Vous ne pouvez pas encore utiliser la console. Le compte peut être inactif ou non rattaché à un bureau. Contactez un super administrateur pour l'activer depuis la page Utilisateurs et le lier à un bureau ou une gouvernorat.",
+      registeredEmail: "E-mail enregistré :",
+      logout: "Déconnexion",
+    },
   },
 };
 

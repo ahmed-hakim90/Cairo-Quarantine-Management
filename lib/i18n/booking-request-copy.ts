@@ -44,6 +44,9 @@ export const bookingRequestCopy = {
     sending: "جاري الإرسال...",
     sendBooking: "إرسال الحجز",
     sendFollowUp: "إرسال المتابعة",
+    formSectionOffice: "المكتب والموعد",
+    formSectionContact: "بيانات التواصل",
+    formSectionDetails: "تفاصيل إضافية",
     statusesUpdated: "تم تحديث الحالات.",
   },
   en: {
@@ -90,6 +93,9 @@ export const bookingRequestCopy = {
     sending: "Sending...",
     sendBooking: "Send booking",
     sendFollowUp: "Send follow-up",
+    formSectionOffice: "Office and date",
+    formSectionContact: "Contact details",
+    formSectionDetails: "Additional details",
     statusesUpdated: "Statuses updated.",
   },
   zh: {
@@ -133,6 +139,9 @@ export const bookingRequestCopy = {
     sending: "正在发送...",
     sendBooking: "提交预约",
     sendFollowUp: "提交跟进",
+    formSectionOffice: "办公室与日期",
+    formSectionContact: "联系方式",
+    formSectionDetails: "补充信息",
     statusesUpdated: "状态已更新。",
   },
   fr: {
@@ -183,6 +192,9 @@ export const bookingRequestCopy = {
     sending: "Envoi...",
     sendBooking: "Envoyer la reservation",
     sendFollowUp: "Envoyer le suivi",
+    formSectionOffice: "Bureau et date",
+    formSectionContact: "Coordonnees",
+    formSectionDetails: "Details supplementaires",
     statusesUpdated: "Statuts mis a jour.",
   },
 } satisfies Record<Locale, Record<string, string>>;

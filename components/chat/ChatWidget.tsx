@@ -2,6 +2,7 @@
 
 import type { FormEvent } from "react";
 import { useEffect, useRef, useState } from "react";
+import { ChatMessageSkeleton } from "@/components/skeletons/ChatMessageSkeleton";
 import { WhatsAppIcon } from "@/components/layout/WhatsAppContactLink";
 import type { PortalAssistantMeta } from "@/lib/chat/portal-assistant-types";
 import {
@@ -506,6 +507,7 @@ export function ChatWidget({
                 <MessageContent content={message.content || "..."} />
               </div>
             ))}
+            {isLoading ? <ChatMessageSkeleton /> : null}
             <div ref={messagesEndRef} />
           </div>
 

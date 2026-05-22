@@ -18,6 +18,7 @@ import {
 import {
   type PublicOfficeRequestStatus,
 } from "@/lib/office-requests/types";
+import { MyRequestsSkeleton } from "@/components/skeletons/public/MyRequestsSkeleton";
 import { feedbackToast } from "@/lib/ui/feedback-toast";
 
 const TRAVELER_LABEL_BY_ID = mergeTravelerStateLabelsWithLegacy(
@@ -344,7 +345,9 @@ export function MyRequestsPanel({ locale }: MyRequestsPanelProps) {
           </p>
         ) : null}
 
-        {sortedRequests.length === 0 ? (
+        {loading && sortedRequests.length > 0 ? (
+          <MyRequestsSkeleton cardCount={Math.min(sortedRequests.length, 3)} compact />
+        ) : sortedRequests.length === 0 ? (
           <div className="rounded-lg border border-gov-gray-200 bg-white p-6 text-gov-gray-700 shadow-sm">
             {t.empty}
           </div>

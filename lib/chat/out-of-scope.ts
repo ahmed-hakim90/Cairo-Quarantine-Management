@@ -1,3 +1,4 @@
+import { messageMatchesChatOfficeCatalog } from "@/lib/chat/office-catalog";
 import { normalizeArabic } from "@/lib/chat/normalize-arabic";
 
 const OUT_OF_SCOPE_PATTERNS = [
@@ -14,7 +15,6 @@ const OUT_OF_SCOPE_PATTERNS = [
   "حامل",
   "حمل",
   "قانون",
-  "محكمه",
   "دعوه",
   "خبر",
   "اخبار",
@@ -32,7 +32,6 @@ const OUT_OF_SCOPE_PATTERNS = [
   "cancer",
   "pregnant",
   "legal",
-  "court",
   "news",
   "politic",
 ];
@@ -40,6 +39,7 @@ const OUT_OF_SCOPE_PATTERNS = [
 export function isOutOfScopeMessage(message: string): boolean {
   const normalized = normalizeArabic(message);
   if (!normalized) return false;
+  if (messageMatchesChatOfficeCatalog(message)) return false;
 
   return OUT_OF_SCOPE_PATTERNS.some((pattern) => {
     const p = normalizeArabic(pattern);

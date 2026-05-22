@@ -42,7 +42,7 @@ export function BookingRequestSuccessView({
           <h3 className="text-sm font-bold text-gov-navy">
             {t.successDetailsTitle}
           </h3>
-          <dl className="mt-3 grid gap-3 text-sm sm:grid-cols-2">
+          <dl className="mt-3 grid grid-cols-2 gap-3 text-sm max-sm:grid-cols-1 sm:grid-cols-2">
             <div className="rounded-md border border-gov-gray-200 bg-gov-gray-50 p-3">
               <dt className="font-bold text-gov-navy">{t.requestId}</dt>
               <dd className="mt-1 font-extrabold text-gov-accent">
@@ -81,7 +81,7 @@ export function BookingRequestSuccessView({
         <LocaleLink
           locale={locale}
           href="/my-requests"
-          className="inline-flex min-h-10 items-center rounded-md bg-gov-accent px-4 text-sm font-bold text-white transition hover:bg-gov-navy"
+          className="inline-flex min-h-12 w-full items-center justify-center rounded-md bg-gov-accent px-4 text-base font-bold text-white transition hover:bg-gov-navy sm:min-h-10 sm:w-auto sm:text-sm"
         >
           {t.followRequests}
         </LocaleLink>

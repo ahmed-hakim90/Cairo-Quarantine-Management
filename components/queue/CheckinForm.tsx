@@ -2,6 +2,7 @@
 
 import { useActionState, useEffect, useMemo, useState } from "react";
 import { QueueCompletedCitizenView } from "@/components/queue/QueueCompletedCitizenView";
+import { CheckinSkeleton } from "@/components/skeletons/public/CheckinSkeleton";
 import { QueueWaitLive } from "@/components/queue/QueueWaitLive";
 import {
   checkinLookupAction,
@@ -140,8 +141,11 @@ export function CheckinForm({
 
   if (restoring && !result) {
     return (
-      <div className="mx-auto max-w-lg rounded-lg border border-gov-gray-200 bg-white p-8 text-center shadow-sm">
-        <p className="text-sm font-semibold text-gov-gray-700">{t.restoring}</p>
+      <div className="mx-auto max-w-lg">
+        <CheckinSkeleton compact />
+        <p className="sr-only" role="status">
+          {t.restoring}
+        </p>
       </div>
     );
   }

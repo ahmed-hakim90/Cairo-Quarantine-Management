@@ -87,12 +87,11 @@ export function BookingPassQrPicture({
   }
   return (
     <div
-      className="flex items-center justify-center rounded-lg border border-gov-gray-200 bg-gov-gray-50 text-sm text-gov-gray-600"
+      className="animate-pulse rounded-lg border border-gov-gray-200 bg-gov-gray-100"
       style={{ width: displayWidth, height: displayWidth }}
-      aria-hidden
-    >
-      …
-    </div>
+      role="status"
+      aria-label="Loading QR code"
+    />
   );
 }
 

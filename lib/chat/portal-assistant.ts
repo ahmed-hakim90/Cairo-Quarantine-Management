@@ -109,10 +109,14 @@ export function applyPortalAssistantRules(
     response.answer.includes("متطلبات التطعيم") ||
     response.answer.includes("مواعيد العمل");
 
+  const maxLines = isOfficeReply
+    ? 24
+    : isLongReply
+      ? 16
+      : 6;
+
   return {
     ...response,
-    answer: enforceResponseRules(response.answer, locale, {
-      maxLines: isLongReply ? 16 : 6,
-    }),
+    answer: enforceResponseRules(response.answer, locale, { maxLines }),
   };
 }

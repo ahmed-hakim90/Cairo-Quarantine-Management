@@ -16,7 +16,11 @@ export function PublicMainContent({ children }: PublicMainContentProps) {
   return (
     <main
       id="main-content"
-      className={`flex-1${needsBottomPadding ? " pb-20" : ""}`}
+      className={
+        needsBottomPadding
+          ? "flex-1 pb-[calc(5.5rem+env(safe-area-inset-bottom,0px))]"
+          : "flex-1"
+      }
     >
       {children}
     </main>

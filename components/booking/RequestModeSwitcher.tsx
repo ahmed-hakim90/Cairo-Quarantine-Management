@@ -51,7 +51,7 @@ export function RequestModeSwitcher({
               role="tab"
               aria-selected={active}
               aria-current={active ? "page" : undefined}
-              className={`flex min-h-16 flex-col justify-center rounded-md px-4 py-3 text-center transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gov-accent ${
+              className={`flex min-h-14 flex-col justify-center rounded-md px-3 py-2.5 text-center transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gov-accent sm:min-h-16 sm:px-4 sm:py-3 ${
                 active
                   ? "bg-gov-navy text-white shadow-sm"
                   : "bg-gov-gray-50 text-gov-navy hover:bg-gov-accent-muted/50"
@@ -59,7 +59,7 @@ export function RequestModeSwitcher({
             >
               <span className="text-sm font-extrabold">{t[item.labelKey]}</span>
               <span
-                className={`mt-1 text-xs leading-relaxed ${
+                className={`mt-1 line-clamp-2 text-xs leading-relaxed max-sm:text-[0.7rem] ${
                   active ? "text-white/80" : "text-gov-gray-600"
                 }`}
               >

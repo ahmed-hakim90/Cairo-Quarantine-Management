@@ -33,6 +33,7 @@ import {
   type PublicOfficeRequestStatus,
   type TravelerState,
 } from "@/lib/office-requests/types";
+import { SkeletonBlock, SkeletonButton } from "@/components/skeletons/primitives";
 import { feedbackToast } from "@/lib/ui/feedback-toast";
 
 type BookingRequestFormProps = {
@@ -64,9 +65,21 @@ const STORAGE_KEY = "cairo-office-requests:v1";
 const DUPLICATE_REDIRECT_DELAY_MS = 1500;
 
 const inputClass =
-  "mt-2 w-full rounded-md border border-gov-gray-200 bg-white px-3 py-3 text-sm text-gov-gray-900 outline-none transition focus:border-gov-accent focus:ring-2 focus:ring-gov-accent/20 disabled:bg-gov-gray-50 disabled:text-gov-gray-600";
+  "mt-2 w-full min-h-12 rounded-md border border-gov-gray-200 bg-white px-3.5 py-3 text-base text-gov-gray-900 outline-none transition focus:border-gov-accent focus:ring-2 focus:ring-gov-accent/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gov-accent disabled:bg-gov-gray-50 disabled:text-gov-gray-600 sm:min-h-0 sm:px-3 sm:py-3 sm:text-sm";
 
 const labelClass = "block text-sm font-bold text-gov-navy";
+
+const fieldGroupClass =
+  "space-y-5 rounded-lg border border-gov-gray-100 bg-gov-gray-50/40 p-4 max-sm:p-3.5 lg:border-transparent lg:bg-transparent lg:p-0";
+
+const fieldGroupLegendClass =
+  "mb-1 px-0 text-sm font-extrabold text-gov-navy lg:sr-only";
+
+const checkboxLabelClass =
+  "flex min-h-11 cursor-pointer items-center gap-3 text-sm font-semibold text-gov-gray-800 sm:min-h-0";
+
+const checkboxInputClass =
+  "size-5 shrink-0 rounded border-gov-gray-300 text-gov-accent focus:ring-gov-accent/20";
 
 function FieldError({ message }: { message?: string }) {
   if (!message) return null;
@@ -378,7 +391,11 @@ function BookingRequestFormFields({
     state.errors?.preferredDate ?? availabilityHint ?? undefined;
 
   return (
-    <form action={action} className="space-y-0">
+    <form
+      action={action}
+      className={`relative space-y-0 ${pending ? "opacity-90" : ""}`}
+      aria-busy={pending || availabilityPending ? true : undefined}
+    >
       <input type="hidden" name="locale" value={locale} />
       <input type="hidden" name="governorateId" value={governorateId} />
       {mode === "booking" ? (
@@ -427,219 +444,241 @@ function BookingRequestFormFields({
           </div>
         ) : null}
 
-        <div className="grid gap-5 md:grid-cols-2">
+        <fieldset className={fieldGroupClass}>
+          <legend className={fieldGroupLegendClass}>{t.formSectionOffice}</legend>
+          <div className="grid gap-5 md:grid-cols-2">
+            {mode === "booking" ? (
+              <>
+                <label className={labelClass}>
+                  {t.travelerState}
+                  <select
+                    ref={travelerStateRef}
+                    name="travelerStateId"
+                    required
+                    className={inputClass}
+                    value={travelerStateId}
+                    onChange={(e) => setTravelerStateId(e.target.value)}
+                  >
+                    <option value="" disabled>
+                      {t.chooseTravelerState}
+                    </option>
+                    {bookingStates.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {travelerStateLabel(s)}
+                      </option>
+                    ))}
+                  </select>
+                  <FieldError message={state.errors?.travelerStateId} />
+                </label>
+                <label className={labelClass}>
+                  {t.officeName}
+                  <select
+                    ref={officeRef}
+                    name="officeId"
+                    required
+                    className={inputClass}
+                    value={officeId}
+                    onChange={(e) => setOfficeId(e.target.value)}
+                    disabled={offices.length === 0 || !travelerChosen}
+                  >
+                    <option value="" disabled>
+                      {!travelerChosen
+                        ? t.chooseTravelerFirst
+                        : t.chooseOffice}
+                    </option>
+                    {filteredOffices.map((office) => (
+                      <option key={office.id} value={office.id}>
+                        {office.nameAr}
+                      </option>
+                    ))}
+                  </select>
+                  {bookingNoMatchingOffices ? (
+                    <p className="mt-2 text-sm font-semibold text-amber-800">
+                      {t.noMatchingOffices}
+                    </p>
+                  ) : null}
+                  <FieldError message={state.errors?.officeId} />
+                </label>
+              </>
+            ) : (
+              <>
+                <label className={labelClass}>
+                  {t.officeName}
+                  <select
+                    ref={officeRef}
+                    name="officeId"
+                    required
+                    className={inputClass}
+                    value={officeId}
+                    onChange={(e) => setOfficeId(e.target.value)}
+                    disabled={offices.length === 0}
+                  >
+                    <option value="" disabled>
+                      {t.chooseOffice}
+                    </option>
+                    {filteredOffices.map((office) => (
+                      <option key={office.id} value={office.id}>
+                        {office.nameAr}
+                      </option>
+                    ))}
+                  </select>
+                  <FieldError message={state.errors?.officeId} />
+                </label>
+                <label className={labelClass}>
+                  {t.followUpType}
+                  <select
+                    ref={typeRef}
+                    name="type"
+                    required
+                    className={inputClass}
+                    defaultValue={state.values?.type ?? "complaint"}
+                  >
+                    <option value="complaint">{t.complaintOption}</option>
+                    <option value="proposal">{t.proposalOption}</option>
+                  </select>
+                  <FieldError message={state.errors?.type} />
+                </label>
+              </>
+            )}
+          </div>
+
           {mode === "booking" ? (
-            <>
-              <label className={labelClass}>
-                {t.travelerState}
-                <select
-                  ref={travelerStateRef}
-                  name="travelerStateId"
-                  required
-                  className={inputClass}
-                  value={travelerStateId}
-                  onChange={(e) => setTravelerStateId(e.target.value)}
-                >
-                  <option value="" disabled>
-                    {t.chooseTravelerState}
-                  </option>
-                  {bookingStates.map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {travelerStateLabel(s)}
-                    </option>
-                  ))}
-                </select>
-                <FieldError message={state.errors?.travelerStateId} />
-              </label>
-              <label className={labelClass}>
-                {t.officeName}
-                <select
-                  ref={officeRef}
-                  name="officeId"
-                  required
-                  className={inputClass}
-                  value={officeId}
-                  onChange={(e) => setOfficeId(e.target.value)}
-                  disabled={offices.length === 0 || !travelerChosen}
-                >
-                  <option value="" disabled>
-                    {!travelerChosen ? t.chooseTravelerFirst : t.chooseOffice}
-                  </option>
-                  {filteredOffices.map((office) => (
-                    <option key={office.id} value={office.id}>
-                      {office.nameAr}
-                    </option>
-                  ))}
-                </select>
-                {bookingNoMatchingOffices ? (
-                  <p className="mt-2 text-sm font-semibold text-amber-800">
-                    {t.noMatchingOffices}
-                  </p>
-                ) : null}
-                <FieldError message={state.errors?.officeId} />
-              </label>
-            </>
-          ) : (
-            <>
-              <label className={labelClass}>
-                {t.officeName}
-                <select
-                  ref={officeRef}
-                  name="officeId"
-                  required
-                  className={inputClass}
-                  value={officeId}
-                  onChange={(e) => setOfficeId(e.target.value)}
-                  disabled={offices.length === 0}
-                >
-                  <option value="" disabled>
-                    {t.chooseOffice}
-                  </option>
-                  {filteredOffices.map((office) => (
-                    <option key={office.id} value={office.id}>
-                      {office.nameAr}
-                    </option>
-                  ))}
-                </select>
-                <FieldError message={state.errors?.officeId} />
-              </label>
-              <label className={labelClass}>
-                {t.followUpType}
-                <select
-                  ref={typeRef}
-                  name="type"
-                  required
-                  className={inputClass}
-                  defaultValue={state.values?.type ?? "complaint"}
-                >
-                  <option value="complaint">{t.complaintOption}</option>
-                  <option value="proposal">{t.proposalOption}</option>
-                </select>
-                <FieldError message={state.errors?.type} />
-              </label>
-            </>
-          )}
-        </div>
-
-        {mode === "booking" ? (
-          <label className={labelClass}>
-            {t.preferredDate}
-            <input
-              ref={preferredDateRef}
-              name="preferredDate"
-              type="date"
-              required
-              min={minYmd}
-              className={inputClass}
-              value={preferredDate}
-              onChange={(e) => setPreferredDate(e.target.value)}
-            />
-            {availabilityPending ? (
-              <p className="mt-1 text-xs text-gov-gray-600">
-                {t.checkingAvailability}
-              </p>
-            ) : null}
-            <FieldError message={preferredDateError} />
-          </label>
-        ) : null}
-
-        <div className="grid gap-5 md:grid-cols-2">
-          <label className={labelClass}>
-            {t.name}
-            <input
-              ref={nameRef}
-              name="name"
-              required
-              minLength={2}
-              autoComplete="name"
-              className={inputClass}
-              placeholder={t.namePlaceholder}
-              defaultValue={state.values?.name ?? ""}
-            />
-            <FieldError message={state.errors?.name} />
-          </label>
-
-          <label className={labelClass}>
-            {t.phone}
-            <input
-              ref={phoneRef}
-              name="phone"
-              required
-              inputMode="tel"
-              autoComplete="tel"
-              className={inputClass}
-              placeholder={t.phonePlaceholder}
-              defaultValue={state.values?.phone ?? ""}
-            />
-            <FieldError message={state.errors?.phone} />
-          </label>
-        </div>
-
-        {mode === "booking" ? (
-          <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:gap-5">
-            <label className="flex items-center gap-2 text-sm font-semibold text-gov-gray-800">
+            <label className={labelClass}>
+              {t.preferredDate}
               <input
-                type="checkbox"
-                name="hasSpecialNeeds"
-                defaultChecked={state.values?.hasSpecialNeeds ?? false}
-                className="size-4 rounded border-gov-gray-300"
+                ref={preferredDateRef}
+                name="preferredDate"
+                type="date"
+                required
+                min={minYmd}
+                className={inputClass}
+                value={preferredDate}
+                onChange={(e) => setPreferredDate(e.target.value)}
               />
-              <span>{t.specialNeeds}</span>
+              {availabilityPending ? (
+                <div
+                  className="mt-2 space-y-1"
+                  role="status"
+                  aria-live="polite"
+                >
+                  <SkeletonBlock className="h-3 w-40" />
+                  <p className="sr-only">{t.checkingAvailability}</p>
+                </div>
+              ) : null}
+              <FieldError message={preferredDateError} />
             </label>
-            <label className="flex items-center gap-2 text-sm font-semibold text-gov-gray-800">
+          ) : null}
+        </fieldset>
+
+        <fieldset className={fieldGroupClass}>
+          <legend className={fieldGroupLegendClass}>{t.formSectionContact}</legend>
+          <div className="grid gap-5 md:grid-cols-2">
+            <label className={labelClass}>
+              {t.name}
               <input
-                type="checkbox"
-                name="hasElderly"
-                defaultChecked={state.values?.hasElderly ?? false}
-                className="size-4 rounded border-gov-gray-300"
+                ref={nameRef}
+                name="name"
+                required
+                minLength={2}
+                autoComplete="name"
+                className={inputClass}
+                placeholder={t.namePlaceholder}
+                defaultValue={state.values?.name ?? ""}
               />
-              <span>{t.elderly}</span>
+              <FieldError message={state.errors?.name} />
+            </label>
+
+            <label className={labelClass}>
+              {t.phone}
+              <input
+                ref={phoneRef}
+                name="phone"
+                required
+                inputMode="tel"
+                autoComplete="tel"
+                className={inputClass}
+                placeholder={t.phonePlaceholder}
+                defaultValue={state.values?.phone ?? ""}
+              />
+              <FieldError message={state.errors?.phone} />
             </label>
           </div>
-        ) : null}
+        </fieldset>
 
-        <label className={labelClass}>
-          {mode === "booking" ? t.bookingDetails : t.complaintDetails}
-          <textarea
-            ref={detailsRef}
-            name="details"
-            required={mode !== "booking"}
-            minLength={mode === "booking" ? undefined : 5}
-            rows={6}
-            className={`${inputClass} resize-y leading-relaxed`}
-            placeholder={
-              mode === "booking"
-                ? t.bookingDetailsPlaceholder
-                : t.complaintDetailsPlaceholder
-            }
-            defaultValue={state.values?.details ?? ""}
-          />
-          <FieldError message={state.errors?.details} />
-        </label>
+        <fieldset className={fieldGroupClass}>
+          <legend className={fieldGroupLegendClass}>{t.formSectionDetails}</legend>
+          {mode === "booking" ? (
+            <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:gap-5">
+              <label className={checkboxLabelClass}>
+                <input
+                  type="checkbox"
+                  name="hasSpecialNeeds"
+                  defaultChecked={state.values?.hasSpecialNeeds ?? false}
+                  className={checkboxInputClass}
+                />
+                <span>{t.specialNeeds}</span>
+              </label>
+              <label className={checkboxLabelClass}>
+                <input
+                  type="checkbox"
+                  name="hasElderly"
+                  defaultChecked={state.values?.hasElderly ?? false}
+                  className={checkboxInputClass}
+                />
+                <span>{t.elderly}</span>
+              </label>
+            </div>
+          ) : null}
+
+          <label className={labelClass}>
+            {mode === "booking" ? t.bookingDetails : t.complaintDetails}
+            <textarea
+              ref={detailsRef}
+              name="details"
+              required={mode !== "booking"}
+              minLength={mode === "booking" ? undefined : 5}
+              rows={4}
+              className={`${inputClass} min-h-[6.5rem] resize-y leading-relaxed sm:min-h-[9rem]`}
+              placeholder={
+                mode === "booking"
+                  ? t.bookingDetailsPlaceholder
+                  : t.complaintDetailsPlaceholder
+              }
+              defaultValue={state.values?.details ?? ""}
+            />
+            <FieldError message={state.errors?.details} />
+          </label>
+        </fieldset>
       </div>
 
-      <div className="flex flex-col gap-3 border-t border-gov-gray-200 bg-gov-gray-50 px-5 py-4 sm:flex-row sm:items-center sm:justify-between md:px-7">
-        <p className="text-sm leading-relaxed text-gov-gray-600">
+      <div className="flex flex-col-reverse gap-3 border-t border-gov-gray-200 bg-gov-gray-50 px-5 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:flex-row sm:items-center sm:justify-between sm:pb-4 md:px-7">
+        <p className="text-xs leading-relaxed text-gov-gray-600 sm:text-sm">
           {mode === "booking"
             ? t.bookingSubmitHint
             : t.complaintSubmitHint}
         </p>
-        <button
-          type="submit"
-          disabled={
-            pending ||
-            offices.length === 0 ||
-            bookingBlocked ||
-            bookingNoMatchingOffices
-          }
-          className="inline-flex min-h-11 items-center justify-center rounded-md bg-gov-accent px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-gov-navy disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          {pending
-            ? t.sending
-            : mode === "booking"
-              ? t.sendBooking
-              : t.sendFollowUp}
-        </button>
+        {pending ? (
+          <div className="w-full shrink-0 sm:w-auto" aria-hidden>
+            <SkeletonButton className="h-12 w-full min-w-[8rem] sm:h-11 sm:w-40" />
+          </div>
+        ) : (
+          <button
+            type="submit"
+            disabled={
+              offices.length === 0 ||
+              bookingBlocked ||
+              bookingNoMatchingOffices
+            }
+            className="inline-flex min-h-12 w-full shrink-0 items-center justify-center rounded-md bg-gov-accent px-5 py-3 text-base font-bold text-white shadow-sm transition hover:bg-gov-navy disabled:cursor-not-allowed disabled:opacity-60 sm:min-h-11 sm:w-auto sm:text-sm"
+          >
+            {mode === "booking" ? t.sendBooking : t.sendFollowUp}
+          </button>
+        )}
+        {pending ? (
+          <p className="sr-only" role="status">
+            {t.sending}
+          </p>
+        ) : null}
       </div>
     </form>
   );

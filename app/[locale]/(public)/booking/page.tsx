@@ -38,7 +38,7 @@ export default async function BookingPage({
 
   return (
     <section className="bg-gov-gray-50">
-      <div className="mx-auto grid max-w-6xl grid-cols-1 gap-8 px-4 py-8 lg:grid-cols-[0.78fr_1.22fr] lg:py-12">
+      <div className="mx-auto grid max-w-6xl grid-cols-1 gap-6 px-4 py-6 sm:gap-8 sm:py-8 lg:grid-cols-[0.78fr_1.22fr] lg:gap-8 lg:py-12">
         <aside className="order-2 self-start lg:order-none">
           <p className="text-sm font-bold text-gov-accent">
             {copy.siteName}
@@ -49,7 +49,7 @@ export default async function BookingPage({
           <p className="mt-4 leading-relaxed text-gov-gray-700">
             {copy.bookingIntro}
           </p>
-          <dl className="mt-6 grid gap-3 text-sm">
+          <dl className="mt-6 grid grid-cols-2 gap-3 text-sm max-sm:mt-4 lg:grid-cols-1">
             <div className="rounded-md border border-gov-gray-200 bg-white p-4">
               <dt className="font-bold text-gov-navy">{copy.officesCount}</dt>
               <dd className="mt-1 text-2xl font-extrabold text-gov-accent">
@@ -66,7 +66,7 @@ export default async function BookingPage({
         </aside>
         <div className="order-1 space-y-4 lg:order-none">
           <RequestModeSwitcher locale={resolvedLocale} activeMode="booking" />
-          <div className="rounded-lg border border-gov-gray-200 bg-white shadow-sm">
+          <div className="rounded-lg border border-gov-gray-200 bg-white shadow-sm max-sm:-mx-4 max-sm:rounded-none max-sm:border-x-0">
             <BookingRequestForm
               offices={offices}
               travelerStates={travelerStates}

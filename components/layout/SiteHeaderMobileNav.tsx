@@ -2,6 +2,7 @@
 
 import { Suspense, useEffect, useId, useRef, useState } from "react";
 import { LanguageSwitcher } from "@/components/i18n/LanguageSwitcher";
+import { LanguageSwitcherSkeleton } from "@/components/skeletons/LanguageSwitcherSkeleton";
 import { SiteNavLinks } from "@/components/layout/SiteNavLinks";
 import type { Locale } from "@/lib/i18n/config";
 import type { Messages } from "@/lib/i18n/messages";
@@ -58,14 +59,7 @@ export function SiteHeaderMobileNav({
 
   return (
     <div className="flex shrink-0 items-center gap-1">
-      <Suspense
-        fallback={
-          <span
-            className="inline-flex size-10 shrink-0 items-center justify-center rounded-md border border-white/15 bg-white/5 opacity-60 sm:size-11"
-            aria-hidden
-          />
-        }
-      >
+      <Suspense fallback={<LanguageSwitcherSkeleton variant="mobile" />}>
         <LanguageSwitcher locale={locale} nav={nav} />
       </Suspense>
       <button

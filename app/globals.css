@@ -61,3 +61,24 @@
       ui-sans-serif, sans-serif;
   }
 }
+
+@keyframes splash-bar-indeterminate {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(250%);
+  }
+}
+
+@layer utilities {
+  .splash-bar-animate {
+    animation: splash-bar-indeterminate 1.4s ease-in-out infinite;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .splash-bar-animate {
+      animation: none;
+    }
+  }
+}

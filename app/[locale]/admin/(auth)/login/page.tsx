@@ -1,23 +1,35 @@
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
+import { AdminAuthShell } from "@/components/admin/AdminAuthShell";
 import { AdminLoginForm } from "@/components/admin/AdminLoginForm";
-import { isLocale } from "@/lib/i18n/config";
+import { isLocale, type Locale } from "@/lib/i18n/config";
+import { getMessages } from "@/lib/i18n/messages";
 import {
   getAdminSession,
   shouldShowAdminPendingReview,
 } from "@/lib/office-requests/session";
 
-export const metadata: Metadata = {
-  title: "تسجيل دخول الإدارة",
-};
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}): Promise<Metadata> {
+  const { locale } = await params;
+  const m = getMessages(locale);
+  return {
+    title: m.admin.meta.loginTitle,
+  };
+}
 
 export default async function AdminLoginPage({
   params,
 }: {
   params: Promise<{ locale: string }>;
 }) {
-  const { locale } = await params;
-  if (!isLocale(locale)) notFound();
+  const { locale: localeParam } = await params;
+  if (!isLocale(localeParam)) notFound();
+  const locale = localeParam as Locale;
+  const messages = getMessages(locale);
 
   const session = await getAdminSession();
   if (session) {
@@ -27,21 +39,19 @@ export default async function AdminLoginPage({
     redirect(`/${locale}/admin`);
   }
 
+  const { auth } = messages.admin;
+
   return (
-    <section className="bg-gov-gray-50">
-      <div className="mx-auto flex min-h-screen max-w-md items-center px-4 py-10">
-        <div className="rounded-lg border border-gov-gray-200 bg-white p-5 shadow-sm md:p-7">
-          <h2 className="font-heading text-xl font-extrabold text-gov-navy">
-            تسجيل الدخول
-          </h2>
-          <p className="mt-2 text-sm leading-relaxed text-gov-gray-600">
-            استخدم البريد وكلمة المرور.
-          </p>
-          <div className="mt-6">
-          <AdminLoginForm redirectTo={`/${locale}/admin`} />
-          </div>
-        </div>
-      </div>
-    </section>
+    <AdminAuthShell
+      locale={locale}
+      messages={messages}
+      title={auth.loginTitle}
+      subtitle={auth.loginSubtitle}
+    >
+      <AdminLoginForm
+        redirectTo={`/${locale}/admin`}
+        copy={auth}
+      />
+    </AdminAuthShell>
   );
 }

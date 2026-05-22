@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { QueuePositionSkeleton } from "@/components/skeletons/QueuePositionSkeleton";
 import { PwaInstallCard } from "@/components/pwa/PwaInstallCard";
 import type { Locale } from "@/lib/i18n/config";
 import { queueCitizenCopy } from "@/lib/i18n/queue-citizen-copy";
@@ -275,9 +276,12 @@ export function QueueWaitLive({
               </p>
 
               {positionView.kind === "loading" ? (
-                <p className="mt-3 text-sm font-semibold text-gov-gray-600">
-                  {positionView.text}
-                </p>
+                <>
+                  <QueuePositionSkeleton />
+                  <p className="sr-only" role="status">
+                    {positionView.text}
+                  </p>
+                </>
               ) : positionView.kind === "error" ? (
                 <p className="mt-3 text-sm font-semibold text-red-800">
                   {positionView.text}

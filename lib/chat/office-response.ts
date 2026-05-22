@@ -147,7 +147,7 @@ export function buildOfficeAssistantResponse(
   }
 
   const lines = officeHits
-    .map((o) => `${o.title}: ${o.body.slice(0, 120)}`)
+    .map((o) => `${o.title}: ${o.body.slice(0, 280)}`)
     .join("\n");
   const tableLabel =
     locale === "en" ? "Office table" : locale === "fr" ? "Tableau" : locale === "zh" ? "表格" : "جدول المكاتب";

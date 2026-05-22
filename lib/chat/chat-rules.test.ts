@@ -55,6 +55,63 @@ describe("chat rules", () => {
     expect(isOutOfScopeMessage("كيف أحجز موعد")).toBe(false);
   });
 
+  it("does not block known office name المحكمة as out-of-scope", () => {
+    expect(isOutOfScopeMessage("المحكمة")).toBe(false);
+    expect(isOutOfScopeMessage("مكتب المحكمة")).toBe(false);
+  });
+
+  it("dedupes المحكمة to one entry in Nozha search", () => {
+    const centers = findVaccinationCenters("مكتب في النزهه", 8);
+    const court = centers.filter((c) =>
+      normalizeArabic(c.centerNameAr).includes("المحكمه"),
+    );
+    expect(court).toHaveLength(1);
+    expect(centers.some((c) => c.centerNameAr.includes("النزهة الجديدة"))).toBe(
+      true,
+    );
+  });
+
+  it("returns المحكمة for office name query", () => {
+    expect(classifyChatIntent("المحكمة")).toBe("office");
+    const reply = localAr("المحكمة");
+    expect(reply?.type).toBe("office");
+    expect(reply?.answer).toContain("المحكمة");
+    expect(reply?.answer).toContain("maps.app.goo.gl");
+    expect(reply?.answer).not.toContain("واتساب");
+  });
+
+  it("resolvePortalAssistant returns المحكمة office not whatsapp fallback", () => {
+    const resolved = resolvePortalAssistant({
+      locale: "ar",
+      message: "مكتب المحكمة",
+      knowledgeIndex: [],
+      destinationCountries: [],
+      portalOffices: [],
+      vaccinesByCategory: VACCINES_BY_CATEGORY,
+    });
+    const final = applyPortalAssistantRules(resolved, "ar");
+    expect(final.type).toBe("office");
+    expect(final.answer).toContain("المحكمة");
+    expect(final.answer).not.toContain(whatsappOutOfScopeMessage("ar"));
+  });
+
+  it("applyPortalAssistantRules keeps all Helwan offices in the reply", () => {
+    const reply = localAr("مكتب في حلوان");
+    expect(reply).not.toBeNull();
+    const final = applyPortalAssistantRules(reply!, "ar");
+    expect(final.answer).toContain("حدائق حلوان");
+    expect(final.answer).toContain("الست خضرة");
+    expect(final.answer).toContain("كل المكاتب");
+  });
+
+  it("chat catalog dedupes duplicate maps URLs", () => {
+    const catalog = buildChatOfficeCatalog();
+    const courtUrls = catalog.filter(
+      (o) => normalizeArabic(o.centerNameAr) === "المحكمه",
+    );
+    expect(courtUrls).toHaveLength(1);
+  });
+
   it("detects human handoff requests", () => {
     expect(isHumanHandoffRequest("عايز اكلم حد")).toBe(true);
     expect(isHumanHandoffRequest("عايز اتواصل مع حد")).toBe(true);
@@ -153,7 +210,7 @@ describe("chat rules", () => {
 
   it("buildOfficeResponse keeps clickable links after enforce", () => {
     const raw = buildOfficeResponse("ar", "مكتب في حلوان", []);
-    const result = enforceResponseRules(raw, "ar", { maxLines: 16 });
+    const result = enforceResponseRules(raw, "ar", { maxLines: 24 });
     expect(result).toContain("tel:");
     expect(result).toContain("maps.app.goo.gl");
     expect(result).not.toMatch(/فتح الخريطة%2C/);

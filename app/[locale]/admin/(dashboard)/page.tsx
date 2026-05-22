@@ -7,6 +7,10 @@ import { AdminFeedbackStatSection } from "@/components/admin/AdminFeedbackStatSe
 import { AdminStatCard } from "@/components/admin/AdminStatCard";
 import { SuperAdminDashboardOfficeFilter } from "@/components/admin/SuperAdminDashboardOfficeFilter";
 import { SuperAdminExportLauncher } from "@/components/admin/SuperAdminExportLauncher";
+import {
+  AdminDashboardOfficeFilterSkeleton,
+  AdminDashboardPeriodFilterSkeleton,
+} from "@/components/skeletons/admin/AdminDashboardFilterSkeleton";
 import { getCairoTodayYmd } from "@/lib/cairo-today-ymd";
 import { isLocale } from "@/lib/i18n/config";
 import { parseAdminBookingDateParams } from "@/lib/office-requests/admin-booking-date-range";
@@ -188,20 +192,7 @@ export default async function AdminOverviewPage({
           </div>
           <div className="flex min-w-0 w-full shrink-0 flex-col gap-4 sm:max-w-xl sm:items-end">
             {isSuperAdmin ? (
-              <Suspense
-                fallback={
-                  <div
-                    className="flex min-w-0 w-full max-w-full flex-col gap-1"
-                    aria-hidden
-                  >
-                    <div className="h-3 w-28 max-w-full rounded bg-gov-gray-100 animate-pulse" />
-                    <div className="flex min-w-0 flex-wrap items-center gap-3">
-                      <div className="h-10 min-w-0 flex-1 rounded-md bg-gov-gray-100 animate-pulse" />
-                      <div className="h-10 w-[7.5rem] shrink-0 rounded-md bg-gov-gray-100 animate-pulse" />
-                    </div>
-                  </div>
-                }
-              >
+              <Suspense fallback={<AdminDashboardOfficeFilterSkeleton />}>
                 <SuperAdminDashboardOfficeFilter
                   locale={locale}
                   offices={offices}
@@ -231,17 +222,7 @@ export default async function AdminOverviewPage({
             ) : null}
           </div>
         </div>
-        <Suspense
-          fallback={
-            <div
-              className="mt-4 border-t border-gov-gray-100 pt-4"
-              aria-hidden
-            >
-              <div className="mb-2 h-3 w-40 rounded bg-gov-gray-100 animate-pulse" />
-              <div className="h-10 w-full max-w-md rounded-md bg-gov-gray-100 animate-pulse" />
-            </div>
-          }
-        >
+        <Suspense fallback={<AdminDashboardPeriodFilterSkeleton />}>
           <AdminDashboardPeriodFilter
             locale={locale}
             dateRange={dateParams.dateRange}

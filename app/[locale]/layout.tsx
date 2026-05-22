@@ -6,6 +6,7 @@ import {
   locales,
   type Locale,
 } from "@/lib/i18n/config";
+import { SplashChrome } from "@/components/splash/SplashChrome";
 import { FeedbackProvider } from "@/components/ui/FeedbackProvider";
 import { getMessages } from "@/lib/i18n/messages";
 import { arabicFontClassName } from "@/lib/fonts/arabic";
@@ -79,10 +80,21 @@ export default async function LocaleLayout({
           ? "fr"
           : "en";
   const htmlClass = localeFontClassName(locale);
+  const messages = getMessages(locale);
 
   return (
-    <html lang={lang} dir={dir} className={htmlClass}>
+    <html
+      lang={lang}
+      dir={dir}
+      className={htmlClass}
+      style={{ backgroundColor: "#0c2340" }}
+    >
       <body className="flex min-h-full flex-col bg-background text-foreground antialiased">
+        <SplashChrome
+          siteName={messages.meta.siteName}
+          loadingLabel={messages.splash.loading}
+          ariaLabel={messages.splash.ariaLabel}
+        />
         <FeedbackProvider>{children}</FeedbackProvider>
       </body>
     </html>

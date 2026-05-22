@@ -7,6 +7,8 @@ import {
   searchTicketAction,
   type QueuePanelState,
 } from "@/app/[locale]/office-dashboard/[officeId]/queue/actions";
+import { OfficeQueueTicketsSkeleton } from "@/components/skeletons/OfficeQueueTicketsSkeleton";
+import { SkeletonCard } from "@/components/skeletons/primitives";
 import { QueueCompleteTicketForm } from "@/components/queue/QueueCompleteTicketForm";
 import { QueueTicketSearchResult } from "@/components/queue/QueueTicketSearchResult";
 import type { DailyStats, QueueTicketWithRequest } from "@/lib/queue/types";
@@ -130,7 +132,11 @@ export function OfficeQueuePanel({
         </button>
       </form>
 
-      {ticket ? (
+      {searchPending ? (
+        <SkeletonCard className="p-5">
+          <OfficeQueueTicketsSkeleton rows={2} />
+        </SkeletonCard>
+      ) : ticket ? (
         <QueueTicketSearchResult
           locale={locale}
           officeId={officeId}
@@ -154,7 +160,9 @@ export function OfficeQueuePanel({
           </p>
         </div>
 
-        {tickets.length > 0 ? (
+        {searchPending || completePending ? (
+          <OfficeQueueTicketsSkeleton rows={5} />
+        ) : tickets.length > 0 ? (
           <div className="overflow-x-auto">
             <table className="min-w-full border-collapse text-start text-sm">
               <caption className="sr-only">قائمة أدوار الطابور لهذا اليوم</caption>
