@@ -102,6 +102,7 @@ export async function POST(request: Request) {
 
   const lastUserMessage = messages[messages.length - 1].content;
   const locale = body.locale;
+  const contextMessages = messages.slice(-8);
 
   const [knowledgeIndex, destinationCountries, portalOffices, vaccinesByCategory] =
     await Promise.all([
@@ -114,6 +115,7 @@ export async function POST(request: Request) {
   const resolved = resolvePortalAssistant({
     locale,
     message: lastUserMessage,
+    messages: contextMessages,
     knowledgeIndex,
     destinationCountries,
     portalOffices,

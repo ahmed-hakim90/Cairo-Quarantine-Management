@@ -3,7 +3,7 @@ import { defaultLocale, isLocale } from "@/lib/i18n/config";
 import { getMessages } from "@/lib/i18n/messages";
 import { normalizeArabic } from "@/lib/chat/normalize-arabic";
 import { buildDestinationCountryResponse } from "@/lib/chat/destination-country-response";
-import { classifyChatIntent } from "@/lib/chat/intent";
+import { resolveIntentWithContext, type ChatIntent } from "@/lib/chat/intent";
 import { buildOfficeHoursResponse } from "@/lib/chat/office-hours-response";
 import { buildVaccineLocationResponse } from "@/lib/chat/office-vaccine-location";
 import { buildOfficeAssistantResponse } from "@/lib/chat/office-response";
@@ -18,6 +18,107 @@ import type { DestinationCountry, Office } from "@/lib/office-requests/types";
 
 function getLocale(localeValue: string | undefined) {
   return localeValue && isLocale(localeValue) ? localeValue : defaultLocale;
+}
+
+function buildPageLinkResponse(args: {
+  localeValue: string | undefined;
+  path: string;
+  sourceAr: string;
+  sourceEn: string;
+  bodyAr: string;
+  bodyEn: string;
+  linkLabelAr: string;
+  linkLabelEn: string;
+  type: PortalAssistantResponse["type"];
+}): PortalAssistantResponse {
+  const loc = getLocale(args.localeValue);
+  const path = formatPortalUrl(loc, args.path);
+  if (loc === "en") {
+    return {
+      answer: `${args.bodyEn}\n[${args.linkLabelEn}](${path})`,
+      source: args.sourceEn,
+      type: args.type,
+      confidence: 0.95,
+    };
+  }
+  return {
+    answer: `${args.bodyAr}\n[${args.linkLabelAr}](${path})`,
+    source: args.sourceAr,
+    type: args.type,
+    confidence: 0.95,
+  };
+}
+
+function buildCheckinInfoResponse(
+  localeValue: string | undefined,
+  knowledgeIndex: SiteKnowledgeEntry[],
+): PortalAssistantResponse {
+  const hit = knowledgeIndex.find((e) => e.id === "checkin");
+  if (hit) {
+    return buildSearchHitResponse(localeValue, hit);
+  }
+  return buildPageLinkResponse({
+    localeValue,
+    path: "checkin",
+    sourceAr: "تسجيل الحضور",
+    sourceEn: "Check-in",
+    bodyAr: "يمكنك تسجيل الحضور أو استعادة تذكرة الطابور من صفحة تسجيل الحضور.",
+    bodyEn: "Register your visit or recover your queue ticket from the check-in page.",
+    linkLabelAr: "فتح تسجيل الحضور",
+    linkLabelEn: "Open check-in",
+    type: "contact",
+  });
+}
+
+function buildComplaintInfoResponse(
+  localeValue: string | undefined,
+  knowledgeIndex: SiteKnowledgeEntry[],
+): PortalAssistantResponse {
+  const hit = knowledgeIndex.find((e) => e.id === "complaint");
+  if (hit) {
+    return buildSearchHitResponse(localeValue, hit);
+  }
+  return buildPageLinkResponse({
+    localeValue,
+    path: "complaint",
+    sourceAr: "تقديم شكوى",
+    sourceEn: "Complaint",
+    bodyAr: "يمكنك تقديم شكوى عبر نموذج الشكاوى في البوابة.",
+    bodyEn: "You can submit a complaint through the portal complaint form.",
+    linkLabelAr: "فتح نموذج الشكوى",
+    linkLabelEn: "Open complaint form",
+    type: "contact",
+  });
+}
+
+function buildInternationalInfoResponse(
+  localeValue: string | undefined,
+  knowledgeIndex: SiteKnowledgeEntry[],
+): PortalAssistantResponse {
+  const loc = getLocale(localeValue);
+  const hit =
+    knowledgeIndex.find((e) => e.id === "international") ??
+    searchSiteKnowledge(
+      loc === "en" ? "international traveler" : "مسافر دولي",
+      knowledgeIndex,
+      3,
+      { intent: "international_info" },
+    )[0];
+  if (hit) {
+    return buildSearchHitResponse(localeValue, hit);
+  }
+  const intl = getMessages(loc).pages.international;
+  return buildPageLinkResponse({
+    localeValue,
+    path: "international-traveler",
+    sourceAr: intl.heading,
+    sourceEn: intl.heading,
+    bodyAr: `${intl.description} ${intl.beforeTravel}`,
+    bodyEn: `${intl.description} ${intl.beforeTravel}`,
+    linkLabelAr: "دليل المسافر الدولي",
+    linkLabelEn: "International traveler guide",
+    type: "vaccine",
+  });
 }
 
 function buildBookingResponse(localeValue: string | undefined): PortalAssistantResponse {
@@ -174,6 +275,7 @@ export function getLocalChatResponse({
   destinationCountries = [],
   portalOffices = [],
   vaccinesByCategory,
+  carriedIntent,
 }: {
   locale: string | undefined;
   message: string;
@@ -181,12 +283,16 @@ export function getLocalChatResponse({
   destinationCountries?: DestinationCountry[];
   portalOffices?: Office[];
   vaccinesByCategory: Record<UserCategory, VaccineRecord[]>;
+  carriedIntent?: ChatIntent;
 }): PortalAssistantResponse | null {
   const vaccineLocation = buildVaccineLocationResponse(locale, message);
   if (vaccineLocation) return vaccineLocation;
 
-  const intent = classifyChatIntent(message, { destinationCountries });
-  const hits = searchSiteKnowledge(message, knowledgeIndex, 5);
+  const intent = resolveIntentWithContext(message, {
+    destinationCountries,
+    carriedIntent,
+  });
+  const hits = searchSiteKnowledge(message, knowledgeIndex, 5, { intent });
 
   switch (intent) {
     case "price":
@@ -217,6 +323,12 @@ export function getLocalChatResponse({
     }
     case "hajj_umrah":
       return buildHajjResponse(locale);
+    case "checkin_info":
+      return buildCheckinInfoResponse(locale, knowledgeIndex);
+    case "complaint_info":
+      return buildComplaintInfoResponse(locale, knowledgeIndex);
+    case "international_info":
+      return buildInternationalInfoResponse(locale, knowledgeIndex);
     case "office":
       return buildOfficeAssistantResponse(locale, message, hits);
     case "general":

@@ -3,7 +3,12 @@ import { getTravelerVaccinationsOfficeCharter } from "@/data/traveler-vaccinatio
 import { defaultLocale, isLocale, type Locale } from "@/lib/i18n/config";
 import { bookingRequestCopy } from "@/lib/i18n/booking-request-copy";
 import { getMessages } from "@/lib/i18n/messages";
-import { normalizeArabic, tokenizeForSearch } from "@/lib/chat/normalize-arabic";
+import type { ChatIntent } from "@/lib/chat/intent";
+import {
+  normalizeArabic,
+  tokenizeForSearch,
+  tokenMatchesHaystack,
+} from "@/lib/chat/normalize-arabic";
 import {
   listOffices,
   listVaccinesByCategoryForPublic,
@@ -72,7 +77,7 @@ export async function buildSiteKnowledgeIndex(
     title: m.meta.siteName,
     body: `${m.hero.title}. ${m.hero.vision}. ${m.hero.mission}`,
     path: formatPortalUrl(locale),
-    tags: ["رئيسيه", "home", "hero"],
+    tags: ["رئيسيه", "رئيسية", "البوابة", "home", "hero", "الرئيسية", "portal"],
   });
 
   pushEntry(entries, {
@@ -87,10 +92,25 @@ export async function buildSiteKnowledgeIndex(
   pushEntry(entries, {
     id: "checkin",
     category: "pages",
-    title: "تسجيل الحضور",
-    body: "تسجيل حضور في المكتب أو استعادة تذكرة الطابور.",
+    title: locale === "en" ? "Check-in" : "تسجيل الحضور",
+    body:
+      locale === "en"
+        ? "Register your visit at the office or recover your queue ticket."
+        : "تسجيل حضور في المكتب أو استعادة تذكرة الطابور.",
     path: formatPortalUrl(locale, "checkin"),
-    tags: ["حضور", "checkin", "طابور"],
+    tags: ["حضور", "checkin", "طابور", "تسجيل", "queue", "ticket", "استعاده"],
+  });
+
+  pushEntry(entries, {
+    id: "complaint",
+    category: "pages",
+    title: locale === "en" ? "Submit a complaint" : "تقديم شكوى",
+    body:
+      locale === "en"
+        ? "File a complaint through the portal complaint form."
+        : "تقديم شكوى عبر نموذج الشكاوى في البوابة.",
+    path: formatPortalUrl(locale, "complaint"),
+    tags: ["شكوى", "شكوي", "complaint", "grievance", "تقديم"],
   });
 
   pushEntry(entries, {
@@ -109,7 +129,15 @@ export async function buildSiteKnowledgeIndex(
     title: intl.heading,
     body: `${intl.description} ${intl.beforeTravel}: ${intl.bullets.join(" | ")}`,
     path: formatPortalUrl(locale, "international-traveler"),
-    tags: ["دولي", "international", "مسافر"],
+    tags: [
+      "دولي",
+      "international",
+      "مسافر",
+      "سفر",
+      "متطلبات",
+      "travel",
+      "before travel",
+    ],
   });
 
   const hajj = m.pages.hajj;
@@ -309,28 +337,66 @@ export async function buildSiteKnowledgeIndex(
   return entries;
 }
 
+const INTENT_SEARCH_BOOST: Partial<Record<ChatIntent, string[]>> = {
+  booking: ["حجز", "booking", "موعد"],
+  checkin_info: ["حضور", "checkin", "طابور"],
+  complaint_info: ["شكوى", "complaint"],
+  international_info: ["دولي", "international", "مسافر"],
+  services: ["خدمات", "services"],
+  hajj_umrah: ["حج", "عمره", "hajj"],
+  price: ["سعر", "لقاح", "price"],
+};
+
+export function expandSearchQuery(
+  query: string,
+  intent?: ChatIntent,
+): string {
+  const extra = intent ? INTENT_SEARCH_BOOST[intent] ?? [] : [];
+  return [query, ...extra].filter(Boolean).join(" ");
+}
+
+function scoreKnowledgeEntry(
+  entry: SiteKnowledgeEntry,
+  tokens: string[],
+): number {
+  const titleHay = normalizeArabic(entry.title);
+  const tagHay = normalizeArabic(entry.tags.join(" "));
+  const bodyHay = normalizeArabic(entry.body);
+  const fullHay = normalizeArabic(
+    `${entry.title} ${entry.body} ${entry.tags.join(" ")} ${entry.category}`,
+  );
+
+  let score = 0;
+  for (const token of tokens) {
+    if (tokenMatchesHaystack(token, titleHay)) score += 4;
+    if (tokenMatchesHaystack(token, tagHay)) score += 3;
+    if (tokenMatchesHaystack(token, bodyHay)) score += 2;
+    if (tokenMatchesHaystack(token, fullHay)) score += 1;
+  }
+  if (entry.category === "faq" && tokens.some((t) => t.includes("سؤال"))) {
+    score += 1;
+  }
+  if (entry.id === "booking" && tokens.some((t) => t.includes("حجز"))) {
+    score += 2;
+  }
+  return score;
+}
+
 export function searchSiteKnowledge(
   query: string,
   entries: SiteKnowledgeEntry[],
   limit = 5,
+  options?: { intent?: ChatIntent },
 ): SiteKnowledgeEntry[] {
-  const tokens = tokenizeForSearch(query);
+  const expanded = expandSearchQuery(query, options?.intent);
+  const tokens = tokenizeForSearch(expanded);
   if (tokens.length === 0) return [];
 
   const scored = entries
-    .map((entry) => {
-      const haystack = normalizeArabic(
-        `${entry.title} ${entry.body} ${entry.tags.join(" ")} ${entry.category}`,
-      );
-      let score = 0;
-      for (const token of tokens) {
-        if (haystack.includes(token)) score += 2;
-      }
-      if (entry.category === "faq" && tokens.some((t) => t.includes("سؤال"))) {
-        score += 1;
-      }
-      return { entry, score };
-    })
+    .map((entry) => ({
+      entry,
+      score: scoreKnowledgeEntry(entry, tokens),
+    }))
     .filter((row) => row.score > 0)
     .sort((a, b) => b.score - a.score);
 
@@ -340,15 +406,25 @@ export function searchSiteKnowledge(
 export function isWeakSearchResult(
   query: string,
   hits: SiteKnowledgeEntry[],
+  options?: { intent?: ChatIntent },
 ): boolean {
   if (hits.length === 0) return true;
-  const tokens = tokenizeForSearch(query);
+  const expanded = expandSearchQuery(query, options?.intent);
+  const tokens = tokenizeForSearch(expanded);
   if (tokens.length === 0) return true;
 
   const top = hits[0];
-  const haystack = normalizeArabic(`${top.title} ${top.body}`);
-  const matched = tokens.filter((t) => haystack.includes(t)).length;
-  return matched < Math.min(2, tokens.length);
+  const titleHay = normalizeArabic(top.title);
+  const tagHay = normalizeArabic(top.tags.join(" "));
+  const bodyHay = normalizeArabic(`${top.title} ${top.body}`);
+  const matched = tokens.filter(
+    (t) =>
+      tokenMatchesHaystack(t, titleHay) ||
+      tokenMatchesHaystack(t, tagHay) ||
+      tokenMatchesHaystack(t, bodyHay),
+  ).length;
+  const threshold = tokens.length === 1 ? 1 : Math.min(2, tokens.length);
+  return matched < threshold;
 }
 
 export function buildSiteKnowledgeContext(
