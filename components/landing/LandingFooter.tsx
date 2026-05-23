@@ -15,7 +15,7 @@ export function LandingFooter({ locale, messages }: LandingFooterProps) {
   return (
     <footer
       id="support"
-      className="scroll-mt-20 border-t border-landing-primary/10 bg-white/60 px-4 py-12 backdrop-blur-sm"
+      className="mb-[calc(4.75rem+env(safe-area-inset-bottom,0px))] scroll-mt-20 border-t border-landing-primary/10 bg-white/60 px-4 py-12 backdrop-blur-sm md:mb-0"
     >
       <div className="mx-auto max-w-6xl">
         <nav

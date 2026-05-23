@@ -15,6 +15,11 @@ import type {
   AdminRequestAnalytics,
 } from "@/lib/office-requests/analytics";
 import { REQUEST_TYPE_LABELS } from "@/lib/office-requests/types";
+import {
+  BRAND_PRIMARY,
+  BRAND_PRIMARY_DEEP,
+  BRAND_SECONDARY,
+} from "@/lib/theme/brand-colors";
 
 type AdminAnalyticsChartsProps = {
   analytics: AdminRequestAnalytics;
@@ -70,7 +75,7 @@ export function AdminAnalyticsCharts({
                   "العدد",
                 ]}
               />
-              <Bar dataKey="count" name="العدد" fill="#0c2340" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="count" name="العدد" fill={BRAND_PRIMARY_DEEP} radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -96,7 +101,7 @@ export function AdminAnalyticsCharts({
                   "العدد",
                 ]}
               />
-              <Bar dataKey="count" name="العدد" fill="#1a5f7a" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="count" name="العدد" fill={BRAND_PRIMARY} radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -122,7 +127,7 @@ export function AdminAnalyticsCharts({
                   "طلبات",
                 ]}
               />
-              <Bar dataKey="count" name="عدد الطلبات" fill="#c5a572" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="count" name="عدد الطلبات" fill={BRAND_SECONDARY} radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>

@@ -1,4 +1,4 @@
-import { LandingBottomNav } from "@/components/landing/LandingBottomNav";
+import { PublicBottomNav } from "@/components/layout/PublicBottomNav";
 import { LandingFooter } from "@/components/landing/LandingFooter";
 import { LandingTopBar } from "@/components/landing/LandingTopBar";
 import { InstallPrompt } from "@/components/pwa/InstallPrompt";
@@ -23,19 +23,19 @@ export default async function LandingLayout({
     <>
       <a
         href="#main-content"
-        className="absolute start-4 top-0 z-[100] -translate-y-full rounded-md bg-landing-primary px-4 py-3 text-sm font-semibold text-white shadow-md transition-transform focus:translate-y-4"
+        className="absolute start-4 top-0 z-[100] -translate-y-full rounded-md bg-brand-accent px-4 py-3 text-sm font-semibold text-white shadow-md transition-transform focus:translate-y-4"
       >
         {messages.skipLink}
       </a>
       <LandingTopBar locale={locale} messages={messages} />
       <main
         id="main-content"
-        className="flex-1 pb-[calc(4.5rem+env(safe-area-inset-bottom,0px))] pt-[calc(3.75rem+env(safe-area-inset-top,0px))] md:pb-0"
+        className="flex-1 pb-[calc(4.75rem+env(safe-area-inset-bottom,0px))] pt-[calc(3.75rem+env(safe-area-inset-top,0px))] md:pb-0"
       >
         {children}
       </main>
       <LandingFooter locale={locale} messages={messages} />
-      <LandingBottomNav copy={messages.landing.bottomNav} />
+      <PublicBottomNav locale={locale} messages={messages} />
       <ServiceWorkerRegistrar />
       <InstallPrompt pwa={messages.pwa} />
     </>

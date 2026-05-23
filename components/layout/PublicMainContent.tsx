@@ -1,26 +1,17 @@
 "use client";
 
-import { usePathname } from "next/navigation";
-
-const footerHiddenSegments = new Set(["booking", "complaint", "checkin"]);
+import type { ReactNode } from "react";
+import { publicMainBottomPadding } from "@/lib/layout/public-chrome";
 
 type PublicMainContentProps = {
-  children: React.ReactNode;
+  children: ReactNode;
 };
 
 export function PublicMainContent({ children }: PublicMainContentProps) {
-  const pathname = usePathname();
-  const [, , pageSegment] = pathname.split("/");
-  const needsBottomPadding = footerHiddenSegments.has(pageSegment);
-
   return (
     <main
       id="main-content"
-      className={
-        needsBottomPadding
-          ? "flex-1 pb-[calc(5.5rem+env(safe-area-inset-bottom,0px))]"
-          : "flex-1"
-      }
+      className={`flex-1 md:pb-0 ${publicMainBottomPadding()}`}
     >
       {children}
     </main>

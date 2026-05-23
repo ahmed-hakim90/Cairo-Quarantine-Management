@@ -3,6 +3,7 @@ import {
   applyPortalAssistantRules,
   resolvePortalAssistant,
 } from "@/lib/chat/portal-assistant";
+import { resolveChatMessageForAssistant } from "@/lib/chat/conversation-context";
 import { buildSiteKnowledgeIndex } from "@/lib/chat/site-knowledge";
 import {
   listDestinationCountriesForPublic,
@@ -100,8 +101,8 @@ export async function POST(request: Request) {
     );
   }
 
-  const lastUserMessage = messages[messages.length - 1].content;
   const locale = body.locale;
+  const lastUserMessage = resolveChatMessageForAssistant(messages, locale);
 
   const [knowledgeIndex, destinationCountries, portalOffices, vaccinesByCategory] =
     await Promise.all([

@@ -14,6 +14,7 @@ import type { DestinationCountry, Office } from "@/lib/office-requests/types";
 import { isBookingQuestion } from "@/lib/chat/intent";
 import { isOutOfScopeMessage } from "@/lib/chat/out-of-scope";
 import { buildOfficeResponse } from "@/lib/chat/office-response";
+import { resolveChatMessageForAssistant } from "@/lib/chat/conversation-context";
 import {
   searchSiteKnowledge,
   type SiteKnowledgeEntry,
@@ -407,6 +408,64 @@ describe("chat rules", () => {
     expect(final.confidence).toBe(0.5);
     expect(final.answer).toContain("تعذر العثور على المعلومات داخل المنصة");
     expect(final.type).toBe("contact");
+  });
+
+  it("does not rank sun protection first for vague step tokens", () => {
+    const index: SiteKnowledgeEntry[] = [
+      {
+        id: "faq-sun",
+        category: "faq",
+        title: "حماية من الشمس",
+        body: "استخدم المظلة أو القبعة، وارتدِ ملابس خفيفة وفضفاضة.",
+        path: "/ar",
+        tags: ["faq"],
+      },
+    ];
+    const hits = searchSiteKnowledge("ايه الخطوات", index, 3);
+    expect(hits[0]?.title).not.toBe("حماية من الشمس");
+  });
+
+  it("does not return sun protection FAQ for vague help question", () => {
+    const resolved = resolvePortalAssistant({
+      locale: "ar",
+      message: "تقدر تساعدني في ايه",
+      knowledgeIndex: [],
+      destinationCountries: [],
+      portalOffices: [],
+      vaccinesByCategory: VACCINES_BY_CATEGORY,
+    });
+    expect(resolved.answer).not.toContain("المظلة");
+    expect(resolved.answer).not.toContain("حماية من الشمس");
+    expect(resolved.answer).toContain("الحجز");
+  });
+
+  it("returns booking steps for steps question", () => {
+    expect(classifyChatIntent("ايه الخطوات")).toBe("booking_steps");
+    const reply = localAr("ايه الخطوات");
+    expect(reply?.answer).toContain("خطوات الحجز");
+    expect(reply?.answer).not.toContain("المظلة");
+    expect(reply?.answer).toContain("/ar/booking");
+  });
+
+  it("expands short steps follow-up after help question", () => {
+    const expanded = resolveChatMessageForAssistant(
+      [
+        { role: "user", content: "تقدر تساعدني في ايه" },
+        { role: "assistant", content: "يمكنني المساعدة في الخدمات والحجز." },
+        { role: "user", content: "ايه الخطوات" },
+      ],
+      "ar",
+    );
+    expect(expanded).toBe("خطوات الحجز في البوابة");
+    expect(classifyChatIntent(expanded)).toBe("booking_steps");
+  });
+
+  it("keeps destination vaccines intent for country question with ايه", () => {
+    expect(
+      classifyChatIntent("مسافر افغانستان هتطعم ايه", {
+        destinationCountries: [mockAfghanistan],
+      }),
+    ).toBe("destination_vaccines");
   });
 
   it("enforce-response keeps wa.me links", () => {

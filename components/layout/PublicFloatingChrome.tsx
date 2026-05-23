@@ -1,15 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { CompactWhatsAppBar } from "@/components/layout/CompactWhatsAppBar";
 import { ChatWidget } from "@/components/chat/ChatWidget";
 import { FloatingTextToSpeechButton } from "@/components/layout/FloatingTextToSpeechButton";
-import { FloatingVaccinationBookingButton } from "@/components/layout/FloatingVaccinationBookingButton";
+import { publicFabBottomOffset } from "@/lib/layout/public-chrome";
 import type { Locale } from "@/lib/i18n/config";
 import type { Messages } from "@/lib/i18n/messages";
-import { usePathname } from "next/navigation";
-
-const footerHiddenSegments = new Set(["booking", "complaint", "checkin"]);
 
 type PublicFloatingChromeProps = {
   locale: Locale;
@@ -20,21 +16,12 @@ export function PublicFloatingChrome({
   locale,
   messages,
 }: PublicFloatingChromeProps) {
-  const pathname = usePathname();
-  const [, , pageSegment] = pathname.split("/");
-  const showCompactWhatsapp = footerHiddenSegments.has(pageSegment);
   const [chatOpen, setChatOpen] = useState(false);
+  const fabBottom = `${publicFabBottomOffset()} md:bottom-5`;
 
   return (
     <>
-      {showCompactWhatsapp ? (
-        <CompactWhatsAppBar
-          label={messages.footer.whatsappLabel}
-          ariaLabel={messages.footer.whatsappAria}
-        />
-      ) : null}
-
-      <div className="fixed bottom-5 start-5 z-[60]">
+      <div className={`fixed start-5 z-[48] ${fabBottom}`}>
         <ChatWidget
           locale={locale}
           messages={messages.chat}
@@ -42,16 +29,10 @@ export function PublicFloatingChrome({
         />
       </div>
 
-      <div className="fixed bottom-5 end-5 z-[60] flex flex-col items-center gap-3">
+      <div className={`fixed end-5 z-[48] flex flex-col items-center gap-3 ${fabBottom}`}>
         <div className={chatOpen ? "max-sm:hidden" : undefined}>
           <FloatingTextToSpeechButton locale={locale} labels={messages.tts} />
         </div>
-        <FloatingVaccinationBookingButton
-          label={messages.nav.bookVaccination}
-          ariaLabel={messages.nav.bookVaccinationAria}
-          locale={locale}
-          stacked
-        />
       </div>
     </>
   );

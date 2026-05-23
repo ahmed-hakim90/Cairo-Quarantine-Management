@@ -3,7 +3,13 @@ import { getTravelerVaccinationsOfficeCharter } from "@/data/traveler-vaccinatio
 import { defaultLocale, isLocale, type Locale } from "@/lib/i18n/config";
 import { bookingRequestCopy } from "@/lib/i18n/booking-request-copy";
 import { getMessages } from "@/lib/i18n/messages";
-import { normalizeArabic, tokenizeForSearch } from "@/lib/chat/normalize-arabic";
+import { normalizeArabic } from "@/lib/chat/normalize-arabic";
+import {
+  countTokenMatches,
+  haystackWords,
+  tokenizeForKnowledgeSearch,
+  tokenMatchesHaystack,
+} from "@/lib/chat/search-tokens";
 import {
   listOffices,
   listVaccinesByCategoryForPublic,
@@ -314,7 +320,7 @@ export function searchSiteKnowledge(
   entries: SiteKnowledgeEntry[],
   limit = 5,
 ): SiteKnowledgeEntry[] {
-  const tokens = tokenizeForSearch(query);
+  const tokens = tokenizeForKnowledgeSearch(query);
   if (tokens.length === 0) return [];
 
   const scored = entries
@@ -322,9 +328,10 @@ export function searchSiteKnowledge(
       const haystack = normalizeArabic(
         `${entry.title} ${entry.body} ${entry.tags.join(" ")} ${entry.category}`,
       );
+      const words = haystackWords(haystack);
       let score = 0;
       for (const token of tokens) {
-        if (haystack.includes(token)) score += 2;
+        if (tokenMatchesHaystack(token, words)) score += 2;
       }
       if (entry.category === "faq" && tokens.some((t) => t.includes("سؤال"))) {
         score += 1;
@@ -342,12 +349,12 @@ export function isWeakSearchResult(
   hits: SiteKnowledgeEntry[],
 ): boolean {
   if (hits.length === 0) return true;
-  const tokens = tokenizeForSearch(query);
+  const tokens = tokenizeForKnowledgeSearch(query);
   if (tokens.length === 0) return true;
 
   const top = hits[0];
-  const haystack = normalizeArabic(`${top.title} ${top.body}`);
-  const matched = tokens.filter((t) => haystack.includes(t)).length;
+  const words = haystackWords(normalizeArabic(`${top.title} ${top.body}`));
+  const matched = countTokenMatches(tokens, words);
   return matched < Math.min(2, tokens.length);
 }
 

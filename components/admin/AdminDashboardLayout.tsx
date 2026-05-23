@@ -58,7 +58,7 @@ export function AdminDashboardLayout({
     >
       <a
         href="#main-content"
-        className="absolute start-4 top-0 z-[100] -translate-y-full rounded-md bg-gov-accent px-4 py-3 text-sm font-semibold text-white shadow-md transition-transform focus:translate-y-4"
+        className="absolute start-4 top-0 z-[100] -translate-y-full rounded-md bg-brand-accent px-4 py-3 text-sm font-semibold text-white shadow-md transition-transform focus:translate-y-4"
       >
         تخطي إلى المحتوى
       </a>

@@ -1,4 +1,5 @@
 import type { MetadataRoute } from "next";
+import { BRAND_PRIMARY, BRAND_SURFACE } from "@/lib/theme/brand-colors";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
@@ -11,8 +12,8 @@ export default function manifest(): MetadataRoute.Manifest {
     scope: "/",
     display: "standalone",
     orientation: "portrait",
-    background_color: "#F5F9FD",
-    theme_color: "#0B4A8B",
+    background_color: BRAND_SURFACE,
+    theme_color: BRAND_PRIMARY,
     lang: "ar",
     dir: "rtl",
     categories: ["health", "government", "travel"],

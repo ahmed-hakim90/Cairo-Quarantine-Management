@@ -651,15 +651,38 @@ function BookingRequestFormFields({
         </fieldset>
       </div>
 
-      <div className="flex flex-col-reverse gap-3 border-t border-gov-gray-200 bg-gov-gray-50 px-5 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:flex-row sm:items-center sm:justify-between sm:pb-4 md:px-7">
-        <p className="text-xs leading-relaxed text-gov-gray-600 sm:text-sm">
+      <div className="border-t border-gov-gray-200 px-5 py-4 md:hidden">
+        {pending ? (
+          <SkeletonButton className="h-12 w-full" aria-hidden />
+        ) : (
+          <button
+            type="submit"
+            disabled={
+              offices.length === 0 ||
+              bookingBlocked ||
+              bookingNoMatchingOffices
+            }
+            className="inline-flex min-h-12 w-full items-center justify-center rounded-md bg-brand-accent px-5 py-3 text-base font-bold text-white shadow-sm transition hover:bg-brand-primary disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {mode === "booking" ? t.sendBooking : t.sendFollowUp}
+          </button>
+        )}
+        {pending ? (
+          <p className="sr-only" role="status">
+            {t.sending}
+          </p>
+        ) : null}
+      </div>
+
+      <div className="hidden flex-col-reverse gap-3 border-t border-gov-gray-200 bg-gov-gray-50 px-5 py-4 md:flex md:flex-row md:items-center md:justify-between md:px-7">
+        <p className="text-xs leading-relaxed text-gov-gray-600 md:text-sm">
           {mode === "booking"
             ? t.bookingSubmitHint
             : t.complaintSubmitHint}
         </p>
         {pending ? (
-          <div className="w-full shrink-0 sm:w-auto" aria-hidden>
-            <SkeletonButton className="h-12 w-full min-w-[8rem] sm:h-11 sm:w-40" />
+          <div className="w-full shrink-0 md:w-auto" aria-hidden>
+            <SkeletonButton className="h-11 w-40" />
           </div>
         ) : (
           <button
@@ -669,7 +692,7 @@ function BookingRequestFormFields({
               bookingBlocked ||
               bookingNoMatchingOffices
             }
-            className="inline-flex min-h-12 w-full shrink-0 items-center justify-center rounded-md bg-gov-accent px-5 py-3 text-base font-bold text-white shadow-sm transition hover:bg-gov-navy disabled:cursor-not-allowed disabled:opacity-60 sm:min-h-11 sm:w-auto sm:text-sm"
+            className="inline-flex min-h-11 w-full shrink-0 items-center justify-center rounded-md bg-brand-accent px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-brand-primary disabled:cursor-not-allowed disabled:opacity-60 md:w-auto"
           >
             {mode === "booking" ? t.sendBooking : t.sendFollowUp}
           </button>

@@ -7,8 +7,10 @@ import { classifyChatIntent } from "@/lib/chat/intent";
 import { buildOfficeHoursResponse } from "@/lib/chat/office-hours-response";
 import { buildVaccineLocationResponse } from "@/lib/chat/office-vaccine-location";
 import { buildOfficeAssistantResponse } from "@/lib/chat/office-response";
+import { bookingRequestCopy } from "@/lib/i18n/booking-request-copy";
 import { formatPortalUrl } from "@/lib/chat/site-knowledge";
 import {
+  isWeakSearchResult,
   searchSiteKnowledge,
   type SiteKnowledgeEntry,
 } from "@/lib/chat/site-knowledge";
@@ -18,6 +20,90 @@ import type { DestinationCountry, Office } from "@/lib/office-requests/types";
 
 function getLocale(localeValue: string | undefined) {
   return localeValue && isLocale(localeValue) ? localeValue : defaultLocale;
+}
+
+function buildHelpCapabilitiesResponse(
+  localeValue: string | undefined,
+): PortalAssistantResponse {
+  const loc = getLocale(localeValue);
+  const m = getMessages(loc);
+  const servicesPath = formatPortalUrl(loc);
+  const bookingPath = formatPortalUrl(loc, "booking");
+  const locationsPath = `${formatPortalUrl(loc)}#locations-heading`;
+
+  if (loc === "en") {
+    return {
+      answer: `${m.chat.greeting}\n• Services and traveller guides\n• Vaccination booking\n• Office locations and hours\n• Guidance vaccine prices\n[Services](${servicesPath}) [Booking](${bookingPath}) [Offices](${locationsPath})`,
+      source: m.chat.title,
+      type: "contact",
+      confidence: 0.95,
+    };
+  }
+  if (loc === "zh") {
+    return {
+      answer: `${m.chat.greeting}\n• 服务与旅客指南\n• 疫苗预约\n• 办事处地址与工作时间\n• 疫苗参考价格\n[服务](${servicesPath}) [预约](${bookingPath}) [办事处](${locationsPath})`,
+      source: m.chat.title,
+      type: "contact",
+      confidence: 0.95,
+    };
+  }
+  if (loc === "fr") {
+    return {
+      answer: `${m.chat.greeting}\n• Services et guides voyageurs\n• Reservation de vaccination\n• Bureaux et horaires\n• Prix indicatifs des vaccins\n[Services](${servicesPath}) [Reservation](${bookingPath}) [Bureaux](${locationsPath})`,
+      source: m.chat.title,
+      type: "contact",
+      confidence: 0.95,
+    };
+  }
+  return {
+    answer: `${m.chat.greeting}\n• الخدمات وإرشادات المسافرين\n• حجز التطعيم\n• مواقع المكاتب ومواعيد العمل\n• أسعار اللقاحات التوجيهية\n[الخدمات](${servicesPath}) [الحجز](${bookingPath}) [المكاتب](${locationsPath})`,
+    source: m.chat.title,
+    type: "contact",
+    confidence: 0.95,
+  };
+}
+
+function buildBookingStepsResponse(
+  localeValue: string | undefined,
+): PortalAssistantResponse {
+  const loc = getLocale(localeValue);
+  const m = getMessages(loc);
+  const booking =
+    bookingRequestCopy[loc as keyof typeof bookingRequestCopy] ??
+    bookingRequestCopy.ar;
+  const path = formatPortalUrl(loc, "booking");
+  const requestsPath = formatPortalUrl(loc, "my-requests");
+
+  if (loc === "en") {
+    return {
+      answer: `Booking steps:\n1. Open the booking page — ${booking.bookingIntro}\n2. Choose governorate and ${booking.officeName.toLowerCase()}, then ${booking.preferredDate.toLowerCase()}.\n3. Enter ${booking.name.toLowerCase()} and ${booking.phone.toLowerCase()}, then submit.\n4. Track your request from My Requests.\n[Open booking](${path}) [My requests](${requestsPath})`,
+      source: m.nav.bookVaccination,
+      type: "booking",
+      confidence: 0.95,
+    };
+  }
+  if (loc === "zh") {
+    return {
+      answer: `预约步骤：\n1. 打开预约页面。\n2. 选择旅客状态、省份与办事处及日期。\n3. 填写姓名和电话并提交。\n4. 在“我的请求”中跟踪。\n[打开预约](${path}) [我的请求](${requestsPath})`,
+      source: m.nav.bookVaccination,
+      type: "booking",
+      confidence: 0.95,
+    };
+  }
+  if (loc === "fr") {
+    return {
+      answer: `Etapes de reservation :\n1. Ouvrez la page de reservation.\n2. Choisissez le statut, le bureau et la date.\n3. Saisissez le nom et le telephone, puis envoyez.\n4. Suivez la demande dans Mes demandes.\n[Reservation](${path}) [Mes demandes](${requestsPath})`,
+      source: m.nav.bookVaccination,
+      type: "booking",
+      confidence: 0.95,
+    };
+  }
+  return {
+    answer: `خطوات الحجز:\n1. افتح صفحة الحجز — ${booking.bookingIntro}\n2. اختر المحافظة و${booking.officeName} و${booking.preferredDate}.\n3. أدخل ${booking.name} و${booking.phone} ثم أرسل الطلب.\n4. تابع الطلب من صفحة طلباتي.\n[فتح صفحة الحجز](${path}) [طلباتي](${requestsPath})`,
+    source: m.nav.bookVaccination,
+    type: "booking",
+    confidence: 0.95,
+  };
 }
 
 function buildBookingResponse(localeValue: string | undefined): PortalAssistantResponse {
@@ -197,6 +283,10 @@ export function getLocalChatResponse({
       );
     case "booking":
       return buildBookingResponse(locale);
+    case "help_capabilities":
+      return buildHelpCapabilitiesResponse(locale);
+    case "booking_steps":
+      return buildBookingStepsResponse(locale);
     case "office_hours": {
       const hoursText = buildOfficeHoursResponse(
         locale,
@@ -220,7 +310,9 @@ export function getLocalChatResponse({
     case "office":
       return buildOfficeAssistantResponse(locale, message, hits);
     case "general":
-      if (hits.length > 0) return buildSearchHitResponse(locale, hits[0]);
+      if (hits.length > 0 && !isWeakSearchResult(message, hits)) {
+        return buildSearchHitResponse(locale, hits[0]);
+      }
       return null;
   }
 }

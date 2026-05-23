@@ -12,7 +12,7 @@ type HeroSectionProps = {
 export function HeroSection({ content }: HeroSectionProps) {
   return (
     <section
-      className="overflow-hidden bg-gov-navy-deep"
+      className="brand-hero-gradient overflow-hidden"
       aria-labelledby="hero-title"
     >
       <div className="relative mx-auto flex max-w-6xl flex-col gap-8 px-4 pb-10 pt-14 sm:gap-10 sm:pb-14 sm:pt-16 md:pt-20">
@@ -25,13 +25,13 @@ export function HeroSection({ content }: HeroSectionProps) {
           </h1>
           <div className="max-w-2xl space-y-4 text-base leading-relaxed text-white/95 sm:text-lg">
             <p>
-              <span className="font-semibold text-gov-accent-muted">
+              <span className="font-semibold text-brand-highlight/90">
                 {content.visionLabel}{" "}
               </span>
               {content.vision}
             </p>
             <p>
-              <span className="font-semibold text-gov-accent-muted">
+              <span className="font-semibold text-brand-highlight/90">
                 {content.missionLabel}{" "}
               </span>
               {content.mission}
@@ -49,9 +49,9 @@ export function HeroSection({ content }: HeroSectionProps) {
               className="object-cover object-center"
               sizes="(max-width: 1280px) 100vw, 1152px"
             />
-            <div className="absolute inset-0 bg-gradient-to-br from-gov-navy/80 via-gov-accent/20 to-gov-navy-deep/90" />
+            <div className="absolute inset-0 bg-gradient-to-br from-brand-primary-deep/80 via-brand-secondary/25 to-brand-primary/90" />
             <div className="absolute inset-0 opacity-[0.12] [background-image:radial-gradient(circle_at_1px_1px,white_1px,transparent_0)] [background-size:24px_24px]" />
-            <div className="pointer-events-none absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-gov-navy-deep/85 to-transparent" />
+            <div className="pointer-events-none absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-brand-primary-deep/85 to-transparent" />
           </div>
         </div>
       </div>

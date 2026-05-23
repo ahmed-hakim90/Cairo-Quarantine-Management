@@ -15,7 +15,7 @@ export function LandingTopBar({ locale, messages }: LandingTopBarProps) {
   const landing = messages.landing;
 
   return (
-    <header className="fixed top-0 z-50 w-full border-b border-white/30 bg-white/70 backdrop-blur-xl">
+    <header className="app-topbar-glass fixed top-0 z-50 w-full">
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3 pt-[max(0.75rem,env(safe-area-inset-top))]">
         <LocaleLink
           locale={locale}

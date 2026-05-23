@@ -21,6 +21,7 @@ export type Messages = {
     title: string;
     aria: string;
     home: string;
+    aboutPlatform: string;
     international: string;
     hajjUmrah: string;
     citizen: string;
@@ -36,6 +37,11 @@ export type Messages = {
     mainMenuHeading: string;
     openMenuAria: string;
     closeMenuAria: string;
+  };
+  bottomNav: {
+    aria: string;
+    booking: string;
+    complaints: string;
   };
   footer: {
     title: string;
@@ -267,6 +273,7 @@ const ar: Messages = {
     title: "إدارة الحجر الصحي بالقاهرة",
     aria: "التنقل الرئيسي",
     home: "الرئيسية",
+    aboutPlatform: "عن المنصة",
     international: "مسافر دولي",
     hajjUmrah: "الحج والعمرة",
     citizen: "خدمات المواطنين",
@@ -283,6 +290,11 @@ const ar: Messages = {
     mainMenuHeading: "القائمة",
     openMenuAria: "فتح قائمة التنقل الرئيسية",
     closeMenuAria: "إغلاق قائمة التنقل",
+  },
+  bottomNav: {
+    aria: "التنقل السريع",
+    booking: "حجز",
+    complaints: "شكاوى",
   },
   footer: {
     title: "إدارة الحجر الصحي بالقاهرة",
@@ -555,6 +567,7 @@ const en: Messages = {
     title: "Cairo Quarantine Administration",
     aria: "Main navigation",
     home: "Home",
+    aboutPlatform: "About the platform",
     international: "International traveller",
     hajjUmrah: "Hajj & Umrah",
     citizen: "Citizen services",
@@ -571,6 +584,11 @@ const en: Messages = {
     mainMenuHeading: "Menu",
     openMenuAria: "Open main navigation menu",
     closeMenuAria: "Close navigation menu",
+  },
+  bottomNav: {
+    aria: "Quick navigation",
+    booking: "Book",
+    complaints: "Complaints",
   },
   footer: {
     title: "Cairo Quarantine Administration",
@@ -848,6 +866,7 @@ const zh: Messages = {
     title: "开罗检疫管理处",
     aria: "主导航",
     home: "首页",
+    aboutPlatform: "关于平台",
     international: "国际旅客",
     hajjUmrah: "朝觐与副朝",
     citizen: "公民服务",
@@ -863,6 +882,11 @@ const zh: Messages = {
     mainMenuHeading: "菜单",
     openMenuAria: "打开主导航菜单",
     closeMenuAria: "关闭导航菜单",
+  },
+  bottomNav: {
+    aria: "快捷导航",
+    booking: "预约",
+    complaints: "投诉",
   },
   footer: {
     title: "开罗检疫管理处",
@@ -1127,6 +1151,7 @@ const fr: Messages = {
     title: "Administration de la quarantaine du Caire",
     aria: "Navigation principale",
     home: "Accueil",
+    aboutPlatform: "À propos de la plateforme",
     international: "Voyageur international",
     hajjUmrah: "Hajj et Omra",
     citizen: "Services aux citoyens",
@@ -1143,6 +1168,11 @@ const fr: Messages = {
     mainMenuHeading: "Menu",
     openMenuAria: "Ouvrir le menu principal",
     closeMenuAria: "Fermer le menu",
+  },
+  bottomNav: {
+    aria: "Navigation rapide",
+    booking: "Reserver",
+    complaints: "Plaintes",
   },
   footer: {
     title: "Administration de la quarantaine du Caire",

@@ -8,6 +8,7 @@ import {
 import { bookingPassFormCopy } from "@/lib/i18n/booking-pass-copy";
 import type { Locale } from "@/lib/i18n/config";
 import type { PublicOfficeRequestStatus } from "@/lib/office-requests/types";
+import { BRAND_PRIMARY_DEEP, BRAND_SECONDARY } from "@/lib/theme/brand-colors";
 
 type BookingPassSuccessBlockProps = {
   locale: Locale;
@@ -61,9 +62,9 @@ export function BookingPassSuccessBlock({
     if (!ctx) return null;
 
     const grad = ctx.createLinearGradient(0, 0, W, H);
-    grad.addColorStop(0, "#081828");
-    grad.addColorStop(0.45, "#0c2340");
-    grad.addColorStop(1, "#0f766e");
+    grad.addColorStop(0, BRAND_PRIMARY_DEEP);
+    grad.addColorStop(0.45, BRAND_PRIMARY_DEEP);
+    grad.addColorStop(1, BRAND_SECONDARY);
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, W, H);
 
@@ -74,7 +75,7 @@ export function BookingPassSuccessBlock({
     await document.fonts.ready.catch(() => undefined);
 
     ctx.textAlign = "center";
-    ctx.fillStyle = "rgba(204,251,241,0.95)";
+    ctx.fillStyle = "rgba(232,238,244,0.95)";
     ctx.font = "110px system-ui, emoji, sans-serif";
     ctx.fillText("✈", W / 2, 220);
 
@@ -159,13 +160,13 @@ export function BookingPassSuccessBlock({
   }, [composeCardBlob, downloadCard, c.cardTitle, cardLines, request.id]);
 
   return (
-    <div className="mt-4 space-y-4 rounded-xl border border-emerald-200/60 bg-gradient-to-b from-gov-navy-deep/95 to-gov-navy p-5 text-white shadow-inner">
+    <div className="mt-4 space-y-4 rounded-xl border border-white/15 bg-gradient-to-b from-gov-navy-deep/95 to-gov-navy p-5 text-white shadow-inner">
       <div className="text-center">
-        <p className="text-xs font-bold uppercase tracking-wider text-teal-200/90">
+        <p className="text-xs font-bold uppercase tracking-wider text-white/70">
           {request.type === "complaint" ? c.cardSubtitleComplaint : c.cardSubtitle}
         </p>
         {passUrl ? (
-          <p className="mt-1 break-all font-mono text-[10px] text-teal-100/70">
+          <p className="mt-1 break-all font-mono text-[10px] text-white/50">
             {passUrl}
           </p>
         ) : (
@@ -187,7 +188,7 @@ export function BookingPassSuccessBlock({
             type="button"
             onClick={() => void downloadCard()}
             disabled={!qrDataUrl}
-            className="inline-flex min-h-10 items-center justify-center rounded-md bg-teal-500 px-4 text-sm font-bold text-white shadow transition hover:bg-teal-400 disabled:cursor-not-allowed disabled:opacity-50"
+            className="inline-flex min-h-10 items-center justify-center rounded-md bg-gov-navy px-4 text-sm font-bold text-white shadow transition hover:bg-brand-primary disabled:cursor-not-allowed disabled:opacity-50"
           >
             {c.downloadPng}
           </button>

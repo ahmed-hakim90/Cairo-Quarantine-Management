@@ -74,50 +74,50 @@ export default async function BookingPassPage({
   return (
     <section className="min-h-[70vh] bg-gradient-to-b from-gov-navy-deep to-gov-navy text-white">
       <div className="mx-auto max-w-lg px-4 py-10">
-        <p className="text-center text-xs font-bold uppercase tracking-widest text-teal-200/90">
+        <p className="text-center text-xs font-bold uppercase tracking-widest text-white/70">
           {c.siteLine}
         </p>
         <h1 className="mt-2 text-center font-heading text-2xl font-extrabold">
           {c.title}
         </h1>
-        <p className="mt-2 text-center text-sm text-teal-100/90">
+        <p className="mt-2 text-center text-sm text-white/80">
           {pass.type === "complaint" ? c.subtitleComplaint : c.subtitle}
         </p>
 
         <div className="mt-8 rounded-2xl border border-white/15 bg-white/5 p-6 shadow-xl backdrop-blur-sm">
           <dl className="space-y-4 text-sm">
             <div className="flex flex-col gap-1 border-b border-white/10 pb-3">
-              <dt className="text-xs font-bold uppercase tracking-wide text-teal-200/80">
+              <dt className="text-xs font-bold uppercase tracking-wide text-white/60">
                 {c.requestId}
               </dt>
               <dd className="text-lg font-extrabold tracking-wide">#{pass.id}</dd>
             </div>
             <div>
-              <dt className="text-xs font-bold text-teal-200/80">{c.office}</dt>
+              <dt className="text-xs font-bold text-white/60">{c.office}</dt>
               <dd className="mt-1 font-semibold leading-snug">{pass.officeNameAr}</dd>
             </div>
             <div>
-              <dt className="text-xs font-bold text-teal-200/80">{c.type}</dt>
+              <dt className="text-xs font-bold text-white/60">{c.type}</dt>
               <dd className="mt-1">{publicRequestTypeLabels[locale][pass.type]}</dd>
             </div>
             <div>
-              <dt className="text-xs font-bold text-teal-200/80">{c.status}</dt>
+              <dt className="text-xs font-bold text-white/60">{c.status}</dt>
               <dd className="mt-1">{publicRequestStatusLabels[locale][pass.status]}</dd>
             </div>
             <div>
-              <dt className="text-xs font-bold text-teal-200/80">{c.name}</dt>
+              <dt className="text-xs font-bold text-white/60">{c.name}</dt>
               <dd className="mt-1 font-semibold">{pass.name}</dd>
             </div>
             {pass.type === "booking" ? (
               <>
                 <div>
-                  <dt className="text-xs font-bold text-teal-200/80">
+                  <dt className="text-xs font-bold text-white/60">
                     {c.travelerType}
                   </dt>
                   <dd className="mt-1">{traveler}</dd>
                 </div>
                 <div>
-                  <dt className="text-xs font-bold text-teal-200/80">
+                  <dt className="text-xs font-bold text-white/60">
                     {c.preferredDate}
                   </dt>
                   <dd className="mt-1 font-mono">{pass.preferredDate ?? "—"}</dd>
@@ -125,18 +125,18 @@ export default async function BookingPassPage({
               </>
             ) : null}
             <div>
-              <dt className="text-xs font-bold text-teal-200/80">{c.details}</dt>
+              <dt className="text-xs font-bold text-white/60">{c.details}</dt>
               <dd className="mt-1 whitespace-pre-wrap leading-relaxed text-white/95">
                 {pass.details || "—"}
               </dd>
             </div>
             <div>
-              <dt className="text-xs font-bold text-teal-200/80">{c.notes}</dt>
+              <dt className="text-xs font-bold text-white/60">{c.notes}</dt>
               <dd className="mt-1 whitespace-pre-wrap leading-relaxed text-white/90">
                 {pass.notes?.trim() ? pass.notes : c.noNotes}
               </dd>
             </div>
-            <div className="border-t border-white/10 pt-3 text-xs text-teal-100/70">
+            <div className="border-t border-white/10 pt-3 text-xs text-white/50">
               <p>
                 {formatIsoDate(pass.createdAt, locale)} —{" "}
                 {formatIsoDate(pass.updatedAt, locale)}

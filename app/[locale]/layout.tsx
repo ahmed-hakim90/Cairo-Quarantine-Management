@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { BRAND_PRIMARY } from "@/lib/theme/brand-colors";
 import { notFound } from "next/navigation";
 import "../globals.css";
 import {
@@ -10,6 +11,7 @@ import { SplashChrome } from "@/components/splash/SplashChrome";
 import { FeedbackProvider } from "@/components/ui/FeedbackProvider";
 import { getMessages } from "@/lib/i18n/messages";
 import { arabicFontClassName } from "@/lib/fonts/arabic";
+import { BRAND_SURFACE } from "@/lib/theme/brand-colors";
 
 function localeFontClassName(locale: Locale): string {
   return locale === "zh" ? "zh-site h-full" : arabicFontClassName();
@@ -21,8 +23,8 @@ export function generateStaticParams() {
 
 export const viewport: Viewport = {
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#0B4A8B" },
-    { media: "(prefers-color-scheme: dark)", color: "#0B4A8B" },
+    { media: "(prefers-color-scheme: light)", color: BRAND_PRIMARY },
+    { media: "(prefers-color-scheme: dark)", color: BRAND_PRIMARY },
   ],
   width: "device-width",
   initialScale: 1,
@@ -87,11 +89,11 @@ export default async function LocaleLayout({
       lang={lang}
       dir={dir}
       className={htmlClass}
-      style={{ backgroundColor: "#F5F9FD" }}
+      style={{ backgroundColor: BRAND_SURFACE }}
       suppressHydrationWarning
     >
       <body
-        className="flex min-h-full flex-col bg-landing-bg text-foreground antialiased"
+        className="flex min-h-full flex-col bg-brand-surface text-foreground antialiased"
         suppressHydrationWarning
       >
         <SplashChrome
