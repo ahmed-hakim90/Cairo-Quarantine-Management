@@ -158,7 +158,7 @@ export function PublicBottomNav({ locale, messages }: PublicBottomNavProps) {
 
   return (
     <nav
-      className="public-bottom-nav app-bottom-nav-bar fixed inset-x-0 bottom-0 z-50 pt-4 md:hidden"
+      className="public-bottom-nav app-bottom-nav-bar fixed inset-x-0 bottom-0 z-40 pt-4 md:hidden"
       aria-label={b.aria}
     >
       <ul

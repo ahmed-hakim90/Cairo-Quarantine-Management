@@ -16,7 +16,7 @@ export function LandingTopBar({ locale, messages }: LandingTopBarProps) {
 
   return (
     <header className="app-topbar-glass fixed top-0 z-50 w-full">
-      <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3 pt-[max(0.75rem,env(safe-area-inset-top))]">
+      <div className="relative z-10 mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3 pt-[max(0.75rem,env(safe-area-inset-top))]">
         <LocaleLink
           locale={locale}
           href="/welcome"

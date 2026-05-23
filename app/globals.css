@@ -41,6 +41,9 @@
   --landing-success: var(--brand-success);
   --background: var(--brand-surface);
   --foreground: var(--brand-gray-900);
+
+  /* Mobile bottom nav — keep in sync with lib/layout/public-chrome.ts */
+  --public-bottom-nav-height: 5.25rem;
 }
 
 @theme inline {
@@ -163,7 +166,16 @@
   }
 
   .app-topbar-glass {
+    position: relative;
+    isolation: isolate;
     border-bottom: 1px solid rgb(255 255 255 / 0.3);
+  }
+
+  .app-topbar-glass::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
     background: rgb(255 255 255 / 0.7);
     backdrop-filter: blur(24px);
   }
@@ -176,6 +188,38 @@
 
   body[data-mobile-nav-open] .public-bottom-nav {
     display: none;
+  }
+
+  .public-main-bottom-pad {
+    padding-bottom: calc(
+      var(--public-bottom-nav-height) + env(safe-area-inset-bottom, 0px)
+    );
+  }
+
+  .public-chrome-bottom-gap {
+    margin-bottom: calc(
+      var(--public-bottom-nav-height) + env(safe-area-inset-bottom, 0px)
+    );
+  }
+
+  .public-fab-anchor {
+    bottom: calc(
+      var(--public-bottom-nav-height) + 1rem + env(safe-area-inset-bottom, 0px)
+    );
+  }
+
+  @media (min-width: 48rem) {
+    .public-main-bottom-pad {
+      padding-bottom: 0;
+    }
+
+    .public-chrome-bottom-gap {
+      margin-bottom: 0;
+    }
+
+    .public-fab-anchor {
+      bottom: 1.25rem;
+    }
   }
 
   .glass-panel {

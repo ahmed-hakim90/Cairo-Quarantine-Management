@@ -27,7 +27,7 @@ export function SiteHeader({ locale, messages }: SiteHeaderProps) {
 
   return (
     <header className="app-topbar-glass sticky top-0 z-50 shadow-sm">
-      <div className="mx-auto flex max-w-6xl flex-col gap-2 px-3 py-2 sm:px-4 md:flex-row md:items-center md:justify-between md:gap-4 md:py-3">
+      <div className="relative z-10 mx-auto flex max-w-6xl flex-col gap-2 px-3 pb-2 pt-[max(0.5rem,env(safe-area-inset-top))] sm:px-4 md:flex-row md:items-center md:justify-between md:gap-4 md:pb-3">
         <div className="flex w-full min-w-0 items-center gap-2 md:hidden">
           <LocaleLink
             locale={locale}

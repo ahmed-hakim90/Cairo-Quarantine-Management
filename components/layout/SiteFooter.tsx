@@ -1,4 +1,5 @@
 import { WhatsAppContactLink } from "@/components/layout/WhatsAppContactLink";
+import { PUBLIC_CHROME_BOTTOM_GAP_CLASS } from "@/lib/layout/public-chrome";
 import type { Messages } from "@/lib/i18n/messages";
 import { PORTFOLIO_CREDIT_URL } from "@/lib/site-credits";
 
@@ -11,7 +12,9 @@ export function SiteFooter({ messages }: SiteFooterProps) {
   const year = new Date().getFullYear();
 
   return (
-    <footer className="mb-[calc(4.75rem+env(safe-area-inset-bottom,0px))] border-t border-brand-gray-200 bg-brand-gray-50 text-brand-gray-700 md:mb-0">
+    <footer
+      className={`${PUBLIC_CHROME_BOTTOM_GAP_CLASS} border-t border-brand-gray-200 bg-brand-gray-50 text-brand-gray-700 md:mb-0`}
+    >
       <div className="mx-auto max-w-6xl px-4 py-10">
         <div className="grid gap-8 md:grid-cols-2">
           <div>

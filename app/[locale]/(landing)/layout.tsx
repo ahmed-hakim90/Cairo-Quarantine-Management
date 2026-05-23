@@ -1,4 +1,5 @@
 import { PublicBottomNav } from "@/components/layout/PublicBottomNav";
+import { PUBLIC_MAIN_BOTTOM_PAD_CLASS } from "@/lib/layout/public-chrome";
 import { LandingFooter } from "@/components/landing/LandingFooter";
 import { LandingTopBar } from "@/components/landing/LandingTopBar";
 import { InstallPrompt } from "@/components/pwa/InstallPrompt";
@@ -30,7 +31,7 @@ export default async function LandingLayout({
       <LandingTopBar locale={locale} messages={messages} />
       <main
         id="main-content"
-        className="flex-1 pb-[calc(4.75rem+env(safe-area-inset-bottom,0px))] pt-[calc(3.75rem+env(safe-area-inset-top,0px))] md:pb-0"
+        className={`flex-1 ${PUBLIC_MAIN_BOTTOM_PAD_CLASS} pt-[calc(3.75rem+env(safe-area-inset-top,0px))] md:pb-0`}
       >
         {children}
       </main>
