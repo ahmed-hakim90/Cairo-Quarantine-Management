@@ -1,0 +1,43 @@
+import { LandingBottomNav } from "@/components/landing/LandingBottomNav";
+import { LandingFooter } from "@/components/landing/LandingFooter";
+import { LandingTopBar } from "@/components/landing/LandingTopBar";
+import { InstallPrompt } from "@/components/pwa/InstallPrompt";
+import { ServiceWorkerRegistrar } from "@/components/pwa/ServiceWorkerRegistrar";
+import { isLocale, type Locale } from "@/lib/i18n/config";
+import { getMessages } from "@/lib/i18n/messages";
+import { notFound } from "next/navigation";
+
+export default async function LandingLayout({
+  children,
+  params,
+}: Readonly<{
+  children: React.ReactNode;
+  params: Promise<{ locale: string }>;
+}>) {
+  const { locale: localeParam } = await params;
+  if (!isLocale(localeParam)) notFound();
+  const locale = localeParam as Locale;
+  const messages = getMessages(locale);
+
+  return (
+    <>
+      <a
+        href="#main-content"
+        className="absolute start-4 top-0 z-[100] -translate-y-full rounded-md bg-landing-primary px-4 py-3 text-sm font-semibold text-white shadow-md transition-transform focus:translate-y-4"
+      >
+        {messages.skipLink}
+      </a>
+      <LandingTopBar locale={locale} messages={messages} />
+      <main
+        id="main-content"
+        className="flex-1 pb-[calc(4.5rem+env(safe-area-inset-bottom,0px))] pt-[calc(3.75rem+env(safe-area-inset-top,0px))] md:pb-0"
+      >
+        {children}
+      </main>
+      <LandingFooter locale={locale} messages={messages} />
+      <LandingBottomNav copy={messages.landing.bottomNav} />
+      <ServiceWorkerRegistrar />
+      <InstallPrompt pwa={messages.pwa} />
+    </>
+  );
+}

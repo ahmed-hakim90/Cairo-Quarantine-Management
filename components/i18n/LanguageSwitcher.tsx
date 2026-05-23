@@ -9,6 +9,8 @@ import type { Messages } from "@/lib/i18n/messages";
 type LanguageSwitcherProps = {
   locale: Locale;
   nav: Messages["nav"];
+  /** Light header on landing page uses dark text */
+  variant?: "default" | "landing";
 };
 
 const flagForLocale: Record<Locale, string> = {
@@ -60,7 +62,11 @@ function usePathQueryHashSuffix(): string {
   return querySuffix + hashSuffix;
 }
 
-export function LanguageSwitcher({ locale, nav }: LanguageSwitcherProps) {
+export function LanguageSwitcher({
+  locale,
+  nav,
+  variant = "default",
+}: LanguageSwitcherProps) {
   const pathname = usePathname();
   const pathSuffix = usePathQueryHashSuffix();
   const [open, setOpen] = useState(false);
@@ -110,7 +116,11 @@ export function LanguageSwitcher({ locale, nav }: LanguageSwitcherProps) {
         aria-expanded={open}
         aria-controls={menuId}
         aria-label={nav.switchLangAria}
-        className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-md border border-white/25 bg-white/10 px-2 text-sm font-medium leading-none text-white/95 transition-colors hover:bg-white/20 min-h-10 sm:min-h-11 sm:px-3"
+        className={
+          variant === "landing"
+            ? "inline-flex shrink-0 items-center justify-center gap-1.5 rounded-md border border-landing-primary/20 bg-landing-primary/5 px-2 text-sm font-medium leading-none text-landing-primary transition-colors hover:bg-landing-primary/10 min-h-10 sm:min-h-11 sm:px-3"
+            : "inline-flex shrink-0 items-center justify-center gap-1.5 rounded-md border border-white/25 bg-white/10 px-2 text-sm font-medium leading-none text-white/95 transition-colors hover:bg-white/20 min-h-10 sm:min-h-11 sm:px-3"
+        }
       >
         <span aria-hidden="true" className="text-base leading-none">
           {flagForLocale[locale]}

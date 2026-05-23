@@ -5,6 +5,13 @@ import {
   healthGuidesFr,
   healthGuidesZh,
 } from "@/lib/i18n/health-guides-content";
+import type { LandingMessages } from "@/lib/i18n/landing-messages";
+import {
+  landingAr,
+  landingEn,
+  landingFr,
+  landingZh,
+} from "@/lib/i18n/landing-messages";
 
 export type Messages = {
   meta: { siteName: string; siteDescription: string };
@@ -209,6 +216,7 @@ export type Messages = {
     loading: string;
     ariaLabel: string;
   };
+  landing: LandingMessages;
   admin: {
     meta: {
       loginTitle: string;
@@ -494,9 +502,10 @@ const ar: Messages = {
     installAria: "اقتراح تثبيت التطبيق على الجهاز",
   },
   splash: {
-    loading: "جاري التحميل…",
-    ariaLabel: "جاري تحميل البوابة",
+    loading: "جاري تحميل المنصة…",
+    ariaLabel: "جاري تحميل منصة إدارة الحجر الصحي",
   },
+  landing: landingAr,
   admin: {
     meta: {
       loginTitle: "تسجيل دخول الإدارة",
@@ -783,9 +792,10 @@ const en: Messages = {
     installAria: "Install app suggestion",
   },
   splash: {
-    loading: "Loading…",
-    ariaLabel: "Loading portal",
+    loading: "Loading platform…",
+    ariaLabel: "Loading quarantine management platform",
   },
+  landing: landingEn,
   admin: {
     meta: {
       loginTitle: "Admin sign in",
@@ -1064,9 +1074,10 @@ const zh: Messages = {
     installAria: "应用安装建议",
   },
   splash: {
-    loading: "加载中…",
-    ariaLabel: "正在加载门户",
+    loading: "正在加载平台…",
+    ariaLabel: "正在加载检疫管理平台",
   },
+  landing: landingZh,
   admin: {
     meta: {
       loginTitle: "管理端登录",
@@ -1353,9 +1364,10 @@ const fr: Messages = {
     installAria: "Suggestion d'installation de l'application",
   },
   splash: {
-    loading: "Chargement…",
-    ariaLabel: "Chargement du portail",
+    loading: "Chargement de la plateforme…",
+    ariaLabel: "Chargement de la plateforme de quarantaine",
   },
+  landing: landingFr,
   admin: {
     meta: {
       loginTitle: "Connexion administration",

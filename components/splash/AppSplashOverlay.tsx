@@ -1,17 +1,21 @@
 "use client";
 
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { useEffect, useState } from "react";
-import { SplashPlaneIcon } from "@/components/splash/SplashPlaneIcon";
+import { PlatformAnimatedBackground } from "@/components/brand/PlatformAnimatedBackground";
+import { SplashBrandMark } from "@/components/splash/SplashBrandMark";
 import { SplashProgressTrack } from "@/components/splash/SplashProgressTrack";
 
-const MIN_DISPLAY_MS = 700;
+const MIN_DISPLAY_MS = 800;
 const FONTS_TIMEOUT_MS = 2000;
-const FADE_MS = 400;
+const FADE_MS = 500;
 
 type AppSplashOverlayProps = {
-  siteName: string;
+  platformTitle: string;
+  platformSubtitle: string;
   loadingLabel: string;
   ariaLabel: string;
+  logoAlt: string;
 };
 
 function waitForDocumentReady(): Promise<void> {
@@ -41,10 +45,13 @@ function delay(ms: number): Promise<void> {
 }
 
 export function AppSplashOverlay({
-  siteName,
+  platformTitle,
+  platformSubtitle,
   loadingLabel,
   ariaLabel,
+  logoAlt,
 }: AppSplashOverlayProps) {
+  const reduceMotion = useReducedMotion();
   const [phase, setPhase] = useState<"visible" | "fading" | "hidden">("visible");
 
   useEffect(() => {
@@ -73,30 +80,68 @@ export function AppSplashOverlay({
     };
   }, []);
 
-  if (phase === "hidden") return null;
-
   return (
-    <div
-      id="cqm-splash-overlay"
-      role="status"
-      aria-busy={phase === "visible"}
-      aria-label={ariaLabel}
-      className={`fixed inset-0 z-[200] flex flex-col items-center justify-center bg-gov-navy px-6 text-center text-white transition-opacity duration-[400ms] ${
-        phase === "fading"
-          ? "pointer-events-none opacity-0"
-          : "opacity-100"
-      }`}
-    >
-      <div className="flex max-w-sm flex-col items-center gap-5">
-        <SplashPlaneIcon className="h-16 w-16 sm:h-20 sm:w-20" />
-        <div className="space-y-2">
-          <p className="font-heading text-lg font-bold leading-snug text-balance sm:text-xl">
-            {siteName}
-          </p>
-          <p className="text-sm text-white/80">{loadingLabel}</p>
-        </div>
-        <SplashProgressTrack />
-      </div>
-    </div>
+    <AnimatePresence>
+      {phase !== "hidden" ? (
+        <motion.div
+          id="cqm-splash-overlay"
+          role="status"
+          aria-busy={phase === "visible"}
+          aria-label={ariaLabel}
+          className={`fixed inset-0 z-[200] flex items-center justify-center overflow-hidden px-6 ${
+            phase === "fading" ? "pointer-events-none" : ""
+          }`}
+          initial={{ opacity: 1 }}
+          animate={{ opacity: phase === "fading" ? 0 : 1 }}
+          exit={{ opacity: 0 }}
+          transition={{
+            duration: reduceMotion ? 0.15 : FADE_MS / 1000,
+            ease: "easeOut",
+          }}
+        >
+          <PlatformAnimatedBackground />
+
+          <motion.div
+            className="glass-panel relative z-10 flex w-full max-w-md flex-col items-center gap-6 rounded-3xl px-8 py-10 text-center shadow-xl"
+            initial={reduceMotion ? false : { opacity: 0, y: 24 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.55, delay: 0.08, ease: [0.22, 1, 0.36, 1] }}
+          >
+            <SplashBrandMark logoAlt={logoAlt} />
+
+            <div className="space-y-2">
+              <motion.p
+                className="font-heading text-xl font-bold leading-snug text-landing-primary text-balance sm:text-2xl"
+                initial={reduceMotion ? false : { opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2, duration: 0.45 }}
+              >
+                {platformTitle}
+              </motion.p>
+              <motion.p
+                className="text-sm leading-relaxed text-landing-secondary sm:text-base"
+                initial={reduceMotion ? false : { opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.28, duration: 0.45 }}
+              >
+                {platformSubtitle}
+              </motion.p>
+            </div>
+
+            <motion.div
+              className="w-full space-y-3"
+              initial={reduceMotion ? false : { opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.38, duration: 0.4 }}
+            >
+              <SplashProgressTrack active={phase === "visible"} />
+              <p className="text-xs font-medium text-landing-primary/65 sm:text-sm">
+                {loadingLabel}
+              </p>
+            </motion.div>
+          </motion.div>
+        </motion.div>
+      ) : null}
+    </AnimatePresence>
   );
 }

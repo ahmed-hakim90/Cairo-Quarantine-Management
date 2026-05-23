@@ -12,6 +12,11 @@
   --gov-gray-900: #1a202c;
   --gov-accent: #0f766e;
   --gov-accent-muted: #ccfbf1;
+  --landing-primary: #0b4a8b;
+  --landing-secondary: #2a7cc7;
+  --landing-accent: #4fc3f7;
+  --landing-bg: #f5f9fd;
+  --landing-success: #1fa971;
   --background: var(--gov-white);
   --foreground: var(--gov-gray-900);
 }
@@ -29,6 +34,11 @@
   --color-gov-gray-900: var(--gov-gray-900);
   --color-gov-accent: var(--gov-accent);
   --color-gov-accent-muted: var(--gov-accent-muted);
+  --color-landing-primary: var(--landing-primary);
+  --color-landing-secondary: var(--landing-secondary);
+  --color-landing-accent: var(--landing-accent);
+  --color-landing-bg: var(--landing-bg);
+  --color-landing-success: var(--landing-success);
   --font-sans: var(--font-almarai), ui-sans-serif, system-ui, sans-serif;
   --font-heading: var(--font-ibm-plex-sans-arabic), var(--font-almarai),
     sans-serif;
@@ -71,13 +81,81 @@
   }
 }
 
+@keyframes landing-gradient-shift {
+  0%,
+  100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+@keyframes landing-blob-float {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  33% {
+    transform: translate(2%, -3%) scale(1.04);
+  }
+  66% {
+    transform: translate(-2%, 2%) scale(0.96);
+  }
+}
+
+@keyframes landing-pulse-glow {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 0.55;
+  }
+}
+
 @layer utilities {
   .splash-bar-animate {
     animation: splash-bar-indeterminate 1.4s ease-in-out infinite;
   }
 
+  .glass-panel {
+    background: rgb(255 255 255 / 0.72);
+    border: 1px solid rgb(255 255 255 / 0.45);
+    box-shadow:
+      0 4px 24px rgb(11 74 139 / 0.08),
+      0 1px 2px rgb(11 74 139 / 0.04);
+    backdrop-filter: blur(20px);
+  }
+
+  .landing-gradient-bg {
+    background: linear-gradient(
+      135deg,
+      var(--landing-bg) 0%,
+      #e8f4fc 35%,
+      #f0f7ff 65%,
+      var(--landing-bg) 100%
+    );
+    background-size: 200% 200%;
+    animation: landing-gradient-shift 18s ease infinite;
+  }
+
+  .landing-blob {
+    animation: landing-blob-float 14s ease-in-out infinite;
+  }
+
+  .landing-pulse-glow {
+    animation: landing-pulse-glow 6s ease-in-out infinite;
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .splash-bar-animate {
+      animation: none;
+    }
+
+    .landing-gradient-bg,
+    .landing-blob,
+    .landing-pulse-glow {
       animation: none;
     }
   }

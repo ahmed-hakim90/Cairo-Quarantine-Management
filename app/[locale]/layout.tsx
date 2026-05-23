@@ -21,8 +21,8 @@ export function generateStaticParams() {
 
 export const viewport: Viewport = {
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#0c2340" },
-    { media: "(prefers-color-scheme: dark)", color: "#0c2340" },
+    { media: "(prefers-color-scheme: light)", color: "#0B4A8B" },
+    { media: "(prefers-color-scheme: dark)", color: "#0B4A8B" },
   ],
   width: "device-width",
   initialScale: 1,
@@ -87,13 +87,19 @@ export default async function LocaleLayout({
       lang={lang}
       dir={dir}
       className={htmlClass}
-      style={{ backgroundColor: "#0c2340" }}
+      style={{ backgroundColor: "#F5F9FD" }}
+      suppressHydrationWarning
     >
-      <body className="flex min-h-full flex-col bg-background text-foreground antialiased">
+      <body
+        className="flex min-h-full flex-col bg-landing-bg text-foreground antialiased"
+        suppressHydrationWarning
+      >
         <SplashChrome
-          siteName={messages.meta.siteName}
+          platformTitle={messages.landing.hero.title}
+          platformSubtitle={messages.landing.hero.subtitle}
           loadingLabel={messages.splash.loading}
           ariaLabel={messages.splash.ariaLabel}
+          logoAlt={messages.landing.topBar.logoAlt}
         />
         <FeedbackProvider>{children}</FeedbackProvider>
       </body>
