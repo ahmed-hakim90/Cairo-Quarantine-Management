@@ -19,16 +19,16 @@ type SiteNavLinksProps = {
 const navLinkBaseBar =
   "inline-flex shrink-0 items-center whitespace-nowrap rounded-md px-1.5 py-2 text-[11px] leading-snug transition-[color,background-color,box-shadow,ring] sm:px-2 sm:text-xs md:px-3 md:text-sm min-h-10 sm:min-h-11";
 
-const inactiveClassBar = `${navLinkBaseBar} font-medium text-white/95 hover:bg-white/15`;
+const inactiveClassBar = `${navLinkBaseBar} font-medium text-brand-primary/90 hover:bg-brand-primary/8`;
 
-const activeClassBar = `${navLinkBaseBar} bg-white font-semibold text-gov-navy shadow-md ring-2 ring-white/50 ring-offset-2 ring-offset-gov-navy`;
+const activeClassBar = `${navLinkBaseBar} bg-brand-primary/12 font-semibold text-brand-primary shadow-sm ring-2 ring-brand-primary/20 ring-offset-2 ring-offset-brand-surface`;
 
 const navLinkBaseDrawer =
   "flex w-full items-center rounded-md px-4 py-3 text-base font-medium leading-snug transition-[color,background-color] min-h-12";
 
-const inactiveClassDrawer = `${navLinkBaseDrawer} text-gov-gray-900 hover:bg-gov-gray-100`;
+const inactiveClassDrawer = `${navLinkBaseDrawer} text-brand-gray-900 hover:bg-brand-gray-100`;
 
-const activeClassDrawer = `${navLinkBaseDrawer} bg-gov-navy font-semibold text-white shadow-sm`;
+const activeClassDrawer = `${navLinkBaseDrawer} bg-brand-accent/10 font-semibold text-brand-primary ring-1 ring-brand-accent/25`;
 
 export function normalizedNavPath(pathname: string): string {
   const pattern = new RegExp(`^\\/(${locales.join("|")})(?=\\/|$)`);

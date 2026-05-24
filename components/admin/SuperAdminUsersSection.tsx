@@ -6,7 +6,7 @@ import { deleteUserProfileAction } from "@/app/[locale]/admin/actions";
 import { AdminMessageTemplatesManager } from "@/components/admin/AdminMessageTemplatesManager";
 import { SuperAdminAddModal } from "@/components/admin/SuperAdminAddModal";
 import { governorateLabelAr } from "@/data/governorates";
-import { roleLabelAr } from "@/lib/office-requests/admin-access";
+import { isSingleOfficeStaffRole, roleLabelAr } from "@/lib/office-requests/admin-access";
 import { runWithFeedback } from "@/lib/ui/run-with-feedback";
 import type { AdminUserProfile, MessageTemplate, Office } from "@/lib/office-requests/types";
 
@@ -87,9 +87,9 @@ export function SuperAdminUsersSection({
                       }`
                     : user.role === "governorate_admin"
                       ? `أدمن محافظة: ${governorateLabelAr(user.governorateId ?? "")}`
-                    : user.role === "office_user"
+                    : isSingleOfficeStaffRole(user.role)
                       ? offices.find((o) => o.id === user.officeId)?.nameAr ||
-                        "مستخدم مكتب"
+                        roleLabelAr(user.role)
                       : roleLabelAr(user.role);
                 const isSelf = user.uid === sessionUid;
                 return (

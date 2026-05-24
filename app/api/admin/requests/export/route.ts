@@ -9,6 +9,8 @@ import { SUPER_ADMIN_EXPORT_MAX_ROWS } from "@/lib/office-requests/export-limits
 import {
   adminAllowedOfficeIds,
   adminCanAccessOffice,
+  isRequestVisibleToAdminRole,
+  isSingleOfficeStaffRole,
 } from "@/lib/office-requests/admin-access";
 import { mergeTravelerStateLabelsWithLegacy } from "@/lib/office-requests/office-traveler-state";
 import {
@@ -60,7 +62,7 @@ export async function GET(request: Request) {
 
   const role = session.profile.role;
   if (
-    role === "office_user" &&
+    isSingleOfficeStaffRole(role) &&
     !session.profile.officeId?.trim()
   ) {
     return noStoreJson(
@@ -89,8 +91,10 @@ export async function GET(request: Request) {
       ? typeTokens.filter((t): t is OfficeRequestType =>
           VALID_TYPES.has(t as OfficeRequestType),
         )
-      : (["booking", "complaint", "proposal"] as OfficeRequestType[])
-  ) as OfficeRequestType[];
+      : role === "office_reception"
+        ? (["booking"] as OfficeRequestType[])
+        : (["booking", "complaint", "proposal"] as OfficeRequestType[])
+  ).filter((t) => isRequestVisibleToAdminRole(role, { type: t })) as OfficeRequestType[];
 
   const officeRaw = searchParams.get("officeId")?.trim() ?? "";
   const officeIdFromQuery =
@@ -98,7 +102,7 @@ export async function GET(request: Request) {
 
   let officeId: string | null = officeIdFromQuery;
   let officeIds: string[] | null = null;
-  if (role === "office_user") {
+  if (isSingleOfficeStaffRole(role)) {
     officeId = session.profile.officeId!.trim();
   } else if (role === "office_admin" || role === "governorate_admin") {
     officeIds = adminAllowedOfficeIds(session.profile);

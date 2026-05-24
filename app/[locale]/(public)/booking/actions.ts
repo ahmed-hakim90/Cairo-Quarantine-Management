@@ -1,6 +1,7 @@
 "use server";
 
 import { headers } from "next/headers";
+import { logPublicFormSubmitError } from "@/lib/analytics/public-analytics-store";
 import {
   DEFAULT_GOVERNORATE_ID,
   normalizeGovernorateId,
@@ -62,6 +63,41 @@ function value(formData: FormData, key: string) {
   return String(formData.get(key) ?? "").trim();
 }
 
+function analyticsSessionIdFromForm(formData: FormData): string | undefined {
+  const raw = value(formData, "analyticsSessionId");
+  return raw || undefined;
+}
+
+function analyticsPathForType(type: OfficeRequestType, locale: Locale): string {
+  if (type === "complaint") return `/${locale}/complaint`;
+  return `/${locale}/booking`;
+}
+
+async function logBookingSubmitError(args: {
+  formData: FormData;
+  locale: Locale;
+  type: OfficeRequestType;
+  errorCode: string;
+  officeId?: string;
+  phone?: string;
+  preferredDate?: string;
+  requestId?: string;
+}): Promise<void> {
+  const sessionId = analyticsSessionIdFromForm(args.formData);
+  if (!sessionId) return;
+  await logPublicFormSubmitError({
+    sessionId,
+    path: analyticsPathForType(args.type, args.locale),
+    locale: args.locale,
+    formType: args.type === "complaint" ? "complaint" : "booking",
+    errorCode: args.errorCode,
+    officeId: args.officeId,
+    phone: args.phone,
+    preferredDate: args.preferredDate,
+    requestId: args.requestId,
+  });
+}
+
 function localeFromForm(formData: FormData): Locale {
   const raw = value(formData, "locale");
   return isLocale(raw) ? raw : defaultLocale;
@@ -81,6 +117,12 @@ export async function submitOfficeRequest(
     windowMs: 10 * 60_000,
   });
   if (!rateLimit.allowed) {
+    await logBookingSubmitError({
+      formData,
+      locale,
+      type: "booking",
+      errorCode: "rate_limited",
+    });
     return {
       ok: false,
       message: t.rateLimited,
@@ -209,6 +251,15 @@ export async function submitOfficeRequest(
   }
 
   if (Object.keys(errors).length > 0) {
+    await logBookingSubmitError({
+      formData,
+      locale,
+      type: requestTypes.includes(type) ? type : "booking",
+      errorCode: "validation",
+      officeId: officeId || undefined,
+      phone: phone || undefined,
+      preferredDate: preferredDate || undefined,
+    });
     return {
       ok: false,
       message: t.reviewRequired,
@@ -226,6 +277,16 @@ export async function submitOfficeRequest(
       phone,
     });
     if (duplicate) {
+      await logBookingSubmitError({
+        formData,
+        locale,
+        type: "booking",
+        errorCode: "duplicate",
+        officeId,
+        phone,
+        preferredDate,
+        requestId: duplicate.id,
+      });
       return {
         ok: false,
         duplicate: true,
@@ -277,6 +338,20 @@ export async function submitOfficeRequest(
               : rawMessage === bookingActionCopy.ar.officeGovernorateMismatch
                 ? t.officeGovernorateMismatch
               : rawMessage || t.saveFailed;
+    await logBookingSubmitError({
+      formData,
+      locale,
+      type: requestTypes.includes(type) ? type : "booking",
+      errorCode:
+        rawMessage === DUPLICATE_BOOKING_MESSAGE
+          ? "duplicate"
+          : rawMessage === bookingActionCopy.ar.firebaseMissing
+            ? "firebase_missing"
+            : rawMessage || "save_failed",
+      officeId,
+      phone,
+      preferredDate: type === "booking" ? preferredDate : undefined,
+    });
     return {
       ok: false,
       message,

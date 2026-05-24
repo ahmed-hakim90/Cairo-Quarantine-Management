@@ -75,7 +75,7 @@ export default async function InternationalTravelerPage({
           }}
         />
       </ScrollReveal>
-      <ScrollReveal>
+      <ScrollReveal initialVisible>
         <HajjTravelerOfficesTable
           content={m.hajjTable}
           locale={locale}

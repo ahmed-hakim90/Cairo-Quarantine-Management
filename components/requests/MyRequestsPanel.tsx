@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { BookingPassQrImage } from "@/components/booking/BookingPassQrImage";
+import { RequestPassCardActions } from "@/components/booking/RequestPassCardActions";
 import { bookingRequestCopy } from "@/lib/i18n/booking-request-copy";
 import { bookingPassFormCopy } from "@/lib/i18n/booking-pass-copy";
 import type { Locale } from "@/lib/i18n/config";
@@ -24,10 +24,10 @@ import { feedbackToast } from "@/lib/ui/feedback-toast";
 const TRAVELER_LABEL_BY_ID = mergeTravelerStateLabelsWithLegacy(
   defaultTravelerStatesFromLegacyLabels(),
 );
-const STORAGE_KEY = "cairo-office-requests:v1";
 
 type StoredRequest = PublicOfficeRequestStatus & {
   phone: string;
+  passToken?: string;
   missing?: boolean;
 };
 
@@ -54,7 +54,7 @@ const copy = {
     updatedAt: "آخر تحديث",
     missing: "لم يتم العثور على الطلب بهذا الرقم ورقم الهاتف.",
     loadError: "تعذر تحديث الطلبات حالياً.",
-    qrSectionTitle: "رمز بطاقة الحجز",
+    passSectionTitle: "بطاقة المتابعة",
     cancel: "إلغاء الطلب",
     cancelling: "جاري الإلغاء...",
     cancelConfirm: "هل تريد إلغاء هذا الطلب؟",
@@ -80,7 +80,7 @@ const copy = {
     updatedAt: "Last updated",
     missing: "No request was found for this number and phone.",
     loadError: "Requests could not be refreshed right now.",
-    qrSectionTitle: "Booking pass QR",
+    passSectionTitle: "Follow-up card",
     cancel: "Cancel request",
     cancelling: "Cancelling...",
     cancelConfirm: "Cancel this request?",
@@ -106,7 +106,7 @@ const copy = {
     updatedAt: "最后更新",
     missing: "未找到与该编号和电话匹配的申请。",
     loadError: "目前无法刷新申请。",
-    qrSectionTitle: "预约凭证二维码",
+    passSectionTitle: "跟进卡",
     cancel: "取消申请",
     cancelling: "正在取消...",
     cancelConfirm: "确定要取消此申请吗？",
@@ -132,7 +132,7 @@ const copy = {
     updatedAt: "Derniere mise a jour",
     missing: "Aucune demande n'a ete trouvee pour ce numero et ce telephone.",
     loadError: "Les demandes ne peuvent pas etre actualisees maintenant.",
-    qrSectionTitle: "QR du pass de reservation",
+    passSectionTitle: "Carte de suivi",
     cancel: "Annuler la demande",
     cancelling: "Annulation...",
     cancelConfirm: "Annuler cette demande ?",
@@ -147,29 +147,6 @@ const CANCELLABLE: PublicOfficeRequestStatus["status"][] = [
   "in_progress",
   "contacted",
 ];
-
-function readStoredRequests(): StoredRequest[] {
-  if (typeof window === "undefined") return [];
-
-  try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed.filter(isStoredRequest) : [];
-  } catch {
-    return [];
-  }
-}
-
-function isStoredRequest(value: unknown): value is StoredRequest {
-  if (!value || typeof value !== "object") return false;
-  const request = value as Record<string, unknown>;
-  return typeof request.id === "string" && typeof request.phone === "string";
-}
-
-function writeStoredRequests(requests: StoredRequest[]) {
-  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(requests.slice(0, 20)));
-}
 
 function mergeRequests(
   current: StoredRequest[],
@@ -206,9 +183,7 @@ function formatDate(value: string, locale: Locale) {
 
 export function MyRequestsPanel({ locale }: MyRequestsPanelProps) {
   const t = copy[locale];
-  const [requests, setRequests] = useState<StoredRequest[]>(() =>
-    readStoredRequests(),
-  );
+  const [requests, setRequests] = useState<StoredRequest[]>([]);
   const [loading, setLoading] = useState(false);
   const [cancellingId, setCancellingId] = useState<string | null>(null);
   const [error, setError] = useState("");
@@ -242,7 +217,6 @@ export function MyRequestsPanel({ locale }: MyRequestsPanelProps) {
         data.requests ?? [],
         data.missing ?? [],
       );
-      writeStoredRequests(next);
       setRequests(next);
 
       let statusChanged = false;
@@ -310,12 +284,6 @@ export function MyRequestsPanel({ locale }: MyRequestsPanelProps) {
       ),
     [requests],
   );
-
-  function removeRequest(id: string) {
-    const next = requests.filter((request) => request.id !== id);
-    writeStoredRequests(next);
-    setRequests(next);
-  }
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8 lg:py-12">
@@ -435,22 +403,24 @@ export function MyRequestsPanel({ locale }: MyRequestsPanelProps) {
                   </div>
                 </dl>
 
-                {request.type === "booking" && request.passToken ? (
+                {request.passToken ? (
                   <div className="mt-5 rounded-md border border-emerald-200 bg-emerald-50/50 p-4">
                     <h3 className="text-sm font-bold text-gov-navy">
-                      {t.qrSectionTitle}
+                      {t.passSectionTitle}
                     </h3>
                     <p className="mt-1 text-xs leading-relaxed text-gov-gray-600">
-                      {bookingPassFormCopy[locale].cardSubtitle}
+                      {request.type === "booking"
+                        ? bookingPassFormCopy[locale].cardSubtitle
+                        : bookingPassFormCopy[locale].cardSubtitleComplaint}
                     </p>
-                    <div className="mt-4 flex justify-center sm:justify-start">
-                      <BookingPassQrImage
+                    <div className="mt-4">
+                      <RequestPassCardActions
                         locale={locale}
-                        requestId={request.id}
-                        passToken={request.passToken}
-                        alt={bookingPassFormCopy[locale].qrAlt}
-                        displayWidth={200}
-                        imgClassName="rounded-lg border border-emerald-200/80 bg-white p-2 shadow-sm"
+                        request={
+                          request as PublicOfficeRequestStatus & {
+                            passToken: string;
+                          }
+                        }
                       />
                     </div>
                   </div>
@@ -477,13 +447,6 @@ export function MyRequestsPanel({ locale }: MyRequestsPanelProps) {
                       {cancellingId === request.id ? t.cancelling : t.cancel}
                     </button>
                   ) : null}
-                  <button
-                    type="button"
-                    onClick={() => removeRequest(request.id)}
-                    className="inline-flex min-h-10 items-center justify-center rounded-md border border-gov-gray-200 px-4 text-sm font-bold text-gov-navy transition hover:bg-gov-gray-50"
-                  >
-                    {t.remove}
-                  </button>
                 </div>
               </article>
             ))}

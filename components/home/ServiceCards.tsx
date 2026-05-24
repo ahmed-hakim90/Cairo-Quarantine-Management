@@ -12,7 +12,7 @@ type CardDef = {
 function IconGlobe() {
   return (
     <svg
-      className="h-10 w-10 text-gov-accent"
+      className="h-10 w-10 text-gov-navy"
       fill="none"
       viewBox="0 0 24 24"
       stroke="currentColor"
@@ -31,7 +31,7 @@ function IconGlobe() {
 function IconKaaba() {
   return (
     <svg
-      className="h-10 w-10 text-gov-accent"
+      className="h-10 w-10 text-gov-navy"
       viewBox="0 0 24 24"
       fill="currentColor"
       aria-hidden
@@ -44,7 +44,7 @@ function IconKaaba() {
 function IconCitizen() {
   return (
     <svg
-      className="h-10 w-10 text-gov-accent"
+      className="h-10 w-10 text-gov-navy"
       fill="none"
       viewBox="0 0 24 24"
       stroke="currentColor"
@@ -116,7 +116,7 @@ export function ServiceCards({ locale, content }: ServiceCardsProps) {
               <span className="mt-2 flex-1 text-sm leading-relaxed text-gov-gray-600">
                 {content[card.descKey]}
               </span>
-              <span className="mt-4 text-sm font-semibold text-gov-accent">
+              <span className="mt-4 text-sm font-semibold text-gov-navy">
                 {content.viewDetails}
               </span>
             </LocaleLink>

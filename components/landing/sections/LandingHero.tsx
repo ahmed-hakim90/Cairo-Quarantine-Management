@@ -54,7 +54,7 @@ export function LandingHero({ locale, copy }: LandingHeroProps) {
                 priority
               />
             </motion.div>
-            <span className="text-sm font-semibold text-landing-secondary">
+            <span className="text-sm font-semibold text-brand-secondary">
               {copy.topBar.platformName}
             </span>
           </motion.div>
@@ -62,19 +62,19 @@ export function LandingHero({ locale, copy }: LandingHeroProps) {
           <motion.h1
             id="landing-hero-title"
             {...fade(0.1)}
-            className="font-heading text-3xl font-bold leading-tight text-landing-primary sm:text-4xl lg:text-5xl"
+            className="font-heading text-3xl font-bold leading-tight text-brand-primary sm:text-4xl lg:text-5xl"
           >
             {h.title}
           </motion.h1>
           <motion.p
             {...fade(0.2)}
-            className="text-lg font-medium text-landing-secondary sm:text-xl"
+            className="text-lg font-medium text-brand-secondary sm:text-xl"
           >
             {h.subtitle}
           </motion.p>
           <motion.p
             {...fade(0.3)}
-            className="max-w-xl text-base leading-relaxed text-landing-primary/80"
+            className="max-w-xl text-base leading-relaxed text-brand-primary/85"
           >
             {h.description}
           </motion.p>
@@ -84,14 +84,14 @@ export function LandingHero({ locale, copy }: LandingHeroProps) {
           >
             <LocaleLink
               locale={locale}
-              href="/citizen-services"
-              className="inline-flex min-h-12 items-center justify-center rounded-xl bg-landing-primary px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-landing-primary/25 transition-opacity hover:opacity-95"
+              href="/"
+              className="inline-flex min-h-12 items-center justify-center rounded-xl bg-brand-primary px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-brand-primary/30 transition-opacity hover:opacity-95"
             >
               {h.ctaPrimary}
             </LocaleLink>
             <a
-              href="#services"
-              className="inline-flex min-h-12 items-center justify-center rounded-xl border-2 border-landing-secondary/40 bg-white/60 px-6 py-3 text-sm font-semibold text-landing-primary backdrop-blur-sm transition-colors hover:bg-white/90"
+              href="/booking"
+              className="inline-flex min-h-12 items-center justify-center rounded-xl border-2 border-brand-secondary/50 bg-white/80 px-6 py-3 text-sm font-semibold text-brand-primary backdrop-blur-sm transition-colors hover:bg-white"
             >
               {h.ctaSecondary}
             </a>

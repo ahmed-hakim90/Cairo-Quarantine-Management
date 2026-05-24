@@ -199,8 +199,11 @@ export function SuperAdminDataToolsPanel() {
       const detail = [
         `أُرشف ${result.archivedRequests} طلباً.`,
         `أُرشف ${result.archivedActivityLogs} حدثاً من سجل النشاط.`,
+        `أُرشف ${result.archivedPublicEvents} حدثاً من تتبّع الزوار.`,
         `حُذف ${result.deletedArchivedRequests} طلباً مؤرشفاً قديماً.`,
         `حُذف ${result.deletedArchivedActivityLogs} حدثاً مؤرشفاً قديماً.`,
+        `حُذف ${result.deletedArchivedPublicEvents} حدث زائر مؤرشف قديم.`,
+        `حُذف ${result.deletedStalePublicSessions} جلسة زائر قديمة.`,
       ].join("\n");
       setMaintenanceResult(detail + more);
       feedbackToast.success("تمت صيانة البيانات.");

@@ -1,29 +1,70 @@
 @import "tailwindcss";
 
 :root {
-  --gov-navy: #0c2340;
-  --gov-navy-deep: #081828;
-  --gov-white: #ffffff;
-  --gov-gray-50: #f5f7fa;
-  --gov-gray-100: #ebeef2;
-  --gov-gray-200: #dfe4ea;
-  --gov-gray-600: #4a5568;
-  --gov-gray-700: #374151;
-  --gov-gray-900: #1a202c;
-  --gov-accent: #0f766e;
-  --gov-accent-muted: #ccfbf1;
-  --landing-primary: #0b4a8b;
-  --landing-secondary: #2a7cc7;
-  --landing-accent: #4fc3f7;
-  --landing-bg: #f5f9fd;
-  --landing-success: #1fa971;
-  --background: var(--gov-white);
-  --foreground: var(--gov-gray-900);
+  /* Brand system (source of truth) */
+  --brand-primary: #0b4a8b;
+  --brand-primary-deep: #072f56;
+  --brand-primary-rgb: 11 74 139;
+  --brand-secondary: #2a7cc7;
+  --brand-highlight: #4fc3f7;
+  --brand-accent: #0b4a8b;
+  --brand-accent-muted: #e8eef4;
+  --brand-muted-surface: #e8eef4;
+  --brand-surface: #f5f9fd;
+  --brand-success: #1fa971;
+  --brand-white: #ffffff;
+
+  /* Gray scale */
+  --brand-gray-50: #f5f7fa;
+  --brand-gray-100: #ebeef2;
+  --brand-gray-200: #dfe4ea;
+  --brand-gray-600: #4a5568;
+  --brand-gray-700: #374151;
+  --brand-gray-900: #1a202c;
+
+  /* Legacy aliases */
+  --gov-navy: var(--brand-primary-deep);
+  --gov-navy-deep: var(--brand-primary-deep);
+  --gov-white: var(--brand-white);
+  --gov-gray-50: var(--brand-gray-50);
+  --gov-gray-100: var(--brand-gray-100);
+  --gov-gray-200: var(--brand-gray-200);
+  --gov-gray-600: var(--brand-gray-600);
+  --gov-gray-700: var(--brand-gray-700);
+  --gov-gray-900: var(--brand-gray-900);
+  --gov-accent: var(--brand-accent);
+  --gov-accent-muted: var(--brand-accent-muted);
+  --landing-primary: var(--brand-primary);
+  --landing-secondary: var(--brand-secondary);
+  --landing-accent: var(--brand-highlight);
+  --landing-bg: var(--brand-surface);
+  --landing-success: var(--brand-success);
+  --background: var(--brand-surface);
+  --foreground: var(--brand-gray-900);
+
+  /* Mobile bottom nav — keep in sync with lib/layout/public-chrome.ts */
+  --public-bottom-nav-height: 5.25rem;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-brand-primary: var(--brand-primary);
+  --color-brand-primary-deep: var(--brand-primary-deep);
+  --color-brand-secondary: var(--brand-secondary);
+  --color-brand-highlight: var(--brand-highlight);
+  --color-brand-accent: var(--brand-accent);
+  --color-brand-accent-muted: var(--brand-accent-muted);
+  --color-brand-muted-surface: var(--brand-muted-surface);
+  --color-brand-surface: var(--brand-surface);
+  --color-brand-success: var(--brand-success);
+  --color-brand-white: var(--brand-white);
+  --color-brand-gray-50: var(--brand-gray-50);
+  --color-brand-gray-100: var(--brand-gray-100);
+  --color-brand-gray-200: var(--brand-gray-200);
+  --color-brand-gray-600: var(--brand-gray-600);
+  --color-brand-gray-700: var(--brand-gray-700);
+  --color-brand-gray-900: var(--brand-gray-900);
   --color-gov-navy: var(--gov-navy);
   --color-gov-navy-deep: var(--gov-navy-deep);
   --color-gov-gray-50: var(--gov-gray-50);
@@ -45,7 +86,12 @@
 }
 
 @layer base {
+  html {
+    height: 100%;
+  }
+
   body {
+    min-height: 100%;
     background: var(--background);
     color: var(--foreground);
     font-family: var(--font-sans);
@@ -60,7 +106,7 @@
   }
 
   :focus-visible {
-    outline: 3px solid var(--gov-accent);
+    outline: 3px solid var(--brand-primary);
     outline-offset: 2px;
   }
 
@@ -114,30 +160,112 @@
   }
 }
 
+@keyframes cta-attention-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+    box-shadow:
+      0 10px 15px -3px rgb(0 0 0 / 0.22),
+      0 0 0 0 rgb(255 255 255 / 0.45);
+  }
+  50% {
+    transform: scale(1.035);
+    box-shadow:
+      0 14px 22px -4px rgb(0 0 0 / 0.28),
+      0 0 0 10px rgb(255 255 255 / 0);
+  }
+}
+
 @layer utilities {
   .splash-bar-animate {
     animation: splash-bar-indeterminate 1.4s ease-in-out infinite;
+  }
+
+  .app-topbar-glass {
+    border-bottom: 1px solid rgb(255 255 255 / 0.35);
+    background-color: rgb(255 255 255 / 0.88);
+    -webkit-backdrop-filter: blur(20px);
+    backdrop-filter: blur(20px);
+  }
+
+  .app-bottom-nav-bar {
+    border-top: 1px solid rgb(var(--brand-primary-rgb) / 0.1);
+    background-color: #ffffff;
+    box-shadow: 0 -4px 16px rgb(var(--brand-primary-rgb) / 0.08);
+  }
+
+  body[data-mobile-nav-open] .public-bottom-nav,
+  body[data-site-search-open] .public-bottom-nav {
+    display: none;
+  }
+
+  .office-search-highlight {
+    outline: 2px solid rgb(var(--brand-primary-rgb) / 0.85);
+    outline-offset: 2px;
+    background-color: rgb(var(--brand-primary-rgb) / 0.08);
+    transition: background-color 0.3s ease, outline-color 0.3s ease;
+  }
+
+  .public-main-bottom-pad {
+    padding-bottom: calc(
+      var(--public-bottom-nav-height) + env(safe-area-inset-bottom, 0px)
+    );
+  }
+
+  .public-chrome-bottom-gap {
+    margin-bottom: calc(
+      var(--public-bottom-nav-height) + env(safe-area-inset-bottom, 0px)
+    );
+  }
+
+  .public-fab-anchor {
+    bottom: calc(
+      var(--public-bottom-nav-height) + 1rem + env(safe-area-inset-bottom, 0px)
+    );
+  }
+
+  @media (min-width: 48rem) {
+    .public-main-bottom-pad {
+      padding-bottom: 0;
+    }
+
+    .public-chrome-bottom-gap {
+      margin-bottom: 0;
+    }
+
+    .public-fab-anchor {
+      bottom: 1.25rem;
+    }
   }
 
   .glass-panel {
     background: rgb(255 255 255 / 0.72);
     border: 1px solid rgb(255 255 255 / 0.45);
     box-shadow:
-      0 4px 24px rgb(11 74 139 / 0.08),
-      0 1px 2px rgb(11 74 139 / 0.04);
+      0 4px 24px rgb(var(--brand-primary-rgb) / 0.08),
+      0 1px 2px rgb(var(--brand-primary-rgb) / 0.04);
     backdrop-filter: blur(20px);
   }
 
   .landing-gradient-bg {
     background: linear-gradient(
       135deg,
-      var(--landing-bg) 0%,
+      var(--brand-surface) 0%,
       #e8f4fc 35%,
       #f0f7ff 65%,
-      var(--landing-bg) 100%
+      var(--brand-surface) 100%
     );
     background-size: 200% 200%;
     animation: landing-gradient-shift 18s ease infinite;
+  }
+
+  .brand-hero-gradient {
+    background: linear-gradient(
+      135deg,
+      var(--brand-primary-deep) 0%,
+      var(--brand-primary) 45%,
+      var(--brand-secondary) 100%
+    );
   }
 
   .landing-blob {
@@ -148,6 +276,16 @@
     animation: landing-pulse-glow 6s ease-in-out infinite;
   }
 
+  .cta-attention {
+    animation: cta-attention-pulse 2.6s ease-in-out infinite;
+  }
+
+  .cta-attention:hover,
+  .cta-attention:focus-visible {
+    animation: none;
+    transform: scale(1.03);
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .splash-bar-animate {
       animation: none;
@@ -155,8 +293,14 @@
 
     .landing-gradient-bg,
     .landing-blob,
-    .landing-pulse-glow {
+    .landing-pulse-glow,
+    .cta-attention {
       animation: none;
+    }
+
+    .cta-attention:hover,
+    .cta-attention:focus-visible {
+      transform: none;
     }
   }
 }

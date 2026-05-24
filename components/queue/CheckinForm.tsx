@@ -1,6 +1,8 @@
 "use client";
 
 import { useActionState, useEffect, useMemo, useState } from "react";
+import { useOptionalPublicAnalytics } from "@/components/analytics/PublicAnalyticsProvider";
+import { trackPublicEvent } from "@/lib/analytics/public-analytics-client";
 import { QueueCompletedCitizenView } from "@/components/queue/QueueCompletedCitizenView";
 import { CheckinSkeleton } from "@/components/skeletons/public/CheckinSkeleton";
 import { QueueWaitLive } from "@/components/queue/QueueWaitLive";
@@ -30,6 +32,7 @@ type CheckinFormProps = {
   officeNameAr: string;
   travelerStates: TravelerState[];
   iosHelp: string;
+  initialLookup?: string;
 };
 
 export function CheckinForm({
@@ -38,8 +41,10 @@ export function CheckinForm({
   officeNameAr,
   travelerStates,
   iosHelp,
+  initialLookup = "",
 }: CheckinFormProps) {
   const t = checkinFormCopy[locale];
+  const analytics = useOptionalPublicAnalytics();
   const [lookupState, lookupAction, lookupPending] = useActionState(
     checkinLookupAction,
     initial,
@@ -54,7 +59,8 @@ export function CheckinForm({
 
   useEffect(() => {
     const lookupTimer = window.setTimeout(() => {
-      setLookupValue(loadCheckinLookup(officeId));
+      const stored = loadCheckinLookup(officeId);
+      setLookupValue(initialLookup.trim() || stored);
     }, 0);
 
     let cancelled = false;
@@ -90,7 +96,11 @@ export function CheckinForm({
       window.clearTimeout(lookupTimer);
       window.clearTimeout(restoreTimer);
     };
-  }, [officeId, locale]);
+  }, [officeId, locale, initialLookup]);
+
+  useEffect(() => {
+    analytics?.trackFormStart("checkin", "lookup");
+  }, [analytics]);
 
   useEffect(() => {
     const id = window.setTimeout(() => {
@@ -127,6 +137,26 @@ export function CheckinForm({
       : !quickState.ok && quickState.error
         ? quickState.error
         : null;
+
+  useEffect(() => {
+    if (!result?.ok || !result.ticket) return;
+    trackPublicEvent({
+      action: "checkin.ticket_created",
+      locale,
+      meta: {
+        formType: "checkin",
+        officeId,
+        ticketId: result.ticket.id,
+      },
+    });
+    analytics?.trackSubmitSuccess("checkin", result.requestId);
+  }, [analytics, locale, officeId, result]);
+
+  useEffect(() => {
+    if (!error) return;
+    analytics?.trackApiError("checkin_error");
+  }, [analytics, error]);
+
   const showQuick =
     !result?.ok &&
     !lookupState.ok &&
@@ -138,6 +168,8 @@ export function CheckinForm({
     () => lookupPending || quickPending || restoring,
     [lookupPending, quickPending, restoring],
   );
+
+  const lookupLocked = Boolean(initialLookup.trim());
 
   if (restoring && !result) {
     return (
@@ -184,7 +216,18 @@ export function CheckinForm({
         </p>
       ) : null}
 
-      <form action={lookupAction} className="space-y-4 rounded-lg border border-gov-gray-200 bg-white p-5 shadow-sm">
+      <form
+        action={lookupAction}
+        className="space-y-4 rounded-lg border border-gov-gray-200 bg-white p-5 shadow-sm"
+        onSubmit={() => {
+          analytics?.trackSubmitAttempt("checkin");
+          trackPublicEvent({
+            action: "checkin.search_start",
+            locale,
+            meta: { formType: "checkin", officeId },
+          });
+        }}
+      >
         <input type="hidden" name="officeId" value={officeId} />
         <input type="hidden" name="locale" value={locale} />
         <div>
@@ -196,11 +239,20 @@ export function CheckinForm({
             name="lookup"
             type="text"
             required
+            readOnly={lookupLocked}
             autoComplete="tel"
             value={lookupValue}
-            onChange={(e) => setLookupValue(e.target.value)}
-            className="mt-2 w-full rounded-md border border-gov-gray-200 px-3 py-2.5 text-sm"
+            onChange={(e) => {
+              if (lookupLocked) return;
+              setLookupValue(e.target.value);
+            }}
+            className={`mt-2 w-full rounded-md border border-gov-gray-200 px-3 py-2.5 text-sm${
+              lookupLocked
+                ? " cursor-not-allowed bg-gov-gray-50 text-gov-gray-700"
+                : ""
+            }`}
             placeholder={t.lookupPlaceholder}
+            aria-readonly={lookupLocked}
           />
         </div>
         <button

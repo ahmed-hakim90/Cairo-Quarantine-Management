@@ -3,6 +3,7 @@
 import QRCode from "qrcode";
 import { useEffect, useMemo, useState } from "react";
 import { buildBookingPassUrl } from "@/lib/booking-pass-url";
+import { BRAND_PRIMARY_DEEP } from "@/lib/theme/brand-colors";
 import type { Locale } from "@/lib/i18n/config";
 
 const QR_RENDER_WIDTH = 400;
@@ -46,7 +47,7 @@ export function useBookingPassQrState({
       margin: 1,
       width: QR_RENDER_WIDTH,
       errorCorrectionLevel: "M",
-      color: { dark: "#0c2340", light: "#ffffff" },
+      color: { dark: BRAND_PRIMARY_DEEP, light: "#ffffff" },
     })
       .then((url) => {
         if (!cancelled) setQrDataUrl(url);

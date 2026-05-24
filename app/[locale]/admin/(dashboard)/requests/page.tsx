@@ -4,7 +4,7 @@ import { RequestsExcelQuickExport } from "@/components/admin/RequestsExcelQuickE
 import { SuperAdminExportLauncher } from "@/components/admin/SuperAdminExportLauncher";
 import { getCairoTodayYmd } from "@/lib/cairo-today-ymd";
 import { isLocale } from "@/lib/i18n/config";
-import { adminAllowedOfficeIds } from "@/lib/office-requests/admin-access";
+import { adminAllowedOfficeIds, isSingleOfficeStaffRole } from "@/lib/office-requests/admin-access";
 import {
   isExplicitBookingDateFilter,
   parseAdminBookingDateParams,
@@ -52,6 +52,7 @@ export default async function AdminRequestsPage({
   if (!session) redirect(`/${locale}/admin/login`);
 
   const isSuperAdmin = session.profile.role === "super_admin";
+  const isReception = session.profile.role === "office_reception";
   const isLocalAdmin =
     session.profile.role === "office_admin" ||
     session.profile.role === "governorate_admin";
@@ -153,7 +154,9 @@ export default async function AdminRequestsPage({
           <div>
             <h1 className="text-2xl font-extrabold text-gov-navy">الطلبات</h1>
             <p className="mt-2 text-sm text-gov-gray-600">
-              عرض وتصفية طلبات الحجز والشكاوى والمقترحات.
+              {isReception
+                ? "عرض وتصفية حجوزات المكتب."
+                : "عرض وتصفية طلبات الحجز والشكاوى والمقترحات."}
             </p>
           </div>
           {isSuperAdmin || isLocalAdmin || session.profile.officeId ? (
@@ -163,7 +166,7 @@ export default async function AdminRequestsPage({
                 bookingDateFrom={bookingDateRange?.fromYmd}
                 bookingDateTo={bookingDateRange?.toYmd}
                 lockedOfficeId={
-                  session.profile.role === "office_user"
+                  isSingleOfficeStaffRole(session.profile.role)
                     ? session.profile.officeId
                     : null
                 }
@@ -171,7 +174,7 @@ export default async function AdminRequestsPage({
               <SuperAdminExportLauncher
                 offices={visibleOffices}
                 lockedOfficeId={
-                  session.profile.role === "office_user"
+                  isSingleOfficeStaffRole(session.profile.role)
                     ? session.profile.officeId
                     : null
                 }
@@ -197,6 +200,7 @@ export default async function AdminRequestsPage({
         totalBookingsInPeriod={totalBookingsInPeriod}
         currentPage={q ? 1 : currentPage}
         pageCursors={q ? [] : pageCursors}
+        bookingsOnly={isReception}
       />
     </div>
   );

@@ -4,6 +4,7 @@ import Link from "next/link";
 import QRCode from "qrcode";
 import { useEffect, useRef, useState } from "react";
 import type { Office } from "@/lib/office-requests/types";
+import { BRAND_ACCENT, BRAND_PRIMARY_DEEP } from "@/lib/theme/brand-colors";
 
 type OfficeQrCardProps = {
   locale: string;
@@ -24,7 +25,7 @@ export function OfficeQrCard({ locale, office, checkinUrl }: OfficeQrCardProps) 
       margin: 1,
       width: 280,
       errorCorrectionLevel: "M",
-      color: { dark: "#0c2340", light: "#ffffff" },
+      color: { dark: BRAND_PRIMARY_DEEP, light: "#ffffff" },
     })
       .then((url) => {
         if (!cancelled) setQrDataUrl(url);
@@ -55,7 +56,7 @@ export function OfficeQrCard({ locale, office, checkinUrl }: OfficeQrCardProps) 
           margin: 1,
           width: 320,
           errorCorrectionLevel: "M",
-          color: { dark: "#0c2340", light: "#ffffff" },
+          color: { dark: BRAND_PRIMARY_DEEP, light: "#ffffff" },
         }));
       const canvas = await composeQrCardCanvas({ office, qrDataUrl: qrUrl });
       const img = canvas.toDataURL("image/png");
@@ -193,9 +194,9 @@ async function composeQrCardCanvas({
   if (!ctx) throw new Error("Canvas غير متاح.");
 
   const grad = ctx.createLinearGradient(0, 0, W, H);
-  grad.addColorStop(0, "#081828");
-  grad.addColorStop(0.45, "#0c2340");
-  grad.addColorStop(1, "#0f766e");
+  grad.addColorStop(0, BRAND_PRIMARY_DEEP);
+  grad.addColorStop(0.45, BRAND_PRIMARY_DEEP);
+  grad.addColorStop(1, BRAND_ACCENT);
   ctx.fillStyle = grad;
   ctx.fillRect(0, 0, W, H);
 

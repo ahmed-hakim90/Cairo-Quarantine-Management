@@ -16,7 +16,8 @@ service cloud.firestore {
         (profile().data.role == "super_admin" ||
           profile().data.role == "governorate_admin" ||
           profile().data.role == "office_admin" ||
-          profile().data.role == "office_user");
+          profile().data.role == "office_user" ||
+          profile().data.role == "office_reception");
     }
 
     function governorateAdminFor(officeId) {
@@ -29,16 +30,17 @@ service cloud.firestore {
       return superAdmin() ||
         governorateAdminFor(officeId) ||
         officeAdminFor(officeId) ||
-        officeUserFor(officeId);
+        officeStaffFor(officeId);
     }
 
     function superAdmin() {
       return activeAdmin() && profile().data.role == "super_admin";
     }
 
-    function officeUserFor(officeId) {
+    function officeStaffFor(officeId) {
       return activeAdmin() &&
-        profile().data.role == "office_user" &&
+        (profile().data.role == "office_user" ||
+          profile().data.role == "office_reception") &&
         profile().data.officeId == officeId;
     }
 
@@ -74,7 +76,7 @@ service cloud.firestore {
     match /requests/{requestId} {
       allow read: if officeScopedRead(resource.data.officeId);
       allow update: if superAdmin() || (
-        (officeUserFor(resource.data.officeId) ||
+        (officeStaffFor(resource.data.officeId) ||
           officeAdminFor(resource.data.officeId)) &&
         request.resource.data.officeId == resource.data.officeId &&
         request.resource.data.diff(resource.data).affectedKeys().hasOnly([
@@ -123,6 +125,22 @@ service cloud.firestore {
     }
 
     match /queue_watches/{watchId} {
+      allow read, write: if false;
+    }
+
+    match /public_events/{eventId} {
+      allow read, write: if false;
+    }
+
+    match /public_events_archive/{eventId} {
+      allow read, write: if false;
+    }
+
+    match /public_sessions/{sessionId} {
+      allow read, write: if false;
+    }
+
+    match /daily_public_stats/{statId} {
       allow read, write: if false;
     }
 

@@ -34,7 +34,7 @@ export async function getAdminSession(): Promise<AdminSession | null> {
 /** لوحة التحكم غير متاحة: حساب موقوف أو مستخدم مكتب بلا مكتب معيّن. */
 export function shouldShowAdminPendingReview(session: AdminSession): boolean {
   if (!session.profile.active) return true;
-  if (session.profile.role === "office_user") {
+  if (session.profile.role === "office_user" || session.profile.role === "office_reception") {
     return !(session.profile.officeId?.trim());
   }
   if (session.profile.role === "office_admin") {

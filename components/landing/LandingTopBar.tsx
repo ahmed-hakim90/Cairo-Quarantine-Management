@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import Image from "next/image";
 import { LanguageSwitcher } from "@/components/i18n/LanguageSwitcher";
 import { LanguageSwitcherSkeleton } from "@/components/skeletons/LanguageSwitcherSkeleton";
+import { PublicHeaderSiteSearch } from "@/components/layout/PublicHeaderSiteSearch";
 import { LocaleLink } from "@/components/i18n/LocaleLink";
 import type { Locale } from "@/lib/i18n/config";
 import type { Messages } from "@/lib/i18n/messages";
@@ -15,11 +16,11 @@ export function LandingTopBar({ locale, messages }: LandingTopBarProps) {
   const landing = messages.landing;
 
   return (
-    <header className="fixed top-0 z-50 w-full border-b border-white/30 bg-white/70 backdrop-blur-xl">
-      <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3 pt-[max(0.75rem,env(safe-area-inset-top))]">
+    <header className="app-topbar-glass fixed top-0 z-50 w-full border-b border-white/35 bg-white/90 shadow-sm backdrop-blur-xl">
+      <div className="relative z-10 mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3 pt-[max(0.75rem,env(safe-area-inset-top))]">
         <LocaleLink
           locale={locale}
-          href="/welcome"
+          href="/"
           className="flex min-w-0 items-center gap-2.5 transition-opacity hover:opacity-90"
         >
           <Image
@@ -33,13 +34,18 @@ export function LandingTopBar({ locale, messages }: LandingTopBarProps) {
             {landing.topBar.platformName}
           </span>
         </LocaleLink>
-        <Suspense fallback={<LanguageSwitcherSkeleton variant="header" />}>
-          <LanguageSwitcher
-            locale={locale}
-            nav={messages.nav}
-            variant="landing"
-          />
-        </Suspense>
+        <div className="flex shrink-0 items-center gap-2">
+          <div className="hidden md:block">
+            <PublicHeaderSiteSearch locale={locale} messages={messages} />
+          </div>
+          <Suspense fallback={<LanguageSwitcherSkeleton variant="header" />}>
+            <LanguageSwitcher
+              locale={locale}
+              nav={messages.nav}
+              variant="landing"
+            />
+          </Suspense>
+        </div>
       </div>
     </header>
   );

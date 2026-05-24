@@ -1,7 +1,6 @@
 "use client";
 
 import { BookingPassSuccessBlock } from "@/components/booking/BookingPassSuccessBlock";
-import { LocaleLink } from "@/components/i18n/LocaleLink";
 import { bookingRequestCopy } from "@/lib/i18n/booking-request-copy";
 import type { Locale } from "@/lib/i18n/config";
 import type { PublicOfficeRequestStatus } from "@/lib/office-requests/types";
@@ -38,6 +37,19 @@ export function BookingRequestSuccessView({
       </div>
 
       <div className="space-y-5 px-5 py-5 md:px-7">
+        {request.passToken ? (
+          <BookingPassSuccessBlock
+            locale={locale}
+            request={
+              request as PublicOfficeRequestStatus & {
+                phone: string;
+                passToken: string;
+              }
+            }
+            serverSiteOrigin={serverSiteOrigin}
+          />
+        ) : null}
+
         <div>
           <h3 className="text-sm font-bold text-gov-navy">
             {t.successDetailsTitle}
@@ -77,27 +89,6 @@ export function BookingRequestSuccessView({
             </div>
           </dl>
         </div>
-
-        <LocaleLink
-          locale={locale}
-          href="/my-requests"
-          className="inline-flex min-h-12 w-full items-center justify-center rounded-md bg-gov-accent px-4 text-base font-bold text-white transition hover:bg-gov-navy sm:min-h-10 sm:w-auto sm:text-sm"
-        >
-          {t.followRequests}
-        </LocaleLink>
-
-        {request.type === "booking" && request.passToken ? (
-          <BookingPassSuccessBlock
-            locale={locale}
-            request={
-              request as PublicOfficeRequestStatus & {
-                phone: string;
-                passToken: string;
-              }
-            }
-            serverSiteOrigin={serverSiteOrigin}
-          />
-        ) : null}
       </div>
     </div>
   );

@@ -1,5 +1,6 @@
 import { LocaleLink } from "@/components/i18n/LocaleLink";
 import { WhatsAppContactLink } from "@/components/layout/WhatsAppContactLink";
+import { PUBLIC_CHROME_BOTTOM_GAP_CLASS } from "@/lib/layout/public-chrome";
 import type { Locale } from "@/lib/i18n/config";
 import type { Messages } from "@/lib/i18n/messages";
 
@@ -15,7 +16,7 @@ export function LandingFooter({ locale, messages }: LandingFooterProps) {
   return (
     <footer
       id="support"
-      className="scroll-mt-20 border-t border-landing-primary/10 bg-white/60 px-4 py-12 backdrop-blur-sm"
+      className={`${PUBLIC_CHROME_BOTTOM_GAP_CLASS} scroll-mt-20 border-t border-landing-primary/10 bg-white/60 px-4 py-12 backdrop-blur-sm md:mb-0`}
     >
       <div className="mx-auto max-w-6xl">
         <nav

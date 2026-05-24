@@ -5,7 +5,7 @@ import { AdminLogoutButton } from "@/components/admin/AdminLogoutButton";
 import { unlockFeedbackSound } from "@/lib/ui/feedback-sound";
 import { AdminNewRequestNotifier } from "@/components/admin/AdminNewRequestNotifier";
 import { AdminSidebar } from "@/components/admin/AdminSidebar";
-import { roleLabelAr } from "@/lib/office-requests/admin-access";
+import { isSingleOfficeStaffRole, roleLabelAr } from "@/lib/office-requests/admin-access";
 import type { AdminRole } from "@/lib/office-requests/types";
 
 type AdminDashboardLayoutProps = {
@@ -58,7 +58,7 @@ export function AdminDashboardLayout({
     >
       <a
         href="#main-content"
-        className="absolute start-4 top-0 z-[100] -translate-y-full rounded-md bg-gov-accent px-4 py-3 text-sm font-semibold text-white shadow-md transition-transform focus:translate-y-4"
+        className="absolute start-4 top-0 z-[100] -translate-y-full rounded-md bg-brand-accent px-4 py-3 text-sm font-semibold text-white shadow-md transition-transform focus:translate-y-4"
       >
         تخطي إلى المحتوى
       </a>
@@ -66,7 +66,7 @@ export function AdminDashboardLayout({
         locale={locale}
         role={role}
         queueOfficeId={
-          role === "office_user"
+          isSingleOfficeStaffRole(role)
             ? officeId
             : (role === "office_admin" || role === "governorate_admin") &&
                 allowedOfficeIds.length === 1

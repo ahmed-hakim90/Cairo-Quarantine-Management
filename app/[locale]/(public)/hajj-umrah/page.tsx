@@ -91,7 +91,7 @@ export default async function HajjUmrahPage({
           }}
         />
       </ScrollReveal>
-      <ScrollReveal>
+      <ScrollReveal initialVisible>
         <HajjTravelerOfficesTable
           content={m.hajjTable}
           locale={locale}

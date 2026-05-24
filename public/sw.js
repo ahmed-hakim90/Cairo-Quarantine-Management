@@ -6,7 +6,7 @@
 //   - Bypass non-GET requests, Server Actions, API routes, and Next.js
 //     internals like /_next/data and HMR endpoints.
 
-const VERSION = "v1";
+const VERSION = "v2";
 const STATIC_CACHE = `cqm-static-${VERSION}`;
 const RUNTIME_CACHE = `cqm-runtime-${VERSION}`;
 const HTML_CACHE = `cqm-html-${VERSION}`;

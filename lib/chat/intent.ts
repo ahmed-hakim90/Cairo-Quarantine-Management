@@ -21,6 +21,8 @@ import type { DestinationCountry } from "@/lib/office-requests/types";
 export type ChatIntent =
   | "price"
   | "booking"
+  | "help_capabilities"
+  | "booking_steps"
   | "office_hours"
   | "services"
   | "destination_vaccines"
@@ -38,11 +40,65 @@ export function isPriceQuestion(normalized: string): boolean {
 }
 
 export function isBookingQuestion(normalized: string): boolean {
+<<<<<<< HEAD
+  if (isBookingStepsQuestion(normalized)) return false;
+=======
   if (normalizedIncludesAny(normalized, BOOKING_PATTERNS)) return true;
+>>>>>>> origin/main
   const tokens = normalized.split(" ").filter((t) => t.length >= 2);
   return tokens.some((t) => t === "موعد");
 }
 
+<<<<<<< HEAD
+export function isHelpCapabilitiesQuestion(normalized: string): boolean {
+  if (!normalized) return false;
+  if (isPriceQuestion(normalized) || isBookingQuestion(normalized)) return false;
+
+  const helpSignals =
+    normalized.includes("تساعدني") ||
+    normalized.includes("تقدر تساعد") ||
+    normalized.includes("ممكن تساعد") ||
+    normalized.includes("what can you help") ||
+    normalized.includes("how can you help") ||
+    normalized.includes("what do you do") ||
+    normalized.includes("how can i use");
+
+  if (!helpSignals) return false;
+
+  return (
+    normalized.includes("ايه") ||
+    normalized.includes("what") ||
+    normalized.includes("how") ||
+    normalized.includes("ماذا") ||
+    normalized.includes("شو") ||
+    normalized.endsWith("في ايه") ||
+    normalized.includes("help with") ||
+    normalized.includes("assist")
+  );
+}
+
+export function isBookingStepsQuestion(normalized: string): boolean {
+  if (!normalized) return false;
+  return (
+    normalized.includes("خطوات") ||
+    normalized.includes("steps") ||
+    normalized.includes("step by step")
+  );
+}
+
+const HOURS_SIGNALS = [
+  "مواعيد",
+  "دوام",
+  "شغل",
+  "مفتوح",
+  "ساعات",
+  "working",
+  "hours",
+  "open",
+];
+
+=======
+>>>>>>> origin/main
 const QUESTION_STOP_TOKENS = new Set([
   "ايه",
   "هي",
@@ -253,6 +309,8 @@ export function classifyChatIntent(
   const countries = options?.destinationCountries ?? [];
 
   if (isPriceQuestion(normalized)) return "price";
+  if (isHelpCapabilitiesQuestion(normalized)) return "help_capabilities";
+  if (isBookingStepsQuestion(normalized)) return "booking_steps";
   if (isBookingQuestion(normalized)) return "booking";
   if (isOfficeHoursQuestion(normalized, { destinationCountries: countries })) {
     return "office_hours";

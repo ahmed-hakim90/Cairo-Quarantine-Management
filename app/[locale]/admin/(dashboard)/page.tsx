@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import { notFound, redirect } from "next/navigation";
 import { AdminAnalyticsCharts } from "@/components/admin/AdminAnalyticsCharts";
+import { AdminTopOfficesCharts } from "@/components/admin/AdminTopOfficesCharts";
 import { AdminBookingQueueStatSection } from "@/components/admin/AdminBookingQueueStatSection";
 import { AdminDashboardPeriodFilter } from "@/components/admin/AdminDashboardPeriodFilter";
 import { AdminFeedbackStatSection } from "@/components/admin/AdminFeedbackStatSection";
@@ -25,12 +26,15 @@ import {
   buildFeedbackSectionFromDailyStats,
   buildFeedbackSectionFromRequests,
   buildOfficePerformanceRatings,
+  buildOfficePerformanceFromDailyStats,
+  topOfficesByComplaints,
+  topOfficesByTotalRequests,
 } from "@/lib/office-requests/analytics";
 import {
   aggregateDailyQueueStats,
   listDailyQueueStatsForOfficesInRange,
 } from "@/lib/queue/daily-stats-service";
-import { adminAllowedOfficeIds } from "@/lib/office-requests/admin-access";
+import { adminAllowedOfficeIds, canViewFeedbackRequests, canViewTopOfficesDashboardCharts } from "@/lib/office-requests/admin-access";
 import { getAdminSession } from "@/lib/office-requests/session";
 import {
   countVisibleBookingsForSession,
@@ -61,6 +65,8 @@ export default async function AdminOverviewPage({
   if (!session) redirect(`/${locale}/admin/login`);
 
   const isSuperAdmin = session.profile.role === "super_admin";
+  const isReception = !canViewFeedbackRequests(session.profile.role);
+  const showTopOfficesCharts = canViewTopOfficesDashboardCharts(session.profile.role);
   const isLocalAdmin =
     session.profile.role === "office_admin" ||
     session.profile.role === "governorate_admin";
@@ -170,12 +176,15 @@ export default async function AdminOverviewPage({
   const feedbackSection = useDailyStatsPath
     ? buildFeedbackSectionFromDailyStats(aggregatedStats)
     : buildFeedbackSectionFromRequests(requests);
-  const officeRatings = buildOfficePerformanceRatings(
-    requests,
-    selectedOfficeId
-      ? offices.filter((office) => office.id === selectedOfficeId)
-      : offices,
-  );
+  const scopedOffices = selectedOfficeId
+    ? offices.filter((office) => office.id === selectedOfficeId)
+    : offices;
+  const officeRatings =
+    dailyStatsRows.length > 0
+      ? buildOfficePerformanceFromDailyStats(dailyStatsRows, scopedOffices)
+      : buildOfficePerformanceRatings(requests, scopedOffices);
+  const topByRequests = topOfficesByTotalRequests(officeRatings);
+  const topByComplaints = topOfficesByComplaints(officeRatings);
 
   return (
     <div className="mx-auto max-w-7xl">
@@ -240,15 +249,17 @@ export default async function AdminOverviewPage({
           }
           section={bookingSection}
         />
-        <AdminFeedbackStatSection
-          title="الشكاوى والمقترحات"
-          totalLabel={
-            applyBookingDateFilter
-              ? "إجمالي الشكاوى والمقترحات (في النطاق)"
-              : "إجمالي الشكاوى والمقترحات"
-          }
-          section={feedbackSection}
-        />
+        {!isReception ? (
+          <AdminFeedbackStatSection
+            title="الشكاوى والمقترحات"
+            totalLabel={
+              applyBookingDateFilter
+                ? "إجمالي الشكاوى والمقترحات (في النطاق)"
+                : "إجمالي الشكاوى والمقترحات"
+            }
+            section={feedbackSection}
+          />
+        ) : null}
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {selectedOfficeNameAr ? (
             <AdminStatCard label="المكتب" value={selectedOfficeNameAr} />
@@ -263,8 +274,19 @@ export default async function AdminOverviewPage({
           analytics={analytics}
           bookingQueue={bookingSection}
           feedback={feedbackSection}
+          showFeedback={!isReception}
         />
       </div>
+
+      {showTopOfficesCharts ? (
+        <div className="mb-6">
+          <AdminTopOfficesCharts
+            topByRequests={topByRequests}
+            topByComplaints={topByComplaints}
+            showComplaints={!isReception}
+          />
+        </div>
+      ) : null}
 
       <section className="mb-6 rounded-lg border border-gov-gray-200 bg-white p-4 shadow-sm">
         <div className="mb-4 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
@@ -273,7 +295,9 @@ export default async function AdminOverviewPage({
               تقييم أداء المكاتب
             </h2>
             <p className="mt-1 text-xs text-gov-gray-600">
-              حجوزات وشكاوى ضمن النطاق المفلتر.
+              {isReception
+                ? "حجوزات ضمن النطاق المفلتر."
+                : "حجوزات وشكاوى ضمن النطاق المفلتر."}
             </p>
           </div>
         </div>
@@ -284,7 +308,7 @@ export default async function AdminOverviewPage({
                 <th className="px-4 py-3">المكتب</th>
                 <th className="px-4 py-3">حجوزات</th>
                 <th className="px-4 py-3">مكتمل</th>
-                <th className="px-4 py-3">شكاوى</th>
+                {!isReception ? <th className="px-4 py-3">شكاوى</th> : null}
               </tr>
             </thead>
             <tbody className="divide-y divide-gov-gray-100">
@@ -299,9 +323,11 @@ export default async function AdminOverviewPage({
                   <td className="px-4 py-3 font-semibold text-gov-gray-800">
                     {rating.completed}
                   </td>
-                  <td className="px-4 py-3 font-semibold text-gov-gray-800">
-                    {rating.complaints}
-                  </td>
+                  {!isReception ? (
+                    <td className="px-4 py-3 font-semibold text-gov-gray-800">
+                      {rating.complaints}
+                    </td>
+                  ) : null}
                 </tr>
               ))}
             </tbody>

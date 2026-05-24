@@ -14,9 +14,14 @@ import {
   submitOfficeRequest,
   type BookingFormState,
 } from "@/app/[locale]/(public)/booking/actions";
+import { useOptionalPublicAnalytics } from "@/components/analytics/PublicAnalyticsProvider";
+import { BookingAvailableDatePicker } from "@/components/booking/BookingAvailableDatePicker";
 import { BookingRequestSuccessView } from "@/components/booking/BookingRequestSuccessView";
-import { LocaleLink } from "@/components/i18n/LocaleLink";
-import { getCairoMinBookingYmd } from "@/lib/cairo-today-ymd";
+import {
+  getCairoMinBookingYmd,
+  getCairoYmdDaysAfter,
+} from "@/lib/cairo-today-ymd";
+import { BOOKING_DATE_HORIZON_DAYS } from "@/lib/office-requests/booking-constants";
 import { bookingRequestCopy } from "@/lib/i18n/booking-request-copy";
 import type { Locale } from "@/lib/i18n/config";
 import { publicTravelerCategoryLabels } from "@/lib/i18n/office-request-copy";
@@ -33,7 +38,7 @@ import {
   type PublicOfficeRequestStatus,
   type TravelerState,
 } from "@/lib/office-requests/types";
-import { SkeletonBlock, SkeletonButton } from "@/components/skeletons/primitives";
+import { SkeletonButton } from "@/components/skeletons/primitives";
 import { feedbackToast } from "@/lib/ui/feedback-toast";
 
 type BookingRequestFormProps = {
@@ -61,9 +66,6 @@ const initialState: BookingFormState = {
   message: "",
 };
 
-const STORAGE_KEY = "cairo-office-requests:v1";
-const DUPLICATE_REDIRECT_DELAY_MS = 1500;
-
 const inputClass =
   "mt-2 w-full min-h-12 rounded-md border border-gov-gray-200 bg-white px-3.5 py-3 text-base text-gov-gray-900 outline-none transition focus:border-gov-accent focus:ring-2 focus:ring-gov-accent/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gov-accent disabled:bg-gov-gray-50 disabled:text-gov-gray-600 sm:min-h-0 sm:px-3 sm:py-3 sm:text-sm";
 
@@ -84,21 +86,6 @@ const checkboxInputClass =
 function FieldError({ message }: { message?: string }) {
   if (!message) return null;
   return <p className="mt-2 text-sm font-semibold text-red-700">{message}</p>;
-}
-
-function saveRequestToDevice(request: StoredRequest) {
-  try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    const current = raw ? JSON.parse(raw) : [];
-    const requests: StoredRequest[] = Array.isArray(current) ? current : [];
-    const next = [
-      request,
-      ...requests.filter((item) => item?.id !== request.id),
-    ].slice(0, 20);
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-  } catch {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify([request]));
-  }
 }
 
 export function BookingRequestForm(props: BookingRequestFormProps) {
@@ -157,8 +144,9 @@ function BookingRequestFormFields({
   sameDayCutoffHour = DEFAULT_BOOKING_SAME_DAY_CUTOFF_HOUR,
   onSuccess,
 }: BookingRequestFormFieldsProps) {
-  const router = useRouter();
   const t = bookingRequestCopy[locale];
+  const analytics = useOptionalPublicAnalytics();
+  const formType = mode === "booking" ? "booking" : "complaint";
   const bookingStates = useMemo(
     () =>
       travelerStates.length > 0
@@ -171,13 +159,11 @@ function BookingRequestFormFields({
     submitOfficeRequest,
     initialState,
   );
-  const savedRequestId = useRef<string | null>(null);
   const lastToastKeyRef = useRef("");
-  const lastDuplicateRedirectKeyRef = useRef("");
   const officeRef = useRef<HTMLSelectElement>(null);
   const travelerStateRef = useRef<HTMLSelectElement>(null);
   const typeRef = useRef<HTMLSelectElement>(null);
-  const preferredDateRef = useRef<HTMLInputElement>(null);
+  const preferredDateRef = useRef<HTMLDivElement>(null);
   const nameRef = useRef<HTMLInputElement>(null);
   const phoneRef = useRef<HTMLInputElement>(null);
   const detailsRef = useRef<HTMLTextAreaElement>(null);
@@ -190,16 +176,19 @@ function BookingRequestFormFields({
   const [travelerStateId, setTravelerStateId] = useState(
     state.values?.travelerStateId ?? "",
   );
-  const [dayFull, setDayFull] = useState(false);
-  const [availabilityHint, setAvailabilityHint] = useState<string | null>(
-    null,
-  );
-  const [availabilityPending, setAvailabilityPending] = useState(false);
 
   const minYmd = useMemo(
     () => getCairoMinBookingYmd(new Date(), { sameDayCutoffHour }),
     [sameDayCutoffHour],
   );
+
+  const [availableDates, setAvailableDates] = useState<Set<string>>(
+    () => new Set(),
+  );
+  const [fullDates, setFullDates] = useState<Set<string>>(() => new Set());
+  const [datesLoading, setDatesLoading] = useState(false);
+  const [datesFrom, setDatesFrom] = useState("");
+  const [datesTo, setDatesTo] = useState("");
 
   const allowedTravelerIds = useMemo(
     () => new Set(bookingStates.map((s) => s.id)),
@@ -240,6 +229,54 @@ function BookingRequestFormFields({
   }
 
   useEffect(() => {
+    analytics?.trackFormStart(formType, "open");
+  }, [analytics, formType]);
+
+  useEffect(() => {
+    if (!state.ok || !state.request) return;
+    analytics?.trackSubmitSuccess(formType, state.request.id);
+  }, [analytics, formType, state.ok, state.request]);
+
+  useEffect(() => {
+    if (state.ok || !state.errors || !analytics) return;
+    analytics.trackFormStep({
+      formType,
+      step: "validation_error",
+      officeId: state.values?.officeId,
+      phone: state.values?.phone,
+      preferredDate: state.values?.preferredDate,
+    });
+  }, [analytics, formType, state.ok, state.errors, state.values]);
+
+  useEffect(() => {
+    if (!officeId.trim()) return;
+    analytics?.trackFormStep({
+      formType,
+      step: "office",
+      officeId,
+    });
+  }, [analytics, formType, officeId]);
+
+  useEffect(() => {
+    if (mode !== "booking" || !travelerStateId) return;
+    analytics?.trackFormStep({
+      formType,
+      step: "traveler_state",
+      officeId: officeId || undefined,
+    });
+  }, [analytics, formType, mode, travelerStateId, officeId]);
+
+  useEffect(() => {
+    if (mode !== "booking" || !preferredDate) return;
+    analytics?.trackFormStep({
+      formType,
+      step: "preferred_date",
+      officeId: officeId || undefined,
+      preferredDate,
+    });
+  }, [analytics, formType, mode, preferredDate, officeId]);
+
+  useEffect(() => {
     if (!state.ok || !state.request) return;
     onSuccess({
       message: state.message,
@@ -271,20 +308,6 @@ function BookingRequestFormFields({
   }, [state.ok, state.message, state.duplicate]);
 
   useEffect(() => {
-    if (!state.duplicate || state.ok || !state.message) return;
-    const key = state.message;
-    if (lastDuplicateRedirectKeyRef.current === key) return;
-    lastDuplicateRedirectKeyRef.current = key;
-
-    feedbackToast.error(state.message);
-    const timer = window.setTimeout(() => {
-      router.push(`/${locale}/my-requests`);
-    }, DUPLICATE_REDIRECT_DELAY_MS);
-
-    return () => window.clearTimeout(timer);
-  }, [state.duplicate, state.ok, state.message, locale, router]);
-
-  useEffect(() => {
     if (state.ok || !state.values) return;
     const id = requestAnimationFrame(() => {
       setOfficeId(state.values!.officeId);
@@ -293,19 +316,6 @@ function BookingRequestFormFields({
     });
     return () => cancelAnimationFrame(id);
   }, [state.ok, state.values]);
-
-  useEffect(() => {
-    if (
-      !state.ok ||
-      !state.request ||
-      savedRequestId.current === state.request.id
-    ) {
-      return;
-    }
-
-    saveRequestToDevice(state.request);
-    savedRequestId.current = state.request.id;
-  }, [state.ok, state.request]);
 
   useEffect(() => {
     if (!state.errors) return;
@@ -329,75 +339,113 @@ function BookingRequestFormFields({
   }, [state.errors]);
 
   useEffect(() => {
-    if (mode !== "booking") {
+    if (mode !== "booking") return;
+
+    const oid = officeId.trim();
+    if (!oid) {
       const id = requestAnimationFrame(() => {
-        setDayFull(false);
-        setAvailabilityHint(null);
-        setAvailabilityPending(false);
+        setAvailableDates(new Set());
+        setFullDates(new Set());
+        setDatesLoading(false);
+        setDatesFrom("");
+        setDatesTo("");
+        setPreferredDate("");
       });
       return () => cancelAnimationFrame(id);
     }
 
-    const oid = officeId.trim();
-    const d = preferredDate.trim();
-    if (!oid || !/^\d{4}-\d{2}-\d{2}$/.test(d)) {
-      const clearId = requestAnimationFrame(() => {
-        setDayFull(false);
-        setAvailabilityHint(null);
-        setAvailabilityPending(false);
-      });
-      return () => cancelAnimationFrame(clearId);
-    }
-
     const ac = new AbortController();
     const pendingId = requestAnimationFrame(() => {
-      setAvailabilityPending(true);
+      setDatesLoading(true);
     });
-    const timer = window.setTimeout(async () => {
+
+    void (async () => {
       try {
         const res = await fetch(
-          `/api/booking/availability?officeId=${encodeURIComponent(oid)}&preferredDate=${encodeURIComponent(d)}`,
+          `/api/booking/available-dates?officeId=${encodeURIComponent(oid)}`,
           { signal: ac.signal },
         );
         const data = (await res.json()) as {
-          available?: boolean;
-          fullMessage?: string;
+          dates?: string[];
+          fullDates?: string[];
+          from?: string;
+          to?: string;
         };
         if (ac.signal.aborted) return;
-        const full = res.ok && data.available === false;
-        setDayFull(full);
-        setAvailabilityHint(full ? t.dayFull : null);
+        if (!res.ok) {
+          setAvailableDates(new Set());
+          setFullDates(new Set());
+          setDatesFrom(minYmd);
+          setDatesTo(getCairoYmdDaysAfter(BOOKING_DATE_HORIZON_DAYS, minYmd));
+          analytics?.trackApiError("booking_available_dates");
+          return;
+        }
+        const nextAvailable = new Set(data.dates ?? []);
+        const nextFull = new Set(data.fullDates ?? []);
+        const from = data.from ?? minYmd;
+        const to =
+          data.to ?? getCairoYmdDaysAfter(BOOKING_DATE_HORIZON_DAYS, minYmd);
+        setAvailableDates(nextAvailable);
+        setFullDates(nextFull);
+        setDatesFrom(from);
+        setDatesTo(to);
+        setPreferredDate((current) => {
+          if (current && nextAvailable.has(current)) return current;
+          const sorted = [...nextAvailable].sort();
+          return sorted[0] ?? "";
+        });
       } catch {
         if (!ac.signal.aborted) {
-          setDayFull(false);
-          setAvailabilityHint(null);
+          setAvailableDates(new Set());
+          setFullDates(new Set());
+          setDatesFrom(minYmd);
+          setDatesTo(getCairoYmdDaysAfter(BOOKING_DATE_HORIZON_DAYS, minYmd));
+          analytics?.trackApiError("booking_available_dates_fetch");
         }
       } finally {
-        if (!ac.signal.aborted) setAvailabilityPending(false);
+        if (!ac.signal.aborted) setDatesLoading(false);
       }
-    }, 350);
+    })();
 
     return () => {
       cancelAnimationFrame(pendingId);
       ac.abort();
-      window.clearTimeout(timer);
     };
-  }, [mode, officeId, preferredDate, t.dayFull]);
+  }, [mode, officeId, minYmd, analytics]);
+
+  const officeSelected = Boolean(officeId.trim());
+  const noAvailableDates =
+    mode === "booking" &&
+    officeSelected &&
+    !datesLoading &&
+    availableDates.size === 0;
 
   const bookingBlocked =
-    mode === "booking" && (dayFull || availabilityPending);
+    mode === "booking" &&
+    (datesLoading ||
+      noAvailableDates ||
+      (officeSelected && !preferredDate.trim()));
 
   const preferredDateError =
-    state.errors?.preferredDate ?? availabilityHint ?? undefined;
+    state.errors?.preferredDate ??
+    (noAvailableDates ? t.noAvailableDates : undefined);
 
   return (
     <form
       action={action}
       className={`relative space-y-0 ${pending ? "opacity-90" : ""}`}
-      aria-busy={pending || availabilityPending ? true : undefined}
+      aria-busy={pending || datesLoading ? true : undefined}
+      onSubmit={() => analytics?.trackSubmitAttempt(formType)}
     >
       <input type="hidden" name="locale" value={locale} />
       <input type="hidden" name="governorateId" value={governorateId} />
+      {analytics ? (
+        <input
+          type="hidden"
+          name="analyticsSessionId"
+          value={analytics.sessionId}
+        />
+      ) : null}
       {mode === "booking" ? (
         <input type="hidden" name="type" value="booking" />
       ) : null}
@@ -425,15 +473,6 @@ function BookingRequestFormFields({
           role="status"
         >
           {state.message}
-          {state.duplicate ? (
-            <LocaleLink
-              locale={locale}
-              href="/my-requests"
-              className="mt-3 inline-flex min-h-10 items-center rounded-md bg-gov-accent px-4 text-sm font-bold text-white transition hover:bg-gov-navy"
-            >
-              {t.duplicateLink}
-            </LocaleLink>
-          ) : null}
         </div>
       ) : null}
 
@@ -543,30 +582,33 @@ function BookingRequestFormFields({
           </div>
 
           {mode === "booking" ? (
-            <label className={labelClass}>
-              {t.preferredDate}
-              <input
-                ref={preferredDateRef}
+            <div>
+              <span className={labelClass}>{t.preferredDate}</span>
+              <BookingAvailableDatePicker
+                locale={locale}
                 name="preferredDate"
-                type="date"
-                required
-                min={minYmd}
-                className={inputClass}
                 value={preferredDate}
-                onChange={(e) => setPreferredDate(e.target.value)}
+                onChange={setPreferredDate}
+                availableDates={availableDates}
+                fullDates={fullDates}
+                fromYmd={datesFrom || minYmd}
+                toYmd={
+                  datesTo ||
+                  getCairoYmdDaysAfter(BOOKING_DATE_HORIZON_DAYS, minYmd)
+                }
+                loading={datesLoading && officeSelected}
+                disabled={!officeSelected}
+                disabledHint={
+                  !officeSelected ? t.chooseOfficeFirstForDate : undefined
+                }
+                placeholderLabel={t.datePlaceholder}
+                loadingLabel={t.loadingAvailableDates}
+                prevMonthLabel={t.calendarPrevMonth}
+                nextMonthLabel={t.calendarNextMonth}
+                containerRef={preferredDateRef}
               />
-              {availabilityPending ? (
-                <div
-                  className="mt-2 space-y-1"
-                  role="status"
-                  aria-live="polite"
-                >
-                  <SkeletonBlock className="h-3 w-40" />
-                  <p className="sr-only">{t.checkingAvailability}</p>
-                </div>
-              ) : null}
               <FieldError message={preferredDateError} />
-            </label>
+            </div>
           ) : null}
         </fieldset>
 
@@ -651,15 +693,38 @@ function BookingRequestFormFields({
         </fieldset>
       </div>
 
-      <div className="flex flex-col-reverse gap-3 border-t border-gov-gray-200 bg-gov-gray-50 px-5 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:flex-row sm:items-center sm:justify-between sm:pb-4 md:px-7">
-        <p className="text-xs leading-relaxed text-gov-gray-600 sm:text-sm">
+      <div className="border-t border-gov-gray-200 px-5 py-4 md:hidden">
+        {pending ? (
+          <SkeletonButton className="h-12 w-full" aria-hidden />
+        ) : (
+          <button
+            type="submit"
+            disabled={
+              offices.length === 0 ||
+              bookingBlocked ||
+              bookingNoMatchingOffices
+            }
+            className="inline-flex min-h-12 w-full items-center justify-center rounded-md bg-brand-accent px-5 py-3 text-base font-bold text-white shadow-sm transition hover:bg-brand-primary disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {mode === "booking" ? t.sendBooking : t.sendFollowUp}
+          </button>
+        )}
+        {pending ? (
+          <p className="sr-only" role="status">
+            {t.sending}
+          </p>
+        ) : null}
+      </div>
+
+      <div className="hidden flex-col-reverse gap-3 border-t border-gov-gray-200 bg-gov-gray-50 px-5 py-4 md:flex md:flex-row md:items-center md:justify-between md:px-7">
+        <p className="text-xs leading-relaxed text-gov-gray-600 md:text-sm">
           {mode === "booking"
             ? t.bookingSubmitHint
             : t.complaintSubmitHint}
         </p>
         {pending ? (
-          <div className="w-full shrink-0 sm:w-auto" aria-hidden>
-            <SkeletonButton className="h-12 w-full min-w-[8rem] sm:h-11 sm:w-40" />
+          <div className="w-full shrink-0 md:w-auto" aria-hidden>
+            <SkeletonButton className="h-11 w-40" />
           </div>
         ) : (
           <button
@@ -669,7 +734,7 @@ function BookingRequestFormFields({
               bookingBlocked ||
               bookingNoMatchingOffices
             }
-            className="inline-flex min-h-12 w-full shrink-0 items-center justify-center rounded-md bg-gov-accent px-5 py-3 text-base font-bold text-white shadow-sm transition hover:bg-gov-navy disabled:cursor-not-allowed disabled:opacity-60 sm:min-h-11 sm:w-auto sm:text-sm"
+            className="inline-flex min-h-11 w-full shrink-0 items-center justify-center rounded-md bg-brand-accent px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-brand-primary disabled:cursor-not-allowed disabled:opacity-60 md:w-auto"
           >
             {mode === "booking" ? t.sendBooking : t.sendFollowUp}
           </button>

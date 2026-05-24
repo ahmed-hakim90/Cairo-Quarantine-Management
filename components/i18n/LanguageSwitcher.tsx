@@ -118,7 +118,7 @@ export function LanguageSwitcher({
         aria-label={nav.switchLangAria}
         className={
           variant === "landing"
-            ? "inline-flex shrink-0 items-center justify-center gap-1.5 rounded-md border border-landing-primary/20 bg-landing-primary/5 px-2 text-sm font-medium leading-none text-landing-primary transition-colors hover:bg-landing-primary/10 min-h-10 sm:min-h-11 sm:px-3"
+            ? "inline-flex shrink-0 items-center justify-center gap-1.5 rounded-md border border-brand-primary/20 bg-brand-primary/5 px-2 text-sm font-medium leading-none text-brand-primary transition-colors hover:bg-brand-primary/10 min-h-10 sm:min-h-11 sm:px-3"
             : "inline-flex shrink-0 items-center justify-center gap-1.5 rounded-md border border-white/25 bg-white/10 px-2 text-sm font-medium leading-none text-white/95 transition-colors hover:bg-white/20 min-h-10 sm:min-h-11 sm:px-3"
         }
       >
@@ -151,7 +151,7 @@ export function LanguageSwitcher({
           id={menuId}
           role="menu"
           aria-label={nav.switchLangAria}
-          className="absolute end-0 top-full z-50 mt-1 min-w-[10rem] overflow-hidden rounded-md border border-gov-gray-200 bg-white py-1 text-sm text-gov-gray-900 shadow-lg ring-1 ring-black/5"
+          className="absolute end-0 top-full z-50 mt-1 min-w-[10rem] overflow-hidden rounded-md border border-brand-gray-200 bg-white py-1 text-sm text-brand-gray-900 shadow-lg ring-1 ring-black/5"
         >
           {alternatives.map((target) => {
             const base =
@@ -166,7 +166,7 @@ export function LanguageSwitcher({
                   lang={hl}
                   role="menuitem"
                   onClick={() => setOpen(false)}
-                  className="flex items-center gap-2 px-3 py-2 transition-colors hover:bg-gov-gray-100 focus:bg-gov-gray-100 focus:outline-none"
+                  className="flex items-center gap-2 px-3 py-2 transition-colors hover:bg-brand-gray-100 focus:bg-brand-gray-100 focus:outline-none"
                 >
                   <span aria-hidden="true" className="text-base leading-none">
                     {flagForLocale[target]}

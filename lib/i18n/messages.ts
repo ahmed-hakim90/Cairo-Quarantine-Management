@@ -21,6 +21,7 @@ export type Messages = {
     title: string;
     aria: string;
     home: string;
+    aboutPlatform: string;
     international: string;
     hajjUmrah: string;
     citizen: string;
@@ -36,6 +37,23 @@ export type Messages = {
     mainMenuHeading: string;
     openMenuAria: string;
     closeMenuAria: string;
+  };
+  bottomNav: {
+    aria: string;
+    booking: string;
+    complaints: string;
+    search: string;
+    searchAria: string;
+    searchPlaceholder: string;
+    searchDialogTitle: string;
+    noResults: string;
+    quickLinksHeading: string;
+    resultTypePage: string;
+    resultTypeSection: string;
+    resultTypeOffice: string;
+    resultTypeCountry: string;
+    resultTypeVaccine: string;
+    closeSearchAria: string;
   };
   footer: {
     title: string;
@@ -267,6 +285,7 @@ const ar: Messages = {
     title: "إدارة الحجر الصحي بالقاهرة",
     aria: "التنقل الرئيسي",
     home: "الرئيسية",
+    aboutPlatform: "عن المنصة",
     international: "مسافر دولي",
     hajjUmrah: "الحج والعمرة",
     citizen: "خدمات المواطنين",
@@ -283,6 +302,23 @@ const ar: Messages = {
     mainMenuHeading: "القائمة",
     openMenuAria: "فتح قائمة التنقل الرئيسية",
     closeMenuAria: "إغلاق قائمة التنقل",
+  },
+  bottomNav: {
+    aria: "التنقل السريع",
+    booking: "حجز",
+    complaints: "شكاوى",
+    search: "بحث",
+    searchAria: "فتح البحث في الموقع",
+    searchPlaceholder: "ابحث عن مكتب، دولة، حج، عمرة…",
+    searchDialogTitle: "بحث سريع",
+    noResults: "لا توجد نتائج مطابقة.",
+    quickLinksHeading: "انتقل مباشرة",
+    resultTypePage: "صفحة",
+    resultTypeSection: "قسم",
+    resultTypeOffice: "مكتب",
+    resultTypeCountry: "دولة",
+    resultTypeVaccine: "لقاح",
+    closeSearchAria: "إغلاق البحث",
   },
   footer: {
     title: "إدارة الحجر الصحي بالقاهرة",
@@ -555,6 +591,7 @@ const en: Messages = {
     title: "Cairo Quarantine Administration",
     aria: "Main navigation",
     home: "Home",
+    aboutPlatform: "About the platform",
     international: "International traveller",
     hajjUmrah: "Hajj & Umrah",
     citizen: "Citizen services",
@@ -571,6 +608,23 @@ const en: Messages = {
     mainMenuHeading: "Menu",
     openMenuAria: "Open main navigation menu",
     closeMenuAria: "Close navigation menu",
+  },
+  bottomNav: {
+    aria: "Quick navigation",
+    booking: "Book",
+    complaints: "Complaints",
+    search: "Search",
+    searchAria: "Open site search",
+    searchPlaceholder: "Search offices, countries, Hajj, Umrah…",
+    searchDialogTitle: "Quick search",
+    noResults: "No matching results.",
+    quickLinksHeading: "Go directly",
+    resultTypePage: "Page",
+    resultTypeSection: "Section",
+    resultTypeOffice: "Office",
+    resultTypeCountry: "Country",
+    resultTypeVaccine: "Vaccine",
+    closeSearchAria: "Close search",
   },
   footer: {
     title: "Cairo Quarantine Administration",
@@ -848,6 +902,7 @@ const zh: Messages = {
     title: "开罗检疫管理处",
     aria: "主导航",
     home: "首页",
+    aboutPlatform: "关于平台",
     international: "国际旅客",
     hajjUmrah: "朝觐与副朝",
     citizen: "公民服务",
@@ -863,6 +918,23 @@ const zh: Messages = {
     mainMenuHeading: "菜单",
     openMenuAria: "打开主导航菜单",
     closeMenuAria: "关闭导航菜单",
+  },
+  bottomNav: {
+    aria: "快捷导航",
+    booking: "预约",
+    complaints: "投诉",
+    search: "搜索",
+    searchAria: "打开网站搜索",
+    searchPlaceholder: "搜索办公室、国家、朝觐、副朝…",
+    searchDialogTitle: "快速搜索",
+    noResults: "没有匹配的结果。",
+    quickLinksHeading: "直接前往",
+    resultTypePage: "页面",
+    resultTypeSection: "部分",
+    resultTypeOffice: "办公室",
+    resultTypeCountry: "国家",
+    resultTypeVaccine: "疫苗",
+    closeSearchAria: "关闭搜索",
   },
   footer: {
     title: "开罗检疫管理处",
@@ -1127,6 +1199,7 @@ const fr: Messages = {
     title: "Administration de la quarantaine du Caire",
     aria: "Navigation principale",
     home: "Accueil",
+    aboutPlatform: "À propos de la plateforme",
     international: "Voyageur international",
     hajjUmrah: "Hajj et Omra",
     citizen: "Services aux citoyens",
@@ -1143,6 +1216,23 @@ const fr: Messages = {
     mainMenuHeading: "Menu",
     openMenuAria: "Ouvrir le menu principal",
     closeMenuAria: "Fermer le menu",
+  },
+  bottomNav: {
+    aria: "Navigation rapide",
+    booking: "Reserver",
+    complaints: "Plaintes",
+    search: "Recherche",
+    searchAria: "Ouvrir la recherche sur le site",
+    searchPlaceholder: "Bureaux, pays, Hajj, Omra…",
+    searchDialogTitle: "Recherche rapide",
+    noResults: "Aucun resultat correspondant.",
+    quickLinksHeading: "Acces direct",
+    resultTypePage: "Page",
+    resultTypeSection: "Section",
+    resultTypeOffice: "Bureau",
+    resultTypeCountry: "Pays",
+    resultTypeVaccine: "Vaccin",
+    closeSearchAria: "Fermer la recherche",
   },
   footer: {
     title: "Administration de la quarantaine du Caire",

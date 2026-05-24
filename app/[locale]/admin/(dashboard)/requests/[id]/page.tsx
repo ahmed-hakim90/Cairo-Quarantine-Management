@@ -1,6 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 import { RequestDetail } from "@/components/admin/RequestDetail";
 import { isLocale } from "@/lib/i18n/config";
+import { canViewFeedbackRequests } from "@/lib/office-requests/admin-access";
 import { getAdminSession } from "@/lib/office-requests/session";
 import {
   getOffice,
@@ -30,6 +31,7 @@ export default async function AdminRequestPage({
     allowedOfficeIds: session.profile.allowedOfficeIds,
   });
   if (!request) notFound();
+  if (!canViewFeedbackRequests(session.profile.role)) notFound();
   if (request.type === "booking") notFound();
 
   const [office, templates, activityLogs, travelerStates] = await Promise.all([

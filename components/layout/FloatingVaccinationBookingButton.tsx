@@ -42,8 +42,8 @@ export function FloatingVaccinationBookingButton({
       href={href}
       className={
         stacked
-          ? "flex size-14 items-center justify-center rounded-full bg-gov-accent text-white shadow-lg shadow-gov-gray-900/20 transition-transform hover:scale-105 focus-visible:scale-105 active:scale-95"
-          : "fixed bottom-5 end-5 z-[60] flex size-14 items-center justify-center rounded-full bg-gov-accent text-white shadow-lg shadow-gov-gray-900/20 transition-transform hover:scale-105 focus-visible:scale-105 active:scale-95"
+          ? "flex size-14 items-center justify-center rounded-full bg-gov-navy text-white shadow-lg shadow-gov-gray-900/25 transition-transform hover:scale-105 focus-visible:scale-105 active:scale-95"
+          : "fixed bottom-5 end-5 z-[60] flex size-14 items-center justify-center rounded-full bg-gov-navy text-white shadow-lg shadow-gov-gray-900/25 transition-transform hover:scale-105 focus-visible:scale-105 active:scale-95"
       }
       aria-label={ariaLabel}
       title={label}

@@ -69,6 +69,16 @@ describe("buildNotifyOfficeIdBatches", () => {
     ).toEqual([["o1"]]);
   });
 
+  it("returns one batch for office_reception", () => {
+    expect(
+      buildNotifyOfficeIdBatches({
+        role: "office_reception",
+        officeId: "o1",
+        allowedOfficeIds: ["o1"],
+      }),
+    ).toEqual([["o1"]]);
+  });
+
   it("chunks office_admin offices at Firestore in limit", () => {
     const ids = Array.from({ length: FIRESTORE_IN_QUERY_MAX + 5 }, (_, i) =>
       String(i),
@@ -85,7 +95,7 @@ describe("buildNotifyOfficeIdBatches", () => {
 });
 
 describe("shouldNotifyRequest", () => {
-  const base = { officeId: "office-a", status: "new" as const };
+  const base = { officeId: "office-a", status: "new" as const, type: "booking" as const };
 
   it("allows super_admin for any office", () => {
     expect(
@@ -137,12 +147,32 @@ describe("shouldNotifyRequest", () => {
   it("ignores non-new status", () => {
     expect(
       shouldNotifyRequest(
-        { officeId: "office-a", status: "in_progress" },
+        { officeId: "office-a", status: "in_progress", type: "booking" },
         {
           role: "super_admin",
           officeId: null,
           allowedOfficeIds: [],
         },
+      ),
+    ).toBe(false);
+  });
+
+  it("notifies reception for new bookings only", () => {
+    const scope = {
+      role: "office_reception" as const,
+      officeId: "office-a",
+      allowedOfficeIds: ["office-a"],
+    };
+    expect(
+      shouldNotifyRequest(
+        { officeId: "office-a", status: "new", type: "booking" },
+        scope,
+      ),
+    ).toBe(true);
+    expect(
+      shouldNotifyRequest(
+        { officeId: "office-a", status: "new", type: "complaint" },
+        scope,
       ),
     ).toBe(false);
   });

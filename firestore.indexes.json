@@ -38,6 +38,15 @@
       "queryScope": "COLLECTION",
       "fields": [
         { "fieldPath": "officeId", "order": "ASCENDING" },
+        { "fieldPath": "type", "order": "ASCENDING" },
+        { "fieldPath": "preferredDate", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "requests",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "officeId", "order": "ASCENDING" },
         { "fieldPath": "preferredDate", "order": "ASCENDING" },
         { "fieldPath": "type", "order": "ASCENDING" }
       ]
@@ -231,11 +240,27 @@
       ]
     },
     {
+      "collectionGroup": "booking_day_stats",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "officeId", "order": "ASCENDING" },
+        { "fieldPath": "date", "order": "ASCENDING" }
+      ]
+    },
+    {
       "collectionGroup": "queue_watches",
       "queryScope": "COLLECTION",
       "fields": [
         { "fieldPath": "queueDate", "order": "ASCENDING" },
         { "fieldPath": "officeId", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "public_sessions",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "formActive", "order": "ASCENDING" },
+        { "fieldPath": "lastSeenAt", "order": "DESCENDING" }
       ]
     }
   ]

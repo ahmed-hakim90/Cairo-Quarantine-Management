@@ -3,12 +3,14 @@ import { defaultLocale, isLocale } from "@/lib/i18n/config";
 import { getMessages } from "@/lib/i18n/messages";
 import { normalizeArabic } from "@/lib/chat/normalize-arabic";
 import { buildDestinationCountryResponse } from "@/lib/chat/destination-country-response";
-import { resolveIntentWithContext, type ChatIntent } from "@/lib/chat/intent";
+import { classifyChatIntent } from "@/lib/chat/intent";
 import { buildOfficeHoursResponse } from "@/lib/chat/office-hours-response";
 import { buildVaccineLocationResponse } from "@/lib/chat/office-vaccine-location";
 import { buildOfficeAssistantResponse } from "@/lib/chat/office-response";
+import { bookingRequestCopy } from "@/lib/i18n/booking-request-copy";
 import { formatPortalUrl } from "@/lib/chat/site-knowledge";
 import {
+  isWeakSearchResult,
   searchSiteKnowledge,
   type SiteKnowledgeEntry,
 } from "@/lib/chat/site-knowledge";
@@ -20,105 +22,87 @@ function getLocale(localeValue: string | undefined) {
   return localeValue && isLocale(localeValue) ? localeValue : defaultLocale;
 }
 
-function buildPageLinkResponse(args: {
-  localeValue: string | undefined;
-  path: string;
-  sourceAr: string;
-  sourceEn: string;
-  bodyAr: string;
-  bodyEn: string;
-  linkLabelAr: string;
-  linkLabelEn: string;
-  type: PortalAssistantResponse["type"];
-}): PortalAssistantResponse {
-  const loc = getLocale(args.localeValue);
-  const path = formatPortalUrl(loc, args.path);
+function buildHelpCapabilitiesResponse(
+  localeValue: string | undefined,
+): PortalAssistantResponse {
+  const loc = getLocale(localeValue);
+  const m = getMessages(loc);
+  const servicesPath = formatPortalUrl(loc);
+  const bookingPath = formatPortalUrl(loc, "booking");
+  const locationsPath = `${formatPortalUrl(loc)}#locations-heading`;
+
   if (loc === "en") {
     return {
-      answer: `${args.bodyEn}\n[${args.linkLabelEn}](${path})`,
-      source: args.sourceEn,
-      type: args.type,
+      answer: `${m.chat.greeting}\n• Services and traveller guides\n• Vaccination booking\n• Office locations and hours\n• Guidance vaccine prices\n[Services](${servicesPath}) [Booking](${bookingPath}) [Offices](${locationsPath})`,
+      source: m.chat.title,
+      type: "contact",
+      confidence: 0.95,
+    };
+  }
+  if (loc === "zh") {
+    return {
+      answer: `${m.chat.greeting}\n• 服务与旅客指南\n• 疫苗预约\n• 办事处地址与工作时间\n• 疫苗参考价格\n[服务](${servicesPath}) [预约](${bookingPath}) [办事处](${locationsPath})`,
+      source: m.chat.title,
+      type: "contact",
+      confidence: 0.95,
+    };
+  }
+  if (loc === "fr") {
+    return {
+      answer: `${m.chat.greeting}\n• Services et guides voyageurs\n• Reservation de vaccination\n• Bureaux et horaires\n• Prix indicatifs des vaccins\n[Services](${servicesPath}) [Reservation](${bookingPath}) [Bureaux](${locationsPath})`,
+      source: m.chat.title,
+      type: "contact",
       confidence: 0.95,
     };
   }
   return {
-    answer: `${args.bodyAr}\n[${args.linkLabelAr}](${path})`,
-    source: args.sourceAr,
-    type: args.type,
+    answer: `${m.chat.greeting}\n• الخدمات وإرشادات المسافرين\n• حجز التطعيم\n• مواقع المكاتب ومواعيد العمل\n• أسعار اللقاحات التوجيهية\n[الخدمات](${servicesPath}) [الحجز](${bookingPath}) [المكاتب](${locationsPath})`,
+    source: m.chat.title,
+    type: "contact",
     confidence: 0.95,
   };
 }
 
-function buildCheckinInfoResponse(
+function buildBookingStepsResponse(
   localeValue: string | undefined,
-  knowledgeIndex: SiteKnowledgeEntry[],
-): PortalAssistantResponse {
-  const hit = knowledgeIndex.find((e) => e.id === "checkin");
-  if (hit) {
-    return buildSearchHitResponse(localeValue, hit);
-  }
-  return buildPageLinkResponse({
-    localeValue,
-    path: "checkin",
-    sourceAr: "تسجيل الحضور",
-    sourceEn: "Check-in",
-    bodyAr: "يمكنك تسجيل الحضور أو استعادة تذكرة الطابور من صفحة تسجيل الحضور.",
-    bodyEn: "Register your visit or recover your queue ticket from the check-in page.",
-    linkLabelAr: "فتح تسجيل الحضور",
-    linkLabelEn: "Open check-in",
-    type: "contact",
-  });
-}
-
-function buildComplaintInfoResponse(
-  localeValue: string | undefined,
-  knowledgeIndex: SiteKnowledgeEntry[],
-): PortalAssistantResponse {
-  const hit = knowledgeIndex.find((e) => e.id === "complaint");
-  if (hit) {
-    return buildSearchHitResponse(localeValue, hit);
-  }
-  return buildPageLinkResponse({
-    localeValue,
-    path: "complaint",
-    sourceAr: "تقديم شكوى",
-    sourceEn: "Complaint",
-    bodyAr: "يمكنك تقديم شكوى عبر نموذج الشكاوى في البوابة.",
-    bodyEn: "You can submit a complaint through the portal complaint form.",
-    linkLabelAr: "فتح نموذج الشكوى",
-    linkLabelEn: "Open complaint form",
-    type: "contact",
-  });
-}
-
-function buildInternationalInfoResponse(
-  localeValue: string | undefined,
-  knowledgeIndex: SiteKnowledgeEntry[],
 ): PortalAssistantResponse {
   const loc = getLocale(localeValue);
-  const hit =
-    knowledgeIndex.find((e) => e.id === "international") ??
-    searchSiteKnowledge(
-      loc === "en" ? "international traveler" : "مسافر دولي",
-      knowledgeIndex,
-      3,
-      { intent: "international_info" },
-    )[0];
-  if (hit) {
-    return buildSearchHitResponse(localeValue, hit);
+  const m = getMessages(loc);
+  const booking =
+    bookingRequestCopy[loc as keyof typeof bookingRequestCopy] ??
+    bookingRequestCopy.ar;
+  const path = formatPortalUrl(loc, "booking");
+
+  if (loc === "en") {
+    return {
+      answer: `Booking steps:\n1. Open the booking page — ${booking.bookingIntro}\n2. Choose governorate and ${booking.officeName.toLowerCase()}, then ${booking.preferredDate.toLowerCase()}.\n3. Enter ${booking.name.toLowerCase()} and ${booking.phone.toLowerCase()}, then submit.\n4. Keep your confirmation link or follow-up card to track your request.\n[Open booking](${path})`,
+      source: m.nav.bookVaccination,
+      type: "booking",
+      confidence: 0.95,
+    };
   }
-  const intl = getMessages(loc).pages.international;
-  return buildPageLinkResponse({
-    localeValue,
-    path: "international-traveler",
-    sourceAr: intl.heading,
-    sourceEn: intl.heading,
-    bodyAr: `${intl.description} ${intl.beforeTravel}`,
-    bodyEn: `${intl.description} ${intl.beforeTravel}`,
-    linkLabelAr: "دليل المسافر الدولي",
-    linkLabelEn: "International traveler guide",
-    type: "vaccine",
-  });
+  if (loc === "zh") {
+    return {
+      answer: `预约步骤：\n1. 打开预约页面。\n2. 选择旅客状态、省份与办事处及日期。\n3. 填写姓名和电话并提交。\n4. 请保存确认链接或跟进卡以查询状态。\n[打开预约](${path})`,
+      source: m.nav.bookVaccination,
+      type: "booking",
+      confidence: 0.95,
+    };
+  }
+  if (loc === "fr") {
+    return {
+      answer: `Etapes de reservation :\n1. Ouvrez la page de reservation.\n2. Choisissez le statut, le bureau et la date.\n3. Saisissez le nom et le telephone, puis envoyez.\n4. Conservez le lien de confirmation ou la carte de suivi pour suivre votre demande.\n[Reservation](${path})`,
+      source: m.nav.bookVaccination,
+      type: "booking",
+      confidence: 0.95,
+    };
+  }
+  return {
+    answer: `خطوات الحجز:\n1. افتح صفحة الحجز — ${booking.bookingIntro}\n2. اختر المحافظة و${booking.officeName} و${booking.preferredDate}.\n3. أدخل ${booking.name} و${booking.phone} ثم أرسل الطلب.\n4. احتفظ برابط التأكيد أو بطاقة المتابعة لمتابعة طلبك.\n[فتح صفحة الحجز](${path})`,
+    source: m.nav.bookVaccination,
+    type: "booking",
+    confidence: 0.95,
+  };
 }
 
 function buildBookingResponse(localeValue: string | undefined): PortalAssistantResponse {
@@ -275,7 +259,6 @@ export function getLocalChatResponse({
   destinationCountries = [],
   portalOffices = [],
   vaccinesByCategory,
-  carriedIntent,
 }: {
   locale: string | undefined;
   message: string;
@@ -283,16 +266,12 @@ export function getLocalChatResponse({
   destinationCountries?: DestinationCountry[];
   portalOffices?: Office[];
   vaccinesByCategory: Record<UserCategory, VaccineRecord[]>;
-  carriedIntent?: ChatIntent;
 }): PortalAssistantResponse | null {
   const vaccineLocation = buildVaccineLocationResponse(locale, message);
   if (vaccineLocation) return vaccineLocation;
 
-  const intent = resolveIntentWithContext(message, {
-    destinationCountries,
-    carriedIntent,
-  });
-  const hits = searchSiteKnowledge(message, knowledgeIndex, 5, { intent });
+  const intent = classifyChatIntent(message, { destinationCountries });
+  const hits = searchSiteKnowledge(message, knowledgeIndex, 5);
 
   switch (intent) {
     case "price":
@@ -303,6 +282,10 @@ export function getLocalChatResponse({
       );
     case "booking":
       return buildBookingResponse(locale);
+    case "help_capabilities":
+      return buildHelpCapabilitiesResponse(locale);
+    case "booking_steps":
+      return buildBookingStepsResponse(locale);
     case "office_hours": {
       const hoursText = buildOfficeHoursResponse(
         locale,
@@ -323,16 +306,12 @@ export function getLocalChatResponse({
     }
     case "hajj_umrah":
       return buildHajjResponse(locale);
-    case "checkin_info":
-      return buildCheckinInfoResponse(locale, knowledgeIndex);
-    case "complaint_info":
-      return buildComplaintInfoResponse(locale, knowledgeIndex);
-    case "international_info":
-      return buildInternationalInfoResponse(locale, knowledgeIndex);
     case "office":
       return buildOfficeAssistantResponse(locale, message, hits);
     case "general":
-      if (hits.length > 0) return buildSearchHitResponse(locale, hits[0]);
+      if (hits.length > 0 && !isWeakSearchResult(message, hits)) {
+        return buildSearchHitResponse(locale, hits[0]);
+      }
       return null;
   }
 }

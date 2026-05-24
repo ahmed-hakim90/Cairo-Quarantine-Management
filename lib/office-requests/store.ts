@@ -65,7 +65,10 @@ import type { OfficeImportRow } from "@/lib/office-requests/offices-excel";
 import type { VaccineImportRow } from "@/lib/office-requests/vaccines-excel";
 import type { TemplateImportRow } from "@/lib/office-requests/templates-excel";
 import {
+  adminAllowedRequestTypes,
   adminCanAccessOffice,
+  isRequestVisibleToAdminRole,
+  isSingleOfficeStaffRole,
   normalizeOfficeIds,
 } from "@/lib/office-requests/admin-access";
 import {
@@ -255,6 +258,7 @@ function publicRequestStatus(
     id: request.id,
     requestNumber: request.requestNumber,
     ...(request.governorateId ? { governorateId: request.governorateId } : {}),
+    officeId: request.officeId,
     officeNameAr: request.officeNameAr,
     type: request.type,
     ...(request.travelerStateId
@@ -1295,7 +1299,9 @@ function profileFromDoc(
         ? "governorate_admin"
       : data.role === "office_admin"
         ? "office_admin"
-        : "office_user";
+        : data.role === "office_reception"
+          ? "office_reception"
+          : "office_user";
   const allowedOfficeIds = Array.isArray(data.allowedOfficeIds)
     ? normalizeOfficeIds(data.allowedOfficeIds)
     : [];
@@ -1713,6 +1719,7 @@ export async function getBookingPassPublic(args: {
     id: request.id,
     requestNumber: request.requestNumber,
     ...(request.governorateId ? { governorateId: request.governorateId } : {}),
+    officeId: request.officeId,
     officeNameAr: request.officeNameAr,
     type: request.type,
     ...(request.travelerStateId
@@ -1843,7 +1850,7 @@ export async function listRequestsForSession(args: {
   >;
 
   let query: FirebaseFirestore.Query = getAdminDb().collection(REQUESTS);
-  if (args.role === "office_user") {
+  if (isSingleOfficeStaffRole(args.role)) {
     if (!args.officeId) return [];
     query = query.where("officeId", "==", args.officeId);
   } else if (args.role === "office_admin" || args.role === "governorate_admin") {
@@ -1871,8 +1878,11 @@ export async function listRequestsForSession(args: {
   if (args.status && args.status !== "all") {
     query = query.where("status", "==", args.status);
   }
-  if (args.type && args.type !== "all") {
-    query = query.where("type", "==", args.type);
+  const effectiveType =
+    adminAllowedRequestTypes(args.role)?.[0] ??
+    (args.type && args.type !== "all" ? args.type : undefined);
+  if (effectiveType) {
+    query = query.where("type", "==", effectiveType);
   }
 
   if (useUpdatedWindow) {
@@ -1886,7 +1896,9 @@ export async function listRequestsForSession(args: {
   }
 
   const snap = await query.get();
-  const requests = snap.docs.map((doc) => requestFromDoc(doc.id, doc.data()));
+  const requests = snap.docs
+    .map((doc) => requestFromDoc(doc.id, doc.data()))
+    .filter((request) => isRequestVisibleToAdminRole(args.role, request));
   if (!args.adminBookingTodayYmd) return requests;
   return requests.filter((request) =>
     isAdminVisibleBookingRequest(request, {
@@ -2020,8 +2032,11 @@ export async function listRequestsForSessionPage(args: {
       if (args.status && args.status !== "all") {
         query = query.where("status", "==", args.status);
       }
-      if (args.type && args.type !== "all") {
-        query = query.where("type", "==", args.type);
+      const effectiveType =
+        adminAllowedRequestTypes(args.role)?.[0] ??
+        (args.type && args.type !== "all" ? args.type : undefined);
+      if (effectiveType) {
+        query = query.where("type", "==", effectiveType);
       }
       if (useUpdatedWindow) {
         query = query
@@ -2053,7 +2068,7 @@ export async function listRequestsForSessionPage(args: {
   };
 
   let officeIds: string[] | null = null;
-  if (args.role === "office_user") {
+  if (isSingleOfficeStaffRole(args.role)) {
     if (!args.officeId) return { items: [], nextCursor: null };
     officeIds = [args.officeId];
   } else if (args.role === "office_admin" || args.role === "governorate_admin") {
@@ -2070,15 +2085,17 @@ export async function listRequestsForSessionPage(args: {
     officeIds = [args.officeFilter];
   }
 
-  const collected = (await runQuery(officeIds)).filter((request) =>
-    args.adminBookingTodayYmd
-      ? isAdminVisibleBookingRequest(request, {
-          todayYmd: args.adminBookingTodayYmd!,
-          bookingDateFrom: args.bookingDateFrom,
-          bookingDateTo: args.bookingDateTo,
-        })
-      : true,
-  );
+  const collected = (await runQuery(officeIds))
+    .filter((request) => isRequestVisibleToAdminRole(args.role, request))
+    .filter((request) =>
+      args.adminBookingTodayYmd
+        ? isAdminVisibleBookingRequest(request, {
+            todayYmd: args.adminBookingTodayYmd!,
+            bookingDateFrom: args.bookingDateFrom,
+            bookingDateTo: args.bookingDateTo,
+          })
+        : true,
+    );
   const items = collected.slice(0, pageSize);
   return {
     items,
@@ -2118,6 +2135,7 @@ function requestMatchesAdminSearch(request: OfficeRequest, rawQuery: string): bo
 function requestMatchesAdminFilters(
   request: OfficeRequest,
   args: {
+    role: AdminRole;
     status?: OfficeRequestStatus | "all";
     type?: OfficeRequestType | "all";
     adminBookingTodayYmd?: string | null;
@@ -2129,6 +2147,9 @@ function requestMatchesAdminFilters(
     return false;
   }
   if (args.type && args.type !== "all" && request.type !== args.type) {
+    return false;
+  }
+  if (!isRequestVisibleToAdminRole(args.role, request)) {
     return false;
   }
   if (args.adminBookingTodayYmd) {
@@ -2157,7 +2178,7 @@ function adminRequestOfficeScope(args: {
     "uid" | "role" | "officeId" | "allowedOfficeIds"
   >;
 
-  if (args.role === "office_user") {
+  if (isSingleOfficeStaffRole(args.role)) {
     return args.officeId ? [args.officeId] : [];
   }
   if (args.role === "office_admin" || args.role === "governorate_admin") {
@@ -2584,6 +2605,9 @@ export async function getRequestForSession(args: {
   ) {
     return null;
   }
+  if (!isRequestVisibleToAdminRole(args.role, request)) {
+    return null;
+  }
   return request;
 }
 
@@ -2807,7 +2831,7 @@ export async function upsertUserProfile(input: AdminUserProfile) {
           input.role === "governorate_admin"
             ? normalizeGovernorateId(input.governorateId)
             : null,
-        officeId: input.role === "office_user" ? input.officeId : null,
+        officeId: isSingleOfficeStaffRole(input.role) ? input.officeId : null,
         allowedOfficeIds,
         active: input.active,
         updatedAt: FieldValue.serverTimestamp(),
@@ -2867,7 +2891,7 @@ export async function upsertAdminUserAccount(input: {
       ? normalizeGovernorateId(input.governorateId)
       : null;
 
-  if (role === "office_user" && !input.officeId?.trim()) {
+  if (isSingleOfficeStaffRole(role) && !input.officeId?.trim()) {
     throw new Error("اختر مكتباً لمستخدم المكتب.");
   }
   if (role === "governorate_admin" && !governorateId) {
@@ -2892,7 +2916,7 @@ export async function upsertAdminUserAccount(input: {
     displayName,
     role,
     governorateId,
-    officeId: role === "office_user" ? input.officeId : null,
+    officeId: isSingleOfficeStaffRole(role) ? input.officeId : null,
     ...(role === "office_admin" || role === "governorate_admin"
       ? { allowedOfficeIds }
       : {}),
@@ -2922,7 +2946,7 @@ export async function upsertAdminUserAccount(input: {
     displayName,
     role,
     governorateId,
-    officeId: role === "office_user" ? input.officeId : null,
+    officeId: isSingleOfficeStaffRole(role) ? input.officeId : null,
     ...(role === "office_admin" || role === "governorate_admin"
       ? { allowedOfficeIds }
       : {}),

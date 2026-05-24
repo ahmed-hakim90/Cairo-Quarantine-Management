@@ -1,4 +1,8 @@
-import { adminCanAccessOffice } from "@/lib/office-requests/admin-access";
+import {
+  adminCanAccessOffice,
+  isRequestVisibleToAdminRole,
+  isSingleOfficeStaffRole,
+} from "@/lib/office-requests/admin-access";
 import type {
   AdminRole,
   OfficeRequest,
@@ -50,7 +54,7 @@ export function notifyScopeFromProfile(profile: {
 /** Office ID batches for `officeId in` listeners; empty for super_admin (global listener). */
 export function buildNotifyOfficeIdBatches(scope: NotifyScope): string[][] {
   if (scope.role === "super_admin") return [];
-  if (scope.role === "office_user") {
+  if (isSingleOfficeStaffRole(scope.role)) {
     const id = scope.officeId?.trim();
     return id ? [[id]] : [];
   }
@@ -64,10 +68,11 @@ export function buildNotifyOfficeIdBatches(scope: NotifyScope): string[][] {
 }
 
 export function shouldNotifyRequest(
-  request: Pick<OfficeRequest, "officeId" | "status">,
+  request: Pick<OfficeRequest, "officeId" | "status" | "type">,
   scope: NotifyScope,
 ): boolean {
   if (request.status !== "new") return false;
+  if (!isRequestVisibleToAdminRole(scope.role, request)) return false;
   return adminCanAccessOffice(
     {
       role: scope.role,

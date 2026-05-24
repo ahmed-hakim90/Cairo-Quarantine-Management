@@ -10,6 +10,7 @@
 | **مستند إداري مكمّل** | [`docs/ADMIN-BRIEF-AR.md`](ADMIN-BRIEF-AR.md) |
 | **نسخة Word (مع الصور)** | [`docs/HANDOVER-AR.docx`](HANDOVER-AR.docx) — توليد: `npm run handover:docx` |
 | **عرض تقديمي PDF** | [`docs/Cairo-Quarantine-Presentation.pdf`](Cairo-Quarantine-Presentation.pdf) — `npm run handover:pdf` |
+| **عرض وزارة الصحة (PPTX)** | [`docs/Cairo-Quarantine-Ministry.pptx`](Cairo-Quarantine-Ministry.pptx) — `npm run handover:pptx` |
 
 ---
 
@@ -484,6 +485,8 @@ npm run load-test:bookings
 
 ```bash
 npm run dev
+npm run handover:screenshots   # Playwright — يتطلب .env.local
+npm run handover:pptx          # عرض وزارة الصحة (PPTX)
 # ثم افتح http://localhost:3000/ar واتبع القائمة أعلاه
 # عرض سطح المكتب: 1440×900 | الجوال: 390×844
 ```

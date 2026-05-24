@@ -2,13 +2,12 @@
 
 import { usePathname } from "next/navigation";
 import { SiteFooter } from "@/components/layout/SiteFooter";
+import { PUBLIC_FOOTER_HIDDEN_SEGMENTS } from "@/lib/layout/public-chrome";
 import type { Messages } from "@/lib/i18n/messages";
 
 type ConditionalSiteFooterProps = {
   messages: Messages;
 };
-
-const footerHiddenSegments = new Set(["booking", "complaint", "checkin"]);
 
 export function ConditionalSiteFooter({
   messages,
@@ -16,7 +15,7 @@ export function ConditionalSiteFooter({
   const pathname = usePathname();
   const [, , pageSegment] = pathname.split("/");
 
-  if (footerHiddenSegments.has(pageSegment)) return null;
+  if (PUBLIC_FOOTER_HIDDEN_SEGMENTS.has(pageSegment)) return null;
 
   return <SiteFooter messages={messages} />;
 }

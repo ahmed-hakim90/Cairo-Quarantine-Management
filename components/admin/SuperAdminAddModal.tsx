@@ -50,9 +50,23 @@ function UserRoleOfficeFields({
             onChange={(e) => setSelectedRole(e.target.value as AdminRole)}
           >
             <option value="office_user">مستخدم مكتب</option>
+            <option value="office_reception">ريسبشن</option>
             <option value="governorate_admin">أدمن محافظة</option>
             <option value="office_admin">أدمن مكاتب</option>
             <option value="super_admin">سوبر أدمن</option>
+          </select>
+        </label>
+      ) : actorRole === "office_admin" || actorRole === "governorate_admin" ? (
+        <label className="mt-3 block text-sm font-bold text-gov-navy">
+          الصلاحية
+          <select
+            name="role"
+            className={officeFieldClass}
+            value={selectedRole}
+            onChange={(e) => setSelectedRole(e.target.value as AdminRole)}
+          >
+            <option value="office_user">مستخدم مكتب</option>
+            <option value="office_reception">ريسبشن</option>
           </select>
         </label>
       ) : (
@@ -101,7 +115,7 @@ function UserRoleOfficeFields({
             ))}
           </div>
         </fieldset>
-      ) : selectedRole === "office_user" ? (
+      ) : selectedRole === "office_user" || selectedRole === "office_reception" ? (
         <label className="mt-3 block text-sm font-bold text-gov-navy">
           المكتب
           <select

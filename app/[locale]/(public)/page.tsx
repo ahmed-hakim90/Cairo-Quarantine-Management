@@ -29,7 +29,12 @@ export default async function HomePage({
 
   return (
     <>
-      <HeroSection content={m.hero} />
+      <HeroSection
+        locale={locale}
+        content={m.hero}
+        bookingLabel={m.nav.bookVaccination}
+        bookingAriaLabel={m.nav.bookVaccinationAria}
+      />
       <ScrollReveal initialVisible>
         <ServiceCards locale={locale} content={m.services} />
       </ScrollReveal>
@@ -50,7 +55,7 @@ export default async function HomePage({
       <ScrollReveal>
         <ImportantLinks content={m.importantLinks} />
       </ScrollReveal>
-      <ScrollReveal>
+      <ScrollReveal initialVisible>
         <HajjTravelerOfficesTable
           content={m.hajjTable}
           locale={locale}
