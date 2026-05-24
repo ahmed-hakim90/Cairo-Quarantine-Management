@@ -3,7 +3,7 @@ import type { Locale } from "@/lib/i18n/config";
 export const bookingPassPageCopy = {
   ar: {
     title: "بطاقة الطلب",
-    subtitle: "للمكتب — اعرض هذه الصفحة عند الوصول",
+    subtitle: "للمكتب — لمعرفة تفاصيل طلبك ",
     subtitleComplaint: "جاري متابعة الشكوى",
     invalidTitle: "الرابط غير صالح",
     invalidBody: "تأكد من فتح الرابط كاملاً من رسالة التأكيد أو بطاقة المتابعة.",

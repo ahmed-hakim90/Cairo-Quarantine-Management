@@ -1,6 +1,8 @@
 "use client";
 
 import { useActionState, useEffect, useMemo, useState } from "react";
+import { useOptionalPublicAnalytics } from "@/components/analytics/PublicAnalyticsProvider";
+import { trackPublicEvent } from "@/lib/analytics/public-analytics-client";
 import { QueueCompletedCitizenView } from "@/components/queue/QueueCompletedCitizenView";
 import { CheckinSkeleton } from "@/components/skeletons/public/CheckinSkeleton";
 import { QueueWaitLive } from "@/components/queue/QueueWaitLive";
@@ -42,6 +44,7 @@ export function CheckinForm({
   initialLookup = "",
 }: CheckinFormProps) {
   const t = checkinFormCopy[locale];
+  const analytics = useOptionalPublicAnalytics();
   const [lookupState, lookupAction, lookupPending] = useActionState(
     checkinLookupAction,
     initial,
@@ -96,6 +99,10 @@ export function CheckinForm({
   }, [officeId, locale, initialLookup]);
 
   useEffect(() => {
+    analytics?.trackFormStart("checkin", "lookup");
+  }, [analytics]);
+
+  useEffect(() => {
     const id = window.setTimeout(() => {
       saveCheckinLookupDraft(officeId, lookupValue);
     }, 400);
@@ -130,6 +137,26 @@ export function CheckinForm({
       : !quickState.ok && quickState.error
         ? quickState.error
         : null;
+
+  useEffect(() => {
+    if (!result?.ok || !result.ticket) return;
+    trackPublicEvent({
+      action: "checkin.ticket_created",
+      locale,
+      meta: {
+        formType: "checkin",
+        officeId,
+        ticketId: result.ticket.id,
+      },
+    });
+    analytics?.trackSubmitSuccess("checkin", result.requestId);
+  }, [analytics, locale, officeId, result]);
+
+  useEffect(() => {
+    if (!error) return;
+    analytics?.trackApiError("checkin_error");
+  }, [analytics, error]);
+
   const showQuick =
     !result?.ok &&
     !lookupState.ok &&
@@ -189,7 +216,18 @@ export function CheckinForm({
         </p>
       ) : null}
 
-      <form action={lookupAction} className="space-y-4 rounded-lg border border-gov-gray-200 bg-white p-5 shadow-sm">
+      <form
+        action={lookupAction}
+        className="space-y-4 rounded-lg border border-gov-gray-200 bg-white p-5 shadow-sm"
+        onSubmit={() => {
+          analytics?.trackSubmitAttempt("checkin");
+          trackPublicEvent({
+            action: "checkin.search_start",
+            locale,
+            meta: { formType: "checkin", officeId },
+          });
+        }}
+      >
         <input type="hidden" name="officeId" value={officeId} />
         <input type="hidden" name="locale" value={locale} />
         <div>

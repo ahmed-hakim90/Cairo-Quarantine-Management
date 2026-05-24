@@ -1,6 +1,6 @@
 import { defaultLocale, isLocale } from "@/lib/i18n/config";
 import { normalizeArabic } from "@/lib/chat/normalize-arabic";
-import { formatPortalUrl } from "@/lib/chat/site-knowledge";
+import { formatPortalUrl } from "@/lib/chat/portal-url";
 import type { DestinationCountry } from "@/lib/office-requests/types";
 
 function getLocale(localeValue: string | undefined) {
@@ -35,9 +35,15 @@ export function findDestinationCountry(
     } else {
       for (const part of nameAr.split(" ").filter((p) => p.length >= 4)) {
         if (normalized.includes(part)) score = Math.max(score, part.length);
+        else if (part.includes(normalized) && normalized.length >= 3) {
+          score = Math.max(score, normalized.length);
+        }
       }
       for (const part of nameEn.split(" ").filter((p) => p.length >= 4)) {
         if (normalized.includes(part)) score = Math.max(score, part.length);
+        else if (part.includes(normalized) && normalized.length >= 3) {
+          score = Math.max(score, normalized.length);
+        }
       }
     }
 

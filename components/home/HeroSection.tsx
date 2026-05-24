@@ -72,7 +72,7 @@ export function HeroSection({
               locale={locale}
               href="/booking"
               aria-label={bookingAriaLabel}
-              className="inline-flex min-h-12 min-w-[12rem] items-center justify-center rounded-lg bg-white px-8 py-3 text-center text-base font-bold text-gov-navy shadow-lg ring-1 ring-white/20 transition-colors hover:bg-gov-accent-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+              className="cta-attention inline-flex min-h-12 min-w-[12rem] items-center justify-center rounded-lg bg-white px-8 py-3 text-center text-base font-bold text-gov-navy shadow-lg ring-1 ring-white/20 transition-colors hover:bg-gov-accent-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
             >
               {bookingLabel}
             </LocaleLink>

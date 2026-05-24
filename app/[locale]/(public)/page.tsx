@@ -55,7 +55,7 @@ export default async function HomePage({
       <ScrollReveal>
         <ImportantLinks content={m.importantLinks} />
       </ScrollReveal>
-      <ScrollReveal>
+      <ScrollReveal initialVisible>
         <HajjTravelerOfficesTable
           content={m.hajjTable}
           locale={locale}

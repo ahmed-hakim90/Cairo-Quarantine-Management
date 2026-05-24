@@ -3,6 +3,10 @@ import { bookingPassFormCopy, bookingPassPdfCopy } from "@/lib/i18n/booking-pass
 import type { OfficeRequestType } from "@/lib/office-requests/types";
 import { BRAND_PRIMARY_DEEP, BRAND_SECONDARY } from "@/lib/theme/brand-colors";
 
+/** Printed card width; height follows canvas aspect ratio. */
+const PASS_CARD_WIDTH_MM = 140;
+const PASS_PDF_MARGIN_MM = 5;
+
 export type BookingPassPdfInput = {
   locale: Locale;
   requestId: string;
@@ -188,21 +192,26 @@ export async function generateBookingPassPdf(input: BookingPassPdfInput): Promis
   const { canvas, links } = await composePassCardCanvas(input);
   const img = canvas.toDataURL("image/png");
   const { jsPDF } = await import("jspdf");
-  const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
-  const pageW = pdf.internal.pageSize.getWidth();
-  const pageH = pdf.internal.pageSize.getHeight();
-  const ratio = Math.min(pageW / canvas.width, pageH / canvas.height) * 0.92;
-  const w = canvas.width * ratio;
-  const h = canvas.height * ratio;
-  const offsetX = (pageW - w) / 2;
-  const offsetY = (pageH - h) / 2;
-  pdf.addImage(img, "PNG", offsetX, offsetY, w, h);
+
+  const margin = PASS_PDF_MARGIN_MM;
+  const cardW = PASS_CARD_WIDTH_MM;
+  const cardH = cardW * (canvas.height / canvas.width);
+  const pageW = cardW + 2 * margin;
+  const pageH = cardH + 2 * margin;
+
+  const pdf = new jsPDF({
+    orientation: "portrait",
+    unit: "mm",
+    format: [pageW, pageH],
+  });
+
+  pdf.addImage(img, "PNG", margin, margin, cardW, cardH);
 
   for (const link of links) {
-    const x = offsetX + (link.x / canvas.width) * w;
-    const y = offsetY + (link.y / canvas.height) * h;
-    const lw = (link.w / canvas.width) * w;
-    const lh = (link.h / canvas.height) * h;
+    const x = margin + (link.x / canvas.width) * cardW;
+    const y = margin + (link.y / canvas.height) * cardH;
+    const lw = (link.w / canvas.width) * cardW;
+    const lh = (link.h / canvas.height) * cardH;
     pdf.link(x, y, lw, lh, { url: link.url });
   }
 

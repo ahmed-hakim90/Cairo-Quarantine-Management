@@ -254,6 +254,14 @@
         { "fieldPath": "queueDate", "order": "ASCENDING" },
         { "fieldPath": "officeId", "order": "ASCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "public_sessions",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "formActive", "order": "ASCENDING" },
+        { "fieldPath": "lastSeenAt", "order": "DESCENDING" }
+      ]
     }
   ]
 }

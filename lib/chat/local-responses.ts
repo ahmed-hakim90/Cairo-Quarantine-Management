@@ -72,11 +72,10 @@ function buildBookingStepsResponse(
     bookingRequestCopy[loc as keyof typeof bookingRequestCopy] ??
     bookingRequestCopy.ar;
   const path = formatPortalUrl(loc, "booking");
-  const requestsPath = formatPortalUrl(loc, "my-requests");
 
   if (loc === "en") {
     return {
-      answer: `Booking steps:\n1. Open the booking page — ${booking.bookingIntro}\n2. Choose governorate and ${booking.officeName.toLowerCase()}, then ${booking.preferredDate.toLowerCase()}.\n3. Enter ${booking.name.toLowerCase()} and ${booking.phone.toLowerCase()}, then submit.\n4. Track your request from My Requests.\n[Open booking](${path}) [My requests](${requestsPath})`,
+      answer: `Booking steps:\n1. Open the booking page — ${booking.bookingIntro}\n2. Choose governorate and ${booking.officeName.toLowerCase()}, then ${booking.preferredDate.toLowerCase()}.\n3. Enter ${booking.name.toLowerCase()} and ${booking.phone.toLowerCase()}, then submit.\n4. Keep your confirmation link or follow-up card to track your request.\n[Open booking](${path})`,
       source: m.nav.bookVaccination,
       type: "booking",
       confidence: 0.95,
@@ -84,7 +83,7 @@ function buildBookingStepsResponse(
   }
   if (loc === "zh") {
     return {
-      answer: `预约步骤：\n1. 打开预约页面。\n2. 选择旅客状态、省份与办事处及日期。\n3. 填写姓名和电话并提交。\n4. 在“我的请求”中跟踪。\n[打开预约](${path}) [我的请求](${requestsPath})`,
+      answer: `预约步骤：\n1. 打开预约页面。\n2. 选择旅客状态、省份与办事处及日期。\n3. 填写姓名和电话并提交。\n4. 请保存确认链接或跟进卡以查询状态。\n[打开预约](${path})`,
       source: m.nav.bookVaccination,
       type: "booking",
       confidence: 0.95,
@@ -92,14 +91,14 @@ function buildBookingStepsResponse(
   }
   if (loc === "fr") {
     return {
-      answer: `Etapes de reservation :\n1. Ouvrez la page de reservation.\n2. Choisissez le statut, le bureau et la date.\n3. Saisissez le nom et le telephone, puis envoyez.\n4. Suivez la demande dans Mes demandes.\n[Reservation](${path}) [Mes demandes](${requestsPath})`,
+      answer: `Etapes de reservation :\n1. Ouvrez la page de reservation.\n2. Choisissez le statut, le bureau et la date.\n3. Saisissez le nom et le telephone, puis envoyez.\n4. Conservez le lien de confirmation ou la carte de suivi pour suivre votre demande.\n[Reservation](${path})`,
       source: m.nav.bookVaccination,
       type: "booking",
       confidence: 0.95,
     };
   }
   return {
-    answer: `خطوات الحجز:\n1. افتح صفحة الحجز — ${booking.bookingIntro}\n2. اختر المحافظة و${booking.officeName} و${booking.preferredDate}.\n3. أدخل ${booking.name} و${booking.phone} ثم أرسل الطلب.\n4. تابع الطلب من صفحة طلباتي.\n[فتح صفحة الحجز](${path}) [طلباتي](${requestsPath})`,
+    answer: `خطوات الحجز:\n1. افتح صفحة الحجز — ${booking.bookingIntro}\n2. اختر المحافظة و${booking.officeName} و${booking.preferredDate}.\n3. أدخل ${booking.name} و${booking.phone} ثم أرسل الطلب.\n4. احتفظ برابط التأكيد أو بطاقة المتابعة لمتابعة طلبك.\n[فتح صفحة الحجز](${path})`,
     source: m.nav.bookVaccination,
     type: "booking",
     confidence: 0.95,

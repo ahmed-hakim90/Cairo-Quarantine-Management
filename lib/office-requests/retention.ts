@@ -1,4 +1,9 @@
 import { Timestamp } from "firebase-admin/firestore";
+import {
+  archiveOldPublicEvents,
+  deleteExpiredPublicEventArchives,
+  deleteStalePublicSessions,
+} from "@/lib/analytics/public-analytics-store";
 import { getAdminDb, isFirebaseAdminConfigured } from "@/lib/firebase/admin";
 import type { RetentionRunResult } from "@/lib/office-requests/types";
 
@@ -209,11 +214,47 @@ export async function runRetentionMaintenance(args?: {
       : { deleted: 0, truncated: true };
   truncated ||= deletedLogs.truncated;
 
+  const staleSessionBefore = new Date(
+    now.getTime() - 7 * 24 * 60 * 60 * 1000,
+  );
+  const deletedStalePublicSessions =
+    remaining > 0
+      ? await deleteStalePublicSessions({
+          staleBefore: staleSessionBefore,
+          maxDocs: remaining,
+        })
+      : { deleted: 0, truncated: true };
+  remaining -= deletedStalePublicSessions.deleted;
+  truncated ||= deletedStalePublicSessions.truncated;
+
+  const archivedPublicEvents =
+    remaining > 0
+      ? await archiveOldPublicEvents({
+          archiveBefore,
+          archivedAt,
+          maxDocs: remaining,
+        })
+      : { archived: 0, truncated: true };
+  remaining -= archivedPublicEvents.archived;
+  truncated ||= archivedPublicEvents.truncated;
+
+  const deletedPublicEvents =
+    remaining > 0
+      ? await deleteExpiredPublicEventArchives({
+          deleteBefore: deleteArchivesBefore,
+          maxDocs: remaining,
+        })
+      : { deleted: 0, truncated: true };
+  truncated ||= deletedPublicEvents.truncated;
+
   return {
     archivedRequests: archivedRequests.archived,
     archivedActivityLogs: archivedActivityLogs.archived,
+    archivedPublicEvents: archivedPublicEvents.archived,
     deletedArchivedRequests: deletedRequests.deleted,
     deletedArchivedActivityLogs: deletedLogs.deleted,
+    deletedArchivedPublicEvents: deletedPublicEvents.deleted,
+    deletedStalePublicSessions: deletedStalePublicSessions.deleted,
     truncated,
     maxDocs,
   };

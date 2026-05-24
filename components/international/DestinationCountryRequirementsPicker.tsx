@@ -1,6 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
+import { Suspense, useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { findDestinationCountry } from "@/lib/chat/destination-country-response";
 import type { DestinationCountry } from "@/lib/office-requests/types";
 import type { Messages } from "@/lib/i18n/messages";
 
@@ -11,6 +13,8 @@ type DestinationCountryRequirementsPickerProps = {
   countries: DestinationCountry[];
   intro: string;
   labels: CountryRequirementsLabels;
+  initialCountryId?: string | null;
+  initialCountryQuery?: string | null;
 };
 
 function countryDisplayLabel(country: DestinationCountry): string {
@@ -27,10 +31,21 @@ function matchesQuery(country: DestinationCountry, query: string): boolean {
   );
 }
 
-export function DestinationCountryRequirementsPicker({
+function scrollPickerIntoView(root: HTMLDivElement | null) {
+  const delays = [0, 100, 250, 500, 800, 1200];
+  return delays.map((ms) =>
+    window.setTimeout(() => {
+      root?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, ms),
+  );
+}
+
+function DestinationCountryRequirementsPickerInner({
   countries,
   intro,
   labels,
+  initialCountryId = null,
+  initialCountryQuery = null,
 }: DestinationCountryRequirementsPickerProps) {
   const listId = useId();
   const inputId = `${listId}-input`;
@@ -64,6 +79,24 @@ export function DestinationCountryRequirementsPicker({
     setOpen(false);
   }, []);
 
+  useEffect(() => {
+    const countryId = initialCountryId?.trim() || null;
+    const countryQuery = initialCountryQuery?.trim() || null;
+    if (!countryId && !countryQuery) return;
+
+    let country: DestinationCountry | undefined;
+    if (countryId) {
+      country = countries.find((c) => c.id === countryId);
+    } else if (countryQuery) {
+      country = findDestinationCountry(countryQuery, countries) ?? undefined;
+    }
+    if (!country) return;
+
+    selectCountry(country);
+    const timers = scrollPickerIntoView(rootRef.current);
+    return () => timers.forEach((t) => window.clearTimeout(t));
+  }, [countries, initialCountryId, initialCountryQuery, selectCountry]);
+
   const onKeyDown = useCallback(
     (event: React.KeyboardEvent<HTMLInputElement>) => {
       if (!showList && event.key !== "Escape") return;
@@ -87,17 +120,21 @@ export function DestinationCountryRequirementsPicker({
 
   if (countries.length === 0) {
     return (
-      <div className="mt-5 rounded-lg bg-gov-gray-50 px-4 py-3 leading-relaxed text-gov-gray-700">
+      <div
+        id="destination-country-requirements"
+        className="mt-5 scroll-mt-24 rounded-lg bg-gov-gray-50 px-4 py-3 text-base leading-relaxed text-gov-gray-700 md:text-lg"
+      >
         <p>{intro}</p>
-        <p className="mt-2 text-sm text-amber-800">{labels.emptyCatalog}</p>
+        <p className="mt-2 text-base text-amber-800">{labels.emptyCatalog}</p>
       </div>
     );
   }
 
   return (
     <div
+      id="destination-country-requirements"
       ref={rootRef}
-      className="mt-5 rounded-lg bg-gov-gray-50 px-4 py-4 leading-relaxed text-gov-gray-700"
+      className="mt-5 scroll-mt-24 rounded-lg bg-gov-gray-50 px-4 py-4 text-base leading-relaxed text-gov-gray-700 md:text-lg"
     >
       <p className="mb-3">{intro}</p>
 
@@ -120,7 +157,7 @@ export function DestinationCountryRequirementsPicker({
           onFocus={() => setOpen(true)}
           onKeyDown={onKeyDown}
           placeholder={labels.searchPlaceholder}
-          className="min-h-12 w-full rounded-md border border-gov-gray-300 bg-white px-3 py-2 text-base text-gov-navy shadow-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gov-accent"
+          className="min-h-12 w-full rounded-md border border-gov-gray-300 bg-white px-3 py-2 text-base text-gov-navy shadow-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gov-accent md:text-lg"
           role="combobox"
           aria-expanded={showList}
           aria-controls={showList ? `${listId}-listbox` : undefined}
@@ -144,7 +181,7 @@ export function DestinationCountryRequirementsPicker({
                 id={`${listId}-option-${index}`}
                 role="option"
                 aria-selected={index === activeIndex}
-                className={`cursor-pointer px-3 py-2.5 text-sm ${
+                className={`cursor-pointer px-3 py-2.5 text-base md:text-lg ${
                   index === activeIndex
                     ? "bg-gov-accent/15 font-bold text-gov-navy"
                     : "text-gov-gray-800 hover:bg-gov-gray-50"
@@ -161,7 +198,7 @@ export function DestinationCountryRequirementsPicker({
       </div>
 
       {open && query.trim() && filtered.length === 0 ? (
-        <p className="mt-2 text-sm text-gov-gray-600">{labels.noResults}</p>
+        <p className="mt-2 text-base text-gov-gray-600">{labels.noResults}</p>
       ) : null}
 
       {selected ? (
@@ -170,14 +207,53 @@ export function DestinationCountryRequirementsPicker({
           role="region"
           aria-live="polite"
         >
-          <p className="text-sm font-bold text-gov-navy">
+          <p className="text-base font-bold text-gov-navy md:text-lg">
             {labels.requirementsHeading}
           </p>
-          <p className="mt-2 text-base leading-relaxed text-gov-gray-800">
+          <p className="mt-2 text-base leading-relaxed text-gov-gray-800 md:text-lg">
             {selected.requirementsAr}
           </p>
         </div>
       ) : null}
     </div>
+  );
+}
+
+function DestinationCountryRequirementsPickerFromParams(
+  props: Omit<
+    DestinationCountryRequirementsPickerProps,
+    "initialCountryId" | "initialCountryQuery"
+  >,
+) {
+  const searchParams = useSearchParams();
+  const initialCountryId = searchParams.get("country");
+  const initialCountryQuery = searchParams.get("q");
+  return (
+    <DestinationCountryRequirementsPickerInner
+      {...props}
+      initialCountryId={initialCountryId}
+      initialCountryQuery={initialCountryQuery}
+    />
+  );
+}
+
+export function DestinationCountryRequirementsPicker(
+  props: Omit<
+    DestinationCountryRequirementsPickerProps,
+    "initialCountryId" | "initialCountryQuery"
+  >,
+) {
+  return (
+    <Suspense
+      fallback={
+        <DestinationCountryRequirementsPickerInner
+          {...props}
+          initialCountryId={null}
+          initialCountryQuery={null}
+        />
+      }
+    >
+      <DestinationCountryRequirementsPickerFromParams {...props} />
+    </Suspense>
   );
 }

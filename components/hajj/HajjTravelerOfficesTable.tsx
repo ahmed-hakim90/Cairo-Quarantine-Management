@@ -1,3 +1,4 @@
+import { OfficeTableHashScroll } from "@/components/hajj/OfficeTableHashScroll";
 import { OfficeContactIcons } from "@/components/ui/OfficeContactIcons";
 import { resolveOfficeMapUrl } from "@/lib/google-maps-url";
 import { getOfficeWorkingHoursTableLabel } from "@/lib/office-working-hours";
@@ -210,11 +211,12 @@ export function HajjTravelerOfficesTable({
           return (
             <li
               key={row.id}
-              className={
+              data-office-id={row.id}
+              className={`scroll-mt-24 ${
                 service === "hajj_umrah_travelers"
                   ? "flex flex-row items-start gap-3 rounded-lg border border-gov-gray-200 bg-gov-gray-100 p-4 shadow-sm"
                   : "flex flex-row items-start gap-3 rounded-lg border border-gov-gray-200 bg-white p-4 shadow-sm"
-              }
+              }`}
             >
               <div className="min-w-0 flex-1 space-y-1.5 text-sm" lang={locale === "fr" ? "fr" : "ar"}>
                 <p className="font-heading font-semibold text-gov-navy">
@@ -299,11 +301,12 @@ export function HajjTravelerOfficesTable({
               return (
                 <tr
                   key={row.id}
-                  className={
+                  data-office-id={row.id}
+                  className={`scroll-mt-24 ${
                     service === "hajj_umrah_travelers"
                       ? "bg-gov-gray-100"
                       : "bg-white"
-                  }
+                  }`}
                 >
                   <td className="whitespace-nowrap px-3 py-3 align-top text-gov-gray-700">
                     {content.governorate}
@@ -352,6 +355,7 @@ export function HajjTravelerOfficesTable({
           </tbody>
         </table>
       </div>
+      <OfficeTableHashScroll />
     </section>
   );
 }

@@ -1,36 +1,24 @@
 "use client";
 
-import { usePathname } from "next/navigation";
-import { useEffect } from "react";
+import { Suspense, useEffect } from "react";
+import { usePathname, useSearchParams } from "next/navigation";
+import {
+  scheduleHashScroll,
+  scrollToHashAnchor,
+} from "@/lib/navigation/hash-anchor-scroll";
 
-function scrollToHashAnchor(): boolean {
-  const hash = window.location.hash;
-  if (!hash) return false;
-
-  const id = decodeURIComponent(hash.slice(1));
-  const el = document.getElementById(id);
-  if (!el) return false;
-
-  el.scrollIntoView({ behavior: "smooth", block: "start" });
-  return true;
-}
-
-/** Scrolls to `location.hash` after client navigations (Next.js Link defaults skip hash scroll). */
-export function HashAnchorScroll() {
+function HashAnchorScrollInner() {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const searchKey = searchParams.toString();
 
   useEffect(() => {
-    if (!window.location.hash) return;
+    const hash = window.location.hash;
+    if (!hash) return;
 
-    if (scrollToHashAnchor()) return;
-
-    const delays = [0, 100, 250, 500, 800];
-    const timers = delays.map((ms) =>
-      window.setTimeout(() => scrollToHashAnchor(), ms),
-    );
-
-    return () => timers.forEach((t) => window.clearTimeout(t));
-  }, [pathname]);
+    const id = decodeURIComponent(hash.slice(1));
+    return scheduleHashScroll(id, scrollToHashAnchor);
+  }, [pathname, searchKey]);
 
   useEffect(() => {
     const onHashChange = () => scrollToHashAnchor();
@@ -39,4 +27,13 @@ export function HashAnchorScroll() {
   }, []);
 
   return null;
+}
+
+/** Scrolls to `location.hash` after client navigations (Next.js Link defaults skip hash scroll). */
+export function HashAnchorScroll() {
+  return (
+    <Suspense fallback={null}>
+      <HashAnchorScrollInner />
+    </Suspense>
+  );
 }

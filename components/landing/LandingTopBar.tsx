@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import Image from "next/image";
 import { LanguageSwitcher } from "@/components/i18n/LanguageSwitcher";
 import { LanguageSwitcherSkeleton } from "@/components/skeletons/LanguageSwitcherSkeleton";
+import { PublicHeaderSiteSearch } from "@/components/layout/PublicHeaderSiteSearch";
 import { LocaleLink } from "@/components/i18n/LocaleLink";
 import type { Locale } from "@/lib/i18n/config";
 import type { Messages } from "@/lib/i18n/messages";
@@ -33,13 +34,18 @@ export function LandingTopBar({ locale, messages }: LandingTopBarProps) {
             {landing.topBar.platformName}
           </span>
         </LocaleLink>
-        <Suspense fallback={<LanguageSwitcherSkeleton variant="header" />}>
-          <LanguageSwitcher
-            locale={locale}
-            nav={messages.nav}
-            variant="landing"
-          />
-        </Suspense>
+        <div className="flex shrink-0 items-center gap-2">
+          <div className="hidden md:block">
+            <PublicHeaderSiteSearch locale={locale} messages={messages} />
+          </div>
+          <Suspense fallback={<LanguageSwitcherSkeleton variant="header" />}>
+            <LanguageSwitcher
+              locale={locale}
+              nav={messages.nav}
+              variant="landing"
+            />
+          </Suspense>
+        </div>
       </div>
     </header>
   );

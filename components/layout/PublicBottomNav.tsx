@@ -1,7 +1,11 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { LocaleLink } from "@/components/i18n/LocaleLink";
+import {
+  PublicSiteSearch,
+  PublicSiteSearchTrigger,
+} from "@/components/layout/PublicSiteSearch";
 import { normalizedNavPath } from "@/components/layout/SiteNavLinks";
 import type { Locale } from "@/lib/i18n/config";
 import type { Messages } from "@/lib/i18n/messages";
@@ -22,7 +26,7 @@ type NavItem = {
   prominent?: boolean;
 };
 
-type BottomNavItem = NavItem;
+type BottomNavItem = NavItem | { kind: "search" };
 
 function HomeIcon({ active }: { active: boolean }) {
   return (
@@ -72,6 +76,7 @@ export function PublicBottomNav({ locale, messages }: PublicBottomNavProps) {
   const path = normalizedNavPath(pathname);
   const n = messages.nav;
   const b = messages.bottomNav;
+  const [searchOpen, setSearchOpen] = useState(false);
 
   const items: BottomNavItem[] = [
     {
@@ -82,6 +87,7 @@ export function PublicBottomNav({ locale, messages }: PublicBottomNavProps) {
       match: isHome,
       icon: (active) => <HomeIcon active={active} />,
     },
+    { kind: "search" },
     {
       kind: "link",
       href: "/booking",
@@ -96,60 +102,82 @@ export function PublicBottomNav({ locale, messages }: PublicBottomNavProps) {
   const colCount = items.length;
 
   return (
-    <nav
-      className="public-bottom-nav app-bottom-nav-bar fixed inset-x-0 bottom-0 z-40 border-t border-brand-gray-200 bg-white pt-4 shadow-[0_-4px_16px_rgb(11_74_139/0.08)] md:hidden"
-      aria-label={b.aria}
-    >
-      <ul
-        className="mx-auto grid max-w-lg items-end px-1 pb-[max(0.375rem,env(safe-area-inset-bottom,0px))] pt-0.5"
-        style={{ gridTemplateColumns: `repeat(${colCount}, minmax(0, 1fr))` }}
+    <>
+      <nav
+        className="public-bottom-nav app-bottom-nav-bar fixed inset-x-0 bottom-0 z-40 border-t border-brand-gray-200 bg-white pt-4 shadow-[0_-4px_16px_rgb(11_74_139/0.08)] md:hidden"
+        aria-label={b.aria}
       >
-        {items.map((item) => {
-          const active = item.match(path);
+        <ul
+          className="mx-auto grid max-w-lg items-end px-1 pb-[max(0.375rem,env(safe-area-inset-bottom,0px))] pt-0.5"
+          style={{ gridTemplateColumns: `repeat(${colCount}, minmax(0, 1fr))` }}
+        >
+          {items.map((item) => {
+            if (item.kind === "search") {
+              return (
+                <li key="search" className="flex justify-center">
+                  <PublicSiteSearchTrigger
+                    labels={b}
+                    onClick={() => setSearchOpen(true)}
+                  />
+                </li>
+              );
+            }
 
-          if (item.prominent) {
+            const active = item.match(path);
+
+            if (item.prominent) {
+              return (
+                <li key={item.href} className="flex justify-center">
+                  <LocaleLink
+                    locale={locale}
+                    href={item.href}
+                    aria-label={item.ariaLabel}
+                    aria-current={active ? "page" : undefined}
+                    className="-mt-10 flex min-h-8 flex-col items-center gap-0.5"
+                  >
+                    <span className="flex size-14 items-center justify-center rounded-full bg-brand-primary-deep shadow-lg shadow-brand-primary/25 ring-4 ring-white transition-transform active:scale-95">
+                      {item.icon(active)}
+                    </span>
+                    <span
+                      className={`max-w-[4.5rem] truncate text-center text-[10px] font-bold leading-tight ${
+                        active ? "text-brand-primary" : "text-brand-primary/70"
+                      }`}
+                    >
+                      {item.label}
+                    </span>
+                  </LocaleLink>
+                </li>
+              );
+            }
+
             return (
-              <li key={item.href} className="flex justify-center">
+              <li key={item.href}>
                 <LocaleLink
                   locale={locale}
                   href={item.href}
                   aria-label={item.ariaLabel}
                   aria-current={active ? "page" : undefined}
-                  className="-mt-10 flex min-h-8 flex-col items-center gap-0.5"
+                  className={`flex min-h-8 flex-col items-center justify-center gap-0.5 px-1 py-0.5 text-[10px] font-semibold leading-tight transition-colors sm:text-[11px] ${
+                    active ? "text-brand-primary" : "text-brand-primary/50"
+                  }`}
                 >
-                  <span className="flex size-14 items-center justify-center rounded-full bg-brand-primary-deep shadow-lg shadow-brand-primary/25 ring-4 ring-white transition-transform active:scale-95">
-                    {item.icon(active)}
-                  </span>
-                  <span
-                    className={`max-w-[4.5rem] truncate text-center text-[10px] font-bold leading-tight ${
-                      active ? "text-brand-primary" : "text-brand-primary/70"
-                    }`}
-                  >
+                  {item.icon(active)}
+                  <span className="max-w-[4.25rem] truncate text-center">
                     {item.label}
                   </span>
                 </LocaleLink>
               </li>
             );
-          }
-
-          return (
-            <li key={item.href}>
-              <LocaleLink
-                locale={locale}
-                href={item.href}
-                aria-label={item.ariaLabel}
-                aria-current={active ? "page" : undefined}
-                className={`flex min-h-8 flex-col items-center justify-center gap-0.5 px-1 py-0.5 text-[10px] font-semibold leading-tight transition-colors sm:text-[11px] ${
-                  active ? "text-brand-primary" : "text-brand-primary/50"
-                }`}
-              >
-                {item.icon(active)}
-                <span className="max-w-[4.25rem] truncate text-center">{item.label}</span>
-              </LocaleLink>
-            </li>
-          );
-        })}
-      </ul>
-    </nav>
+          })}
+        </ul>
+      </nav>
+      <PublicSiteSearch
+        locale={locale}
+        labels={b}
+        nav={n}
+        open={searchOpen}
+        onOpenChange={setSearchOpen}
+      />
+    </>
   );
 }

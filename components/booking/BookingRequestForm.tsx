@@ -14,6 +14,7 @@ import {
   submitOfficeRequest,
   type BookingFormState,
 } from "@/app/[locale]/(public)/booking/actions";
+import { useOptionalPublicAnalytics } from "@/components/analytics/PublicAnalyticsProvider";
 import { BookingAvailableDatePicker } from "@/components/booking/BookingAvailableDatePicker";
 import { BookingRequestSuccessView } from "@/components/booking/BookingRequestSuccessView";
 import {
@@ -144,6 +145,8 @@ function BookingRequestFormFields({
   onSuccess,
 }: BookingRequestFormFieldsProps) {
   const t = bookingRequestCopy[locale];
+  const analytics = useOptionalPublicAnalytics();
+  const formType = mode === "booking" ? "booking" : "complaint";
   const bookingStates = useMemo(
     () =>
       travelerStates.length > 0
@@ -224,6 +227,54 @@ function BookingRequestFormFields({
     }
     return state.labelAr;
   }
+
+  useEffect(() => {
+    analytics?.trackFormStart(formType, "open");
+  }, [analytics, formType]);
+
+  useEffect(() => {
+    if (!state.ok || !state.request) return;
+    analytics?.trackSubmitSuccess(formType, state.request.id);
+  }, [analytics, formType, state.ok, state.request]);
+
+  useEffect(() => {
+    if (state.ok || !state.errors || !analytics) return;
+    analytics.trackFormStep({
+      formType,
+      step: "validation_error",
+      officeId: state.values?.officeId,
+      phone: state.values?.phone,
+      preferredDate: state.values?.preferredDate,
+    });
+  }, [analytics, formType, state.ok, state.errors, state.values]);
+
+  useEffect(() => {
+    if (!officeId.trim()) return;
+    analytics?.trackFormStep({
+      formType,
+      step: "office",
+      officeId,
+    });
+  }, [analytics, formType, officeId]);
+
+  useEffect(() => {
+    if (mode !== "booking" || !travelerStateId) return;
+    analytics?.trackFormStep({
+      formType,
+      step: "traveler_state",
+      officeId: officeId || undefined,
+    });
+  }, [analytics, formType, mode, travelerStateId, officeId]);
+
+  useEffect(() => {
+    if (mode !== "booking" || !preferredDate) return;
+    analytics?.trackFormStep({
+      formType,
+      step: "preferred_date",
+      officeId: officeId || undefined,
+      preferredDate,
+    });
+  }, [analytics, formType, mode, preferredDate, officeId]);
 
   useEffect(() => {
     if (!state.ok || !state.request) return;
@@ -326,6 +377,7 @@ function BookingRequestFormFields({
           setFullDates(new Set());
           setDatesFrom(minYmd);
           setDatesTo(getCairoYmdDaysAfter(BOOKING_DATE_HORIZON_DAYS, minYmd));
+          analytics?.trackApiError("booking_available_dates");
           return;
         }
         const nextAvailable = new Set(data.dates ?? []);
@@ -348,6 +400,7 @@ function BookingRequestFormFields({
           setFullDates(new Set());
           setDatesFrom(minYmd);
           setDatesTo(getCairoYmdDaysAfter(BOOKING_DATE_HORIZON_DAYS, minYmd));
+          analytics?.trackApiError("booking_available_dates_fetch");
         }
       } finally {
         if (!ac.signal.aborted) setDatesLoading(false);
@@ -358,7 +411,7 @@ function BookingRequestFormFields({
       cancelAnimationFrame(pendingId);
       ac.abort();
     };
-  }, [mode, officeId, minYmd]);
+  }, [mode, officeId, minYmd, analytics]);
 
   const officeSelected = Boolean(officeId.trim());
   const noAvailableDates =
@@ -382,9 +435,17 @@ function BookingRequestFormFields({
       action={action}
       className={`relative space-y-0 ${pending ? "opacity-90" : ""}`}
       aria-busy={pending || datesLoading ? true : undefined}
+      onSubmit={() => analytics?.trackSubmitAttempt(formType)}
     >
       <input type="hidden" name="locale" value={locale} />
       <input type="hidden" name="governorateId" value={governorateId} />
+      {analytics ? (
+        <input
+          type="hidden"
+          name="analyticsSessionId"
+          value={analytics.sessionId}
+        />
+      ) : null}
       {mode === "booking" ? (
         <input type="hidden" name="type" value="booking" />
       ) : null}

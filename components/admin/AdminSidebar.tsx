@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 import { normalizedNavPath } from "@/components/layout/SiteNavLinks";
 import type { AdminRole } from "@/lib/office-requests/types";
 
@@ -41,7 +42,13 @@ function NavLinks({
   onNavigate: () => void;
 }) {
   const pathname = usePathname();
-  const normalized = normalizedNavPath(pathname);
+  const [navReady, setNavReady] = useState(false);
+
+  useEffect(() => {
+    setNavReady(true);
+  }, []);
+
+  const normalized = navReady ? normalizedNavPath(pathname) : null;
 
   const baseItems: NavItem[] = [
     { href: "/admin", label: "الرئيسية", exact: true },
@@ -86,6 +93,11 @@ function NavLinks({
     },
     { href: "/admin/settings", label: "الإعدادات", roles: ["super_admin"] },
     { href: "/admin/activity", label: "سجل النشاط", roles: ["super_admin"] },
+    {
+      href: "/admin/platform-insights",
+      label: "رؤية المنصة",
+      roles: ["super_admin"],
+    },
   ];
 
   const items = [...baseItems, ...superItems].filter(
@@ -103,7 +115,8 @@ function NavLinks({
         القائمة
       </p>
       {items.map((item) => {
-        const active = isActive(normalized, item);
+        const active =
+          normalized !== null ? isActive(normalized, item) : false;
         const fullHref = `/${locale}${item.href}`;
         return (
           <Link

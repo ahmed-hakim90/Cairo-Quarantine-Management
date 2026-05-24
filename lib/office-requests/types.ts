@@ -262,8 +262,11 @@ export type PaginatedResult<T> = {
 export type RetentionRunResult = {
   archivedRequests: number;
   archivedActivityLogs: number;
+  archivedPublicEvents: number;
   deletedArchivedRequests: number;
   deletedArchivedActivityLogs: number;
+  deletedArchivedPublicEvents: number;
+  deletedStalePublicSessions: number;
   truncated: boolean;
   maxDocs: number;
 };

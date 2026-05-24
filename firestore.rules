@@ -128,6 +128,22 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
+    match /public_events/{eventId} {
+      allow read, write: if false;
+    }
+
+    match /public_events_archive/{eventId} {
+      allow read, write: if false;
+    }
+
+    match /public_sessions/{sessionId} {
+      allow read, write: if false;
+    }
+
+    match /daily_public_stats/{statId} {
+      allow read, write: if false;
+    }
+
     match /{document=**} {
       allow read, write: if false;
     }

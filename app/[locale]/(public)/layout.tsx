@@ -1,3 +1,4 @@
+import { PublicAnalyticsShell } from "@/components/analytics/PublicAnalyticsShell";
 import { HashAnchorScroll } from "@/components/navigation/HashAnchorScroll";
 import { ConditionalSiteFooter } from "@/components/layout/ConditionalSiteFooter";
 import { PublicFloatingChrome } from "@/components/layout/PublicFloatingChrome";
@@ -32,8 +33,10 @@ export default async function PublicLayout({
       </a>
       <SiteHeader locale={locale} messages={messages} />
       <PublicMainContent>
-        <HashAnchorScroll />
-        {children}
+        <PublicAnalyticsShell>
+          <HashAnchorScroll />
+          {children}
+        </PublicAnalyticsShell>
       </PublicMainContent>
       <ConditionalSiteFooter messages={messages} />
       <PublicBottomNav locale={locale} messages={messages} />
