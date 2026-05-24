@@ -40,16 +40,12 @@ export function isPriceQuestion(normalized: string): boolean {
 }
 
 export function isBookingQuestion(normalized: string): boolean {
-<<<<<<< HEAD
   if (isBookingStepsQuestion(normalized)) return false;
-=======
   if (normalizedIncludesAny(normalized, BOOKING_PATTERNS)) return true;
->>>>>>> origin/main
   const tokens = normalized.split(" ").filter((t) => t.length >= 2);
   return tokens.some((t) => t === "موعد");
 }
 
-<<<<<<< HEAD
 export function isHelpCapabilitiesQuestion(normalized: string): boolean {
   if (!normalized) return false;
   if (isPriceQuestion(normalized) || isBookingQuestion(normalized)) return false;
@@ -86,19 +82,6 @@ export function isBookingStepsQuestion(normalized: string): boolean {
   );
 }
 
-const HOURS_SIGNALS = [
-  "مواعيد",
-  "دوام",
-  "شغل",
-  "مفتوح",
-  "ساعات",
-  "working",
-  "hours",
-  "open",
-];
-
-=======
->>>>>>> origin/main
 const QUESTION_STOP_TOKENS = new Set([
   "ايه",
   "هي",

@@ -3,7 +3,7 @@ import { defaultLocale, isLocale } from "@/lib/i18n/config";
 import { getMessages } from "@/lib/i18n/messages";
 import { normalizeArabic } from "@/lib/chat/normalize-arabic";
 import { buildDestinationCountryResponse } from "@/lib/chat/destination-country-response";
-import { classifyChatIntent } from "@/lib/chat/intent";
+import { resolveIntentWithContext, type ChatIntent } from "@/lib/chat/intent";
 import { buildOfficeHoursResponse } from "@/lib/chat/office-hours-response";
 import { buildVaccineLocationResponse } from "@/lib/chat/office-vaccine-location";
 import { buildOfficeAssistantResponse } from "@/lib/chat/office-response";
@@ -259,6 +259,7 @@ export function getLocalChatResponse({
   destinationCountries = [],
   portalOffices = [],
   vaccinesByCategory,
+  carriedIntent,
 }: {
   locale: string | undefined;
   message: string;
@@ -266,11 +267,15 @@ export function getLocalChatResponse({
   destinationCountries?: DestinationCountry[];
   portalOffices?: Office[];
   vaccinesByCategory: Record<UserCategory, VaccineRecord[]>;
+  carriedIntent?: ChatIntent;
 }): PortalAssistantResponse | null {
   const vaccineLocation = buildVaccineLocationResponse(locale, message);
   if (vaccineLocation) return vaccineLocation;
 
-  const intent = classifyChatIntent(message, { destinationCountries });
+  const intent = resolveIntentWithContext(message, {
+    destinationCountries,
+    carriedIntent,
+  });
   const hits = searchSiteKnowledge(message, knowledgeIndex, 5);
 
   switch (intent) {
@@ -306,6 +311,13 @@ export function getLocalChatResponse({
     }
     case "hajj_umrah":
       return buildHajjResponse(locale);
+    case "checkin_info":
+    case "complaint_info":
+    case "international_info":
+      if (hits.length > 0 && !isWeakSearchResult(message, hits)) {
+        return buildSearchHitResponse(locale, hits[0]);
+      }
+      return null;
     case "office":
       return buildOfficeAssistantResponse(locale, message, hits);
     case "general":

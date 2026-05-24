@@ -204,7 +204,9 @@ async function createSampleBooking(): Promise<{
   }
 
   const travelerStateId = await resolveTravelerStateId(OFFICE_ID);
-  const preferredDate = getCairoMinBookingYmd(DEFAULT_BOOKING_SAME_DAY_CUTOFF_HOUR);
+  const preferredDate = getCairoMinBookingYmd(new Date(), {
+    sameDayCutoffHour: DEFAULT_BOOKING_SAME_DAY_CUTOFF_HOUR,
+  });
 
   try {
     const created = await createOfficeRequest({

@@ -43,8 +43,9 @@ function searchFallback(
   knowledgeIndex: SiteKnowledgeEntry[],
   options?: { intent?: ChatIntent },
 ): PortalAssistantResponse | null {
-  const hits = searchSiteKnowledge(message, knowledgeIndex, 5, options);
-  if (isWeakSearchResult(message, hits, options)) return null;
+  const hits = searchSiteKnowledge(message, knowledgeIndex, 5);
+  if (isWeakSearchResult(message, hits)) return null;
+  void options;
 
   const hit = hits[0];
   const type =

@@ -102,11 +102,13 @@ export async function POST(request: Request) {
   }
 
   const locale = body.locale;
-<<<<<<< HEAD
-  const lastUserMessage = resolveChatMessageForAssistant(messages, locale);
-=======
   const contextMessages = messages.slice(-8);
->>>>>>> origin/main
+  const lastUserMessage = resolveChatMessageForAssistant(messages, locale);
+  const contextWithExpansion = contextMessages.map((message, index) =>
+    index === contextMessages.length - 1 && message.role === "user"
+      ? { ...message, content: lastUserMessage }
+      : message,
+  );
 
   const [knowledgeIndex, destinationCountries, portalOffices, vaccinesByCategory] =
     await Promise.all([
@@ -119,7 +121,7 @@ export async function POST(request: Request) {
   const resolved = resolvePortalAssistant({
     locale,
     message: lastUserMessage,
-    messages: contextMessages,
+    messages: contextWithExpansion,
     knowledgeIndex,
     destinationCountries,
     portalOffices,
