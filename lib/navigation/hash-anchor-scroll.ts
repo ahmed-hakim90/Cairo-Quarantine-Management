@@ -24,9 +24,27 @@ export function findHashTarget(hashId: string): HTMLElement | null {
   return document.getElementById(hashId);
 }
 
-export function highlightOfficeElement(el: HTMLElement) {
-  el.classList.add("office-search-highlight");
-  window.setTimeout(() => el.classList.remove("office-search-highlight"), 2500);
+const SEARCH_HIGHLIGHT_MS = 3000;
+/** Wait for nested client components to finish hydrating before applying class. */
+const SEARCH_HIGHLIGHT_DELAY_MS = 400;
+
+const highlightScheduleTimers = new WeakMap<HTMLElement, number>();
+
+export function highlightSearchTarget(el: HTMLElement) {
+  const prev = highlightScheduleTimers.get(el);
+  if (prev !== undefined) window.clearTimeout(prev);
+
+  const timer = window.setTimeout(() => {
+    highlightScheduleTimers.delete(el);
+    if (!document.contains(el)) return;
+    el.classList.add("site-search-highlight");
+    window.setTimeout(
+      () => el.classList.remove("site-search-highlight"),
+      SEARCH_HIGHLIGHT_MS,
+    );
+  }, SEARCH_HIGHLIGHT_DELAY_MS);
+
+  highlightScheduleTimers.set(el, timer);
 }
 
 export function revealHiddenScrollRevealAncestors(el: HTMLElement) {
@@ -53,7 +71,7 @@ export function scrollToHashAnchor(): boolean {
 
   revealHiddenScrollRevealAncestors(el);
   el.scrollIntoView({ behavior: "smooth", block: "start" });
-  if (id.startsWith("office-")) highlightOfficeElement(el);
+  highlightSearchTarget(el);
   return true;
 }
 

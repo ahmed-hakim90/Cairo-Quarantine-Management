@@ -5,6 +5,10 @@ import { useEffect, useState } from "react";
 import { PlatformAnimatedBackground } from "@/components/brand/PlatformAnimatedBackground";
 import { SplashBrandMark } from "@/components/splash/SplashBrandMark";
 import { SplashProgressTrack } from "@/components/splash/SplashProgressTrack";
+import {
+  clearSplashActiveClass,
+  markSplashCompleted,
+} from "@/lib/splash/splash-session-storage";
 
 const MIN_DISPLAY_MS = 800;
 const FONTS_TIMEOUT_MS = 2000;
@@ -72,6 +76,8 @@ export function AppSplashOverlay({
       await delay(FADE_MS);
       if (cancelled) return;
       setPhase("hidden");
+      markSplashCompleted();
+      clearSplashActiveClass();
     };
 
     void run();

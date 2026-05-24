@@ -118,6 +118,14 @@
   }
 }
 
+html.cqm-splash-active {
+  overflow: hidden;
+}
+
+html.cqm-splash-active #cqm-app-root {
+  visibility: hidden;
+}
+
 @keyframes splash-bar-indeterminate {
   0% {
     transform: translateX(-100%);
@@ -160,6 +168,26 @@
   }
 }
 
+@keyframes site-search-blink {
+  0%,
+  100% {
+    outline-color: transparent;
+    background-color: transparent;
+    box-shadow: none;
+  }
+  25%,
+  75% {
+    outline-color: rgb(31 169 113 / 0.95);
+    background-color: rgb(31 169 113 / 0.14);
+    box-shadow: 0 0 0 4px rgb(31 169 113 / 0.22);
+  }
+  50% {
+    outline-color: rgb(31 169 113 / 0.45);
+    background-color: rgb(31 169 113 / 0.06);
+    box-shadow: 0 0 0 2px rgb(31 169 113 / 0.1);
+  }
+}
+
 @keyframes cta-attention-pulse {
   0%,
   100% {
@@ -199,11 +227,20 @@
     display: none;
   }
 
-  .office-search-highlight {
-    outline: 2px solid rgb(var(--brand-primary-rgb) / 0.85);
-    outline-offset: 2px;
-    background-color: rgb(var(--brand-primary-rgb) / 0.08);
-    transition: background-color 0.3s ease, outline-color 0.3s ease;
+  .site-search-highlight {
+    outline: 3px solid transparent;
+    outline-offset: 3px;
+    border-radius: inherit;
+    animation: site-search-blink 0.6s ease-in-out 5;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .site-search-highlight {
+      animation: none;
+      outline-color: rgb(31 169 113 / 0.9);
+      background-color: rgb(31 169 113 / 0.12);
+      box-shadow: 0 0 0 4px rgb(31 169 113 / 0.18);
+    }
   }
 
   .public-main-bottom-pad {

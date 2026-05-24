@@ -12,6 +12,7 @@ import { FeedbackProvider } from "@/components/ui/FeedbackProvider";
 import { getMessages } from "@/lib/i18n/messages";
 import { arabicFontClassName } from "@/lib/fonts/arabic";
 import { BRAND_SURFACE } from "@/lib/theme/brand-colors";
+import { SPLASH_SESSION_KEY } from "@/lib/splash/splash-session-storage";
 
 function localeFontClassName(locale: Locale): string {
   return locale === "zh" ? "zh-site h-full" : arabicFontClassName();
@@ -96,6 +97,11 @@ export default async function LocaleLayout({
         className="flex min-h-full flex-col bg-brand-surface text-foreground antialiased"
         suppressHydrationWarning
       >
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{if(sessionStorage.getItem(${JSON.stringify(SPLASH_SESSION_KEY)})!=="1")document.documentElement.classList.add("cqm-splash-active")}catch(e){}})();`,
+          }}
+        />
         <SplashChrome
           platformTitle={messages.landing.hero.title}
           platformSubtitle={messages.landing.hero.subtitle}
@@ -103,7 +109,9 @@ export default async function LocaleLayout({
           ariaLabel={messages.splash.ariaLabel}
           logoAlt={messages.landing.topBar.logoAlt}
         />
-        <FeedbackProvider>{children}</FeedbackProvider>
+        <div id="cqm-app-root" className="flex min-h-full flex-1 flex-col">
+          <FeedbackProvider>{children}</FeedbackProvider>
+        </div>
       </body>
     </html>
   );
