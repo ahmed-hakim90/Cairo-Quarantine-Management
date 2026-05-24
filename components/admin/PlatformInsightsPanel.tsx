@@ -30,8 +30,8 @@ type HealthState = {
   checkedAt: string;
 } | null;
 
-function formatRelativeMinutes(isoDate: string): string {
-  const ms = Date.now() - Date.parse(isoDate);
+function formatRelativeMinutes(isoDate: string, nowMs = Date.now()): string {
+  const ms = nowMs - Date.parse(isoDate);
   if (!Number.isFinite(ms)) return "—";
   const minutes = Math.max(0, Math.round(ms / 60_000));
   if (minutes < 1) return "الآن";
@@ -39,6 +39,19 @@ function formatRelativeMinutes(isoDate: string): string {
   if (minutes < 60) return `منذ ${minutes} دقيقة`;
   const hours = Math.round(minutes / 60);
   return hours === 1 ? "منذ ساعة" : `منذ ${hours} ساعة`;
+}
+
+function RelativeMinutes({ isoDate }: { isoDate: string }) {
+  const [label, setLabel] = useState<string | null>(null);
+
+  useEffect(() => {
+    const update = () => setLabel(formatRelativeMinutes(isoDate));
+    update();
+    const id = window.setInterval(update, 30_000);
+    return () => window.clearInterval(id);
+  }, [isoDate]);
+
+  return <>{label ?? "…"}</>;
 }
 
 function formTypeLabelAr(formType?: string): string {
@@ -199,7 +212,7 @@ export function PlatformInsightsPanel({
                     </td>
                     <td className="px-4 py-3 text-gov-gray-700">{session.locale}</td>
                     <td className="whitespace-nowrap px-4 py-3 text-gov-gray-700">
-                      {formatRelativeMinutes(session.lastSeenAt)}
+                      <RelativeMinutes isoDate={session.lastSeenAt} />
                     </td>
                     <td className="px-4 py-3 text-gov-gray-800">
                       {session.formActive
