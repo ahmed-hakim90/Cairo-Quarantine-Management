@@ -31,6 +31,16 @@ vi.mock("@/lib/office-requests/store", () => ({
       active: true,
       serialInGovernorate: 14,
     },
+    {
+      id: "helwan-1",
+      nameAr: "حدائق حلوان",
+      addressAr: "شارع خالد بن الوليد، أمام قسم شرطة المعصرة",
+      administrationAr: "حلوان",
+      phone: "0225500000",
+      service: "hajj_umrah_travelers",
+      active: true,
+      serialInGovernorate: 1,
+    },
   ]),
   listVaccinesByCategoryForPublic: vi.fn(async () => ({
     international: [],
@@ -113,5 +123,12 @@ describe("site knowledge search for public nav", () => {
     expect(mapped[0]?.href).toBeTruthy();
     expect(mapped[0]?.resultType).toBeTruthy();
     expect(mapped[0]?.title).toBeTruthy();
+  });
+
+  it("prefers offices over unrelated countries for area name حلوان", async () => {
+    const index = await buildSiteKnowledgeIndex("ar");
+    const hits = searchSiteKnowledge("حلوان", index, 10);
+    expect(hits.some((h) => h.resultType === "office")).toBe(true);
+    expect(hits.some((h) => h.resultType === "country")).toBe(false);
   });
 });

@@ -7,10 +7,9 @@ import { getMessages } from "@/lib/i18n/messages";
 import { normalizeArabic } from "@/lib/chat/normalize-arabic";
 import { findDestinationCountry } from "@/lib/chat/destination-country-response";
 import {
-  countTokenMatches,
-  haystackWords,
+  passesKnowledgeSearchThreshold,
+  scoreKnowledgeEntryMatch,
   tokenizeForKnowledgeSearch,
-  tokenMatchesHaystack,
 } from "@/lib/chat/search-tokens";
 import { effectiveOfficeService } from "@/lib/office-requests/office-traveler-state";
 import {
@@ -526,6 +525,18 @@ export async function buildSiteKnowledgeIndex(
   return entries;
 }
 
+function knowledgeEntrySearchFields(entry: SiteKnowledgeEntry) {
+  return {
+    title: normalizeArabic(entry.title),
+    subtitle: normalizeArabic(entry.subtitle ?? ""),
+    tags: normalizeArabic(entry.tags.join(" ")),
+    body: normalizeArabic(entry.body),
+  };
+}
+
+/** Drop hits far below the best score so weak body-only matches do not fill the list. */
+const RELATIVE_SCORE_FLOOR = 0.55;
+
 export function searchSiteKnowledge(
   query: string,
   entries: SiteKnowledgeEntry[],
@@ -536,29 +547,24 @@ export function searchSiteKnowledge(
 
   const scored = entries
     .map((entry) => {
-      const haystack = normalizeArabic(
-        `${entry.title} ${entry.subtitle ?? ""} ${entry.body} ${entry.tags.join(" ")} ${entry.category}`,
+      const match = scoreKnowledgeEntryMatch(
+        tokens,
+        knowledgeEntrySearchFields(entry),
       );
-      const words = haystackWords(haystack);
-      let score = 0;
-      for (const token of tokens) {
-        if (tokenMatchesHaystack(token, words)) score += 2;
-      }
-      if (entry.category === "faq" && tokens.some((t) => t.includes("سؤال"))) {
-        score += 1;
-      }
-      if (entry.category === "countries" && entry.resultType === "country") {
-        score += 1;
-      }
-      if (entry.category === "offices" && entry.resultType === "office") {
-        score += 1;
-      }
-      return { entry, score };
+      return { entry, ...match };
     })
-    .filter((row) => row.score > 0)
+    .filter((row) => passesKnowledgeSearchThreshold(tokens, row))
     .sort((a, b) => b.score - a.score);
 
-  return scored.slice(0, limit).map((row) => row.entry);
+  if (scored.length === 0) return [];
+
+  const topScore = scored[0]!.score;
+  const minScore = Math.max(3, topScore * RELATIVE_SCORE_FLOOR);
+
+  return scored
+    .filter((row) => row.score >= minScore)
+    .slice(0, limit)
+    .map((row) => row.entry);
 }
 
 export function isWeakSearchResult(
@@ -569,10 +575,12 @@ export function isWeakSearchResult(
   const tokens = tokenizeForKnowledgeSearch(query);
   if (tokens.length === 0) return true;
 
-  const top = hits[0];
-  const words = haystackWords(normalizeArabic(`${top.title} ${top.body}`));
-  const matched = countTokenMatches(tokens, words);
-  return matched < Math.min(2, tokens.length);
+  const top = hits[0]!;
+  const match = scoreKnowledgeEntryMatch(
+    tokens,
+    knowledgeEntrySearchFields(top),
+  );
+  return !passesKnowledgeSearchThreshold(tokens, match);
 }
 
 export function buildSiteKnowledgeContext(

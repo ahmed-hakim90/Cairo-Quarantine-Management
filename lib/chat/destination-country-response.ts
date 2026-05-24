@@ -32,12 +32,13 @@ export function findDestinationCountry(
       score = nameAr.length;
     } else if (nameEn.length >= 3 && normalized.includes(nameEn)) {
       score = nameEn.length;
-    } else if (nameAr.length >= 4) {
-      const coreAr = nameAr.replace(/^ال/, "");
-      if (coreAr.length >= 3 && normalized.includes(coreAr)) {
-        score = coreAr.length;
-      }
     } else {
+      if (nameAr.length >= 4) {
+        const coreAr = nameAr.replace(/^ال/, "");
+        if (coreAr.length >= 3 && normalized.includes(coreAr)) {
+          score = Math.max(score, coreAr.length);
+        }
+      }
       for (const part of nameAr.split(" ").filter((p) => p.length >= 4)) {
         if (normalized.includes(part)) score = Math.max(score, part.length);
         else if (part.includes(normalized) && normalized.length >= 3) {
