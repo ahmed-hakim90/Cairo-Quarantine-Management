@@ -46,9 +46,27 @@ export function getCairoYesterdayYmd(ref = new Date()): string {
 
 /** Calendar day after `getCairoTodayYmd(ref)` in Cairo (YYYY-MM-DD). */
 export function getCairoTomorrowYmd(ref = new Date()): string {
-  const today = getCairoTodayYmd(ref);
-  const noonCairo = new Date(`${today}T12:00:00+02:00`);
-  return getCairoTodayYmd(new Date(noonCairo.getTime() + 24 * 60 * 60 * 1000));
+  return getCairoYmdDaysAfter(1, getCairoTodayYmd(ref));
+}
+
+/** Calendar day `days` after `fromYmd` in Cairo (YYYY-MM-DD). */
+export function getCairoYmdDaysAfter(days: number, fromYmd: string): string {
+  const noonCairo = new Date(`${fromYmd}T12:00:00+02:00`);
+  const ms = Math.max(0, Math.floor(days)) * 24 * 60 * 60 * 1000;
+  return getCairoTodayYmd(new Date(noonCairo.getTime() + ms));
+}
+
+/** Inclusive Cairo calendar days from `fromYmd` through `toYmd` (YYYY-MM-DD). */
+export function enumerateCairoYmdRange(fromYmd: string, toYmd: string): string[] {
+  if (fromYmd > toYmd) return [];
+  const out: string[] = [];
+  let current = fromYmd;
+  for (let i = 0; i < 400; i++) {
+    out.push(current);
+    if (current === toYmd) break;
+    current = getCairoYmdDaysAfter(1, current);
+  }
+  return out;
 }
 
 function getCairoHour24(date: Date): number {

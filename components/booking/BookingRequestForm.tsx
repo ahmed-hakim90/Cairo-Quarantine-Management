@@ -14,8 +14,13 @@ import {
   submitOfficeRequest,
   type BookingFormState,
 } from "@/app/[locale]/(public)/booking/actions";
+import { BookingAvailableDatePicker } from "@/components/booking/BookingAvailableDatePicker";
 import { BookingRequestSuccessView } from "@/components/booking/BookingRequestSuccessView";
-import { getCairoMinBookingYmd } from "@/lib/cairo-today-ymd";
+import {
+  getCairoMinBookingYmd,
+  getCairoYmdDaysAfter,
+} from "@/lib/cairo-today-ymd";
+import { BOOKING_DATE_HORIZON_DAYS } from "@/lib/office-requests/booking-constants";
 import { bookingRequestCopy } from "@/lib/i18n/booking-request-copy";
 import type { Locale } from "@/lib/i18n/config";
 import { publicTravelerCategoryLabels } from "@/lib/i18n/office-request-copy";
@@ -32,7 +37,7 @@ import {
   type PublicOfficeRequestStatus,
   type TravelerState,
 } from "@/lib/office-requests/types";
-import { SkeletonBlock, SkeletonButton } from "@/components/skeletons/primitives";
+import { SkeletonButton } from "@/components/skeletons/primitives";
 import { feedbackToast } from "@/lib/ui/feedback-toast";
 
 type BookingRequestFormProps = {
@@ -155,7 +160,7 @@ function BookingRequestFormFields({
   const officeRef = useRef<HTMLSelectElement>(null);
   const travelerStateRef = useRef<HTMLSelectElement>(null);
   const typeRef = useRef<HTMLSelectElement>(null);
-  const preferredDateRef = useRef<HTMLInputElement>(null);
+  const preferredDateRef = useRef<HTMLDivElement>(null);
   const nameRef = useRef<HTMLInputElement>(null);
   const phoneRef = useRef<HTMLInputElement>(null);
   const detailsRef = useRef<HTMLTextAreaElement>(null);
@@ -168,16 +173,19 @@ function BookingRequestFormFields({
   const [travelerStateId, setTravelerStateId] = useState(
     state.values?.travelerStateId ?? "",
   );
-  const [dayFull, setDayFull] = useState(false);
-  const [availabilityHint, setAvailabilityHint] = useState<string | null>(
-    null,
-  );
-  const [availabilityPending, setAvailabilityPending] = useState(false);
 
   const minYmd = useMemo(
     () => getCairoMinBookingYmd(new Date(), { sameDayCutoffHour }),
     [sameDayCutoffHour],
   );
+
+  const [availableDates, setAvailableDates] = useState<Set<string>>(
+    () => new Set(),
+  );
+  const [fullDates, setFullDates] = useState<Set<string>>(() => new Set());
+  const [datesLoading, setDatesLoading] = useState(false);
+  const [datesFrom, setDatesFrom] = useState("");
+  const [datesTo, setDatesTo] = useState("");
 
   const allowedTravelerIds = useMemo(
     () => new Set(bookingStates.map((s) => s.id)),
@@ -280,72 +288,100 @@ function BookingRequestFormFields({
   }, [state.errors]);
 
   useEffect(() => {
-    if (mode !== "booking") {
+    if (mode !== "booking") return;
+
+    const oid = officeId.trim();
+    if (!oid) {
       const id = requestAnimationFrame(() => {
-        setDayFull(false);
-        setAvailabilityHint(null);
-        setAvailabilityPending(false);
+        setAvailableDates(new Set());
+        setFullDates(new Set());
+        setDatesLoading(false);
+        setDatesFrom("");
+        setDatesTo("");
+        setPreferredDate("");
       });
       return () => cancelAnimationFrame(id);
     }
 
-    const oid = officeId.trim();
-    const d = preferredDate.trim();
-    if (!oid || !/^\d{4}-\d{2}-\d{2}$/.test(d)) {
-      const clearId = requestAnimationFrame(() => {
-        setDayFull(false);
-        setAvailabilityHint(null);
-        setAvailabilityPending(false);
-      });
-      return () => cancelAnimationFrame(clearId);
-    }
-
     const ac = new AbortController();
     const pendingId = requestAnimationFrame(() => {
-      setAvailabilityPending(true);
+      setDatesLoading(true);
     });
-    const timer = window.setTimeout(async () => {
+
+    void (async () => {
       try {
         const res = await fetch(
-          `/api/booking/availability?officeId=${encodeURIComponent(oid)}&preferredDate=${encodeURIComponent(d)}`,
+          `/api/booking/available-dates?officeId=${encodeURIComponent(oid)}`,
           { signal: ac.signal },
         );
         const data = (await res.json()) as {
-          available?: boolean;
-          fullMessage?: string;
+          dates?: string[];
+          fullDates?: string[];
+          from?: string;
+          to?: string;
         };
         if (ac.signal.aborted) return;
-        const full = res.ok && data.available === false;
-        setDayFull(full);
-        setAvailabilityHint(full ? t.dayFull : null);
+        if (!res.ok) {
+          setAvailableDates(new Set());
+          setFullDates(new Set());
+          setDatesFrom(minYmd);
+          setDatesTo(getCairoYmdDaysAfter(BOOKING_DATE_HORIZON_DAYS, minYmd));
+          return;
+        }
+        const nextAvailable = new Set(data.dates ?? []);
+        const nextFull = new Set(data.fullDates ?? []);
+        const from = data.from ?? minYmd;
+        const to =
+          data.to ?? getCairoYmdDaysAfter(BOOKING_DATE_HORIZON_DAYS, minYmd);
+        setAvailableDates(nextAvailable);
+        setFullDates(nextFull);
+        setDatesFrom(from);
+        setDatesTo(to);
+        setPreferredDate((current) => {
+          if (current && nextAvailable.has(current)) return current;
+          const sorted = [...nextAvailable].sort();
+          return sorted[0] ?? "";
+        });
       } catch {
         if (!ac.signal.aborted) {
-          setDayFull(false);
-          setAvailabilityHint(null);
+          setAvailableDates(new Set());
+          setFullDates(new Set());
+          setDatesFrom(minYmd);
+          setDatesTo(getCairoYmdDaysAfter(BOOKING_DATE_HORIZON_DAYS, minYmd));
         }
       } finally {
-        if (!ac.signal.aborted) setAvailabilityPending(false);
+        if (!ac.signal.aborted) setDatesLoading(false);
       }
-    }, 350);
+    })();
 
     return () => {
       cancelAnimationFrame(pendingId);
       ac.abort();
-      window.clearTimeout(timer);
     };
-  }, [mode, officeId, preferredDate, t.dayFull]);
+  }, [mode, officeId, minYmd]);
+
+  const officeSelected = Boolean(officeId.trim());
+  const noAvailableDates =
+    mode === "booking" &&
+    officeSelected &&
+    !datesLoading &&
+    availableDates.size === 0;
 
   const bookingBlocked =
-    mode === "booking" && (dayFull || availabilityPending);
+    mode === "booking" &&
+    (datesLoading ||
+      noAvailableDates ||
+      (officeSelected && !preferredDate.trim()));
 
   const preferredDateError =
-    state.errors?.preferredDate ?? availabilityHint ?? undefined;
+    state.errors?.preferredDate ??
+    (noAvailableDates ? t.noAvailableDates : undefined);
 
   return (
     <form
       action={action}
       className={`relative space-y-0 ${pending ? "opacity-90" : ""}`}
-      aria-busy={pending || availabilityPending ? true : undefined}
+      aria-busy={pending || datesLoading ? true : undefined}
     >
       <input type="hidden" name="locale" value={locale} />
       <input type="hidden" name="governorateId" value={governorateId} />
@@ -485,30 +521,33 @@ function BookingRequestFormFields({
           </div>
 
           {mode === "booking" ? (
-            <label className={labelClass}>
-              {t.preferredDate}
-              <input
-                ref={preferredDateRef}
+            <div>
+              <span className={labelClass}>{t.preferredDate}</span>
+              <BookingAvailableDatePicker
+                locale={locale}
                 name="preferredDate"
-                type="date"
-                required
-                min={minYmd}
-                className={inputClass}
                 value={preferredDate}
-                onChange={(e) => setPreferredDate(e.target.value)}
+                onChange={setPreferredDate}
+                availableDates={availableDates}
+                fullDates={fullDates}
+                fromYmd={datesFrom || minYmd}
+                toYmd={
+                  datesTo ||
+                  getCairoYmdDaysAfter(BOOKING_DATE_HORIZON_DAYS, minYmd)
+                }
+                loading={datesLoading && officeSelected}
+                disabled={!officeSelected}
+                disabledHint={
+                  !officeSelected ? t.chooseOfficeFirstForDate : undefined
+                }
+                placeholderLabel={t.datePlaceholder}
+                loadingLabel={t.loadingAvailableDates}
+                prevMonthLabel={t.calendarPrevMonth}
+                nextMonthLabel={t.calendarNextMonth}
+                containerRef={preferredDateRef}
               />
-              {availabilityPending ? (
-                <div
-                  className="mt-2 space-y-1"
-                  role="status"
-                  aria-live="polite"
-                >
-                  <SkeletonBlock className="h-3 w-40" />
-                  <p className="sr-only">{t.checkingAvailability}</p>
-                </div>
-              ) : null}
               <FieldError message={preferredDateError} />
-            </label>
+            </div>
           ) : null}
         </fieldset>
 

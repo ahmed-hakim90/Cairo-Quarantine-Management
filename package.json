@@ -17,7 +17,9 @@
     "backfill:booking-day-stats": "node --env-file=.env.local scripts/backfill-booking-day-stats.mjs",
     "load-test:bookings": "npx tsx --env-file=.env.local scripts/load-test-bookings.ts",
     "handover:docx": ".venv-handover/bin/python scripts/build-handover-docx.py",
-    "handover:pdf": ".venv-handover/bin/python scripts/build-presentation-pdf.py"
+    "handover:pdf": ".venv-handover/bin/python scripts/build-presentation-pdf.py",
+    "handover:screenshots": "npx tsx --env-file=.env.local scripts/capture-handover-screenshots.ts",
+    "handover:pptx": ".venv-handover/bin/python scripts/build-ministry-pptx.py"
   },
   "dependencies": {
     "@types/qrcode": "^1.5.6",
@@ -30,16 +32,19 @@
     "next": "16.2.6",
     "qrcode": "^1.5.4",
     "react": "19.2.4",
+    "react-day-picker": "^9.14.0",
     "react-dom": "19.2.4",
     "recharts": "^2.15.4"
   },
   "devDependencies": {
+    "@playwright/test": "^1.60.0",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.2.6",
+    "playwright": "^1.60.0",
     "png-to-ico": "^3.0.1",
     "sharp": "^0.34.5",
     "tailwindcss": "^4",
