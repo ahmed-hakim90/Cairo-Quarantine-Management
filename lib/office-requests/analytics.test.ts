@@ -7,6 +7,7 @@ import {
   buildFeedbackSectionFromRequests,
   buildOfficePerformanceRatings,
   buildOfficePerformanceFromDailyStats,
+  sortOfficePerformanceRatingsBy,
   topOfficesByComplaints,
   topOfficesByTotalRequests,
 } from "@/lib/office-requests/analytics";
@@ -115,7 +116,7 @@ describe("buildOfficePerformanceRatings", () => {
     });
   });
 
-  it("sorts by total activity, then bookings, then name", () => {
+  it("sorts by bookings, then completed, then name", () => {
     const ratings = buildOfficePerformanceRatings(
       [
         request("1", "office-low", "completed"),
@@ -136,9 +137,38 @@ describe("buildOfficePerformanceRatings", () => {
     expect(ratings.map((rating) => rating.officeId)).toEqual([
       "office-high-bookings",
       "office-low",
-      "office-high-complaints",
       "office-empty",
+      "office-high-complaints",
     ]);
+  });
+});
+
+describe("sortOfficePerformanceRatingsBy", () => {
+  const ratings = buildOfficePerformanceRatings(
+    [
+      request("1", "office-a", "completed"),
+      request("2", "office-a", "new"),
+      request("3", "office-b", "new", "complaint"),
+      request("4", "office-b", "new", "complaint"),
+    ],
+    [office("office-a", "مكتب أ"), office("office-b", "مكتب ب")],
+  );
+
+  it("sorts by completed descending", () => {
+    const sorted = sortOfficePerformanceRatingsBy(ratings, "completed", "desc");
+    expect(sorted.map((row) => row.officeId)).toEqual(["office-a", "office-b"]);
+  });
+
+  it("sorts by complaints ascending", () => {
+    const sorted = sortOfficePerformanceRatingsBy(ratings, "complaints", "asc");
+    expect(sorted.map((row) => row.officeId)).toEqual(["office-a", "office-b"]);
+  });
+
+  it("toggles office name sort direction", () => {
+    const asc = sortOfficePerformanceRatingsBy(ratings, "officeNameAr", "asc");
+    const desc = sortOfficePerformanceRatingsBy(ratings, "officeNameAr", "desc");
+    expect(asc.map((row) => row.officeId)).toEqual(["office-a", "office-b"]);
+    expect(desc.map((row) => row.officeId)).toEqual(["office-b", "office-a"]);
   });
 });
 

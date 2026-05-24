@@ -23,6 +23,41 @@ export type OfficePerformanceRating = {
   completed: number;
 };
 
+export type OfficePerformanceSortKey =
+  | "officeNameAr"
+  | "bookings"
+  | "completed"
+  | "complaints";
+
+export type OfficePerformanceSortDirection = "asc" | "desc";
+
+export function sortOfficePerformanceRatingsBy(
+  ratings: OfficePerformanceRating[],
+  key: OfficePerformanceSortKey,
+  direction: OfficePerformanceSortDirection,
+): OfficePerformanceRating[] {
+  const factor = direction === "asc" ? 1 : -1;
+
+  return [...ratings].sort((a, b) => {
+    if (key === "officeNameAr") {
+      const cmp = a.officeNameAr.localeCompare(b.officeNameAr, "ar");
+      if (cmp !== 0) return cmp * factor;
+      return a.officeId.localeCompare(b.officeId);
+    }
+
+    const diff = a[key] - b[key];
+    if (diff !== 0) return diff * factor;
+    return a.officeNameAr.localeCompare(b.officeNameAr, "ar");
+  });
+}
+
+/** Default table order: highest bookings first. */
+export function sortOfficePerformanceRatings(
+  ratings: OfficePerformanceRating[],
+): OfficePerformanceRating[] {
+  return sortOfficePerformanceRatingsBy(ratings, "bookings", "desc");
+}
+
 export type QueueDailyAnalyticsSummary = {
   totalCheckedIn: number;
   totalCompleted: number;
@@ -247,17 +282,7 @@ export function buildOfficePerformanceRatings(
     byOffice.set(rating.officeId, rating);
   }
 
-  const ratings = [...byOffice.values()];
-
-  ratings.sort((a, b) => {
-    const aTotal = a.bookings + a.complaints + a.proposals;
-    const bTotal = b.bookings + b.complaints + b.proposals;
-    if (aTotal !== bTotal) return bTotal - aTotal;
-    if (a.bookings !== b.bookings) return b.bookings - a.bookings;
-    return a.officeNameAr.localeCompare(b.officeNameAr, "ar");
-  });
-
-  return ratings;
+  return sortOfficePerformanceRatings([...byOffice.values()]);
 }
 
 export function buildOfficePerformanceFromDailyStats(
@@ -297,17 +322,7 @@ export function buildOfficePerformanceFromDailyStats(
     byOffice.set(rating.officeId, rating);
   }
 
-  const ratings = [...byOffice.values()];
-
-  ratings.sort((a, b) => {
-    const aTotal = a.bookings + a.complaints + a.proposals;
-    const bTotal = b.bookings + b.complaints + b.proposals;
-    if (aTotal !== bTotal) return bTotal - aTotal;
-    if (a.bookings !== b.bookings) return b.bookings - a.bookings;
-    return a.officeNameAr.localeCompare(b.officeNameAr, "ar");
-  });
-
-  return ratings;
+  return sortOfficePerformanceRatings([...byOffice.values()]);
 }
 
 export type TopOfficeChartRow = {

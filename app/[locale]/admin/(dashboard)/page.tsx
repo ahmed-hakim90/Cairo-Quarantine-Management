@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import { notFound, redirect } from "next/navigation";
+import { AdminOfficePerformanceTable } from "@/components/admin/AdminOfficePerformanceTable";
 import { AdminAnalyticsCharts } from "@/components/admin/AdminAnalyticsCharts";
 import { AdminTopOfficesCharts } from "@/components/admin/AdminTopOfficesCharts";
 import { AdminBookingQueueStatSection } from "@/components/admin/AdminBookingQueueStatSection";
@@ -301,38 +302,10 @@ export default async function AdminOverviewPage({
             </p>
           </div>
         </div>
-        <div className="overflow-x-auto">
-          <table className="min-w-full text-right text-sm">
-            <thead className="bg-gov-gray-50 text-xs font-bold uppercase text-gov-gray-600">
-              <tr>
-                <th className="px-4 py-3">المكتب</th>
-                <th className="px-4 py-3">حجوزات</th>
-                <th className="px-4 py-3">مكتمل</th>
-                {!isReception ? <th className="px-4 py-3">شكاوى</th> : null}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gov-gray-100">
-              {officeRatings.map((rating) => (
-                <tr key={rating.officeId} className="align-middle">
-                  <td className="px-4 py-3 font-bold text-gov-navy">
-                    {rating.officeNameAr}
-                  </td>
-                  <td className="px-4 py-3 font-semibold text-gov-gray-800">
-                    {rating.bookings}
-                  </td>
-                  <td className="px-4 py-3 font-semibold text-gov-gray-800">
-                    {rating.completed}
-                  </td>
-                  {!isReception ? (
-                    <td className="px-4 py-3 font-semibold text-gov-gray-800">
-                      {rating.complaints}
-                    </td>
-                  ) : null}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <AdminOfficePerformanceTable
+          ratings={officeRatings}
+          showComplaints={!isReception}
+        />
       </section>
     </div>
   );
