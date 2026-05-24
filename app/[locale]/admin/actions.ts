@@ -318,7 +318,9 @@ export async function saveUserProfileAction(formData: FormData) {
     rawRole === "governorate_admin" ||
     rawRole === "office_admin"
       ? rawRole
-      : "office_user";
+      : rawRole === "office_reception"
+        ? "office_reception"
+        : "office_user";
   const governorateId = formValue(formData, "governorateId") || null;
   const officeId = formValue(formData, "officeId") || null;
   const allowedOfficeIds = formValues(formData, "allowedOfficeIds");

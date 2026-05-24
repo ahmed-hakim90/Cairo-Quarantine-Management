@@ -30,6 +30,7 @@ type CheckinFormProps = {
   officeNameAr: string;
   travelerStates: TravelerState[];
   iosHelp: string;
+  initialLookup?: string;
 };
 
 export function CheckinForm({
@@ -38,6 +39,7 @@ export function CheckinForm({
   officeNameAr,
   travelerStates,
   iosHelp,
+  initialLookup = "",
 }: CheckinFormProps) {
   const t = checkinFormCopy[locale];
   const [lookupState, lookupAction, lookupPending] = useActionState(
@@ -54,7 +56,8 @@ export function CheckinForm({
 
   useEffect(() => {
     const lookupTimer = window.setTimeout(() => {
-      setLookupValue(loadCheckinLookup(officeId));
+      const stored = loadCheckinLookup(officeId);
+      setLookupValue(initialLookup.trim() || stored);
     }, 0);
 
     let cancelled = false;
@@ -90,7 +93,7 @@ export function CheckinForm({
       window.clearTimeout(lookupTimer);
       window.clearTimeout(restoreTimer);
     };
-  }, [officeId, locale]);
+  }, [officeId, locale, initialLookup]);
 
   useEffect(() => {
     const id = window.setTimeout(() => {
@@ -138,6 +141,8 @@ export function CheckinForm({
     () => lookupPending || quickPending || restoring,
     [lookupPending, quickPending, restoring],
   );
+
+  const lookupLocked = Boolean(initialLookup.trim());
 
   if (restoring && !result) {
     return (
@@ -196,11 +201,20 @@ export function CheckinForm({
             name="lookup"
             type="text"
             required
+            readOnly={lookupLocked}
             autoComplete="tel"
             value={lookupValue}
-            onChange={(e) => setLookupValue(e.target.value)}
-            className="mt-2 w-full rounded-md border border-gov-gray-200 px-3 py-2.5 text-sm"
+            onChange={(e) => {
+              if (lookupLocked) return;
+              setLookupValue(e.target.value);
+            }}
+            className={`mt-2 w-full rounded-md border border-gov-gray-200 px-3 py-2.5 text-sm${
+              lookupLocked
+                ? " cursor-not-allowed bg-gov-gray-50 text-gov-gray-700"
+                : ""
+            }`}
             placeholder={t.lookupPlaceholder}
+            aria-readonly={lookupLocked}
           />
         </div>
         <button

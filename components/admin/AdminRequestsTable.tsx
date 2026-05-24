@@ -96,6 +96,8 @@ type AdminRequestsTableProps = {
   totalBookingsInPeriod?: number | null;
   currentPage?: number;
   pageCursors?: string[];
+  /** Hide complaint/proposal tabs and force bookings view (office reception). */
+  bookingsOnly?: boolean;
 };
 
 const statusClass: Record<OfficeRequest["status"], string> = {
@@ -270,9 +272,12 @@ export function AdminRequestsTable({
   totalBookingsInPeriod = null,
   currentPage = 1,
   pageCursors = [],
+  bookingsOnly = false,
 }: AdminRequestsTableProps) {
   const router = useRouter();
-  const [typeFilter, setTypeFilter] = useState<RequestTypeFilter>("all");
+  const [typeFilter, setTypeFilter] = useState<RequestTypeFilter>(
+    bookingsOnly ? "booking" : "all",
+  );
   const [activeTravelerStateId, setActiveTravelerStateId] = useState<
     string | null
   >(null);
@@ -281,6 +286,10 @@ export function AdminRequestsTable({
     FormData
   >(addRequestToQueueAction, { ok: false });
   const wasQueuePending = useRef(false);
+
+  const visibleTypeTabs = bookingsOnly
+    ? TYPE_TABS.filter((tab) => tab.id === "booking")
+    : TYPE_TABS;
 
   const filterStates = useMemo(
     () =>
@@ -361,7 +370,13 @@ export function AdminRequestsTable({
     totalBookingsInPeriod != null
       ? totalBookingsInPeriod
       : requests.filter((r) => r.type === "booking").length;
-  const summaryLine = hasCustomDateRange
+  const summaryLine = bookingsOnly
+    ? hasCustomDateRange
+      ? `الحجوزات بتاريخ من ${customDateFrom} إلى ${customDateTo}.`
+      : dateRange === "all"
+        ? "الحجوزات المعروضة هي الحجوزات القادمة فقط."
+        : `الحجوزات حسب تاريخ الحجز (${periodLabel}).`
+    : hasCustomDateRange
     ? `الحجوزات بتاريخ من ${customDateFrom} إلى ${customDateTo}؛ الشكاوى والمقترحات الجديدة المُنشأة في نفس الفترة (توقيت القاهرة).`
     : dateRange === "all"
       ? "الحجوزات المعروضة هي الحجوزات القادمة فقط؛ تبويب الشكاوى يعرض الجديد فقط."
@@ -562,7 +577,7 @@ export function AdminRequestsTable({
                 role="tablist"
                 aria-label="تصفية الطلبات حسب النوع"
               >
-                {TYPE_TABS.map((tab) => {
+                {visibleTypeTabs.map((tab) => {
                   const selected = typeFilter === tab.id;
                   const n = typeCountForTab(tab.id);
                   return (

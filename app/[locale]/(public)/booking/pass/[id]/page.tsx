@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { bookingPassPageCopy } from "@/lib/i18n/booking-pass-copy";
+import { LocaleLink } from "@/components/i18n/LocaleLink";
+import { buildOfficeCheckinQuery } from "@/lib/booking-pass-url";
+import { getCairoTodayYmd } from "@/lib/cairo-today-ymd";
+import { bookingPassFormCopy, bookingPassPageCopy } from "@/lib/i18n/booking-pass-copy";
 import { isLocale, type Locale } from "@/lib/i18n/config";
 import {
   publicRequestStatusLabels,
@@ -70,6 +73,12 @@ export default async function BookingPassPage({
       : "—";
 
   const c = bookingPassPageCopy[locale];
+  const formCopy = bookingPassFormCopy[locale];
+  const today = getCairoTodayYmd();
+  const showQueueCta =
+    pass.type === "booking" &&
+    pass.preferredDate === today &&
+    Boolean(pass.officeId);
 
   return (
     <section className="min-h-[70vh] bg-gradient-to-b from-gov-navy-deep to-gov-navy text-white">
@@ -144,6 +153,26 @@ export default async function BookingPassPage({
             </div>
           </dl>
         </div>
+
+        <p className="mt-6 rounded-xl border border-amber-200/30 bg-amber-500/10 px-4 py-3 text-center text-sm font-semibold leading-relaxed text-amber-100">
+          {c.keepCardNotice}
+        </p>
+
+        {showQueueCta ? (
+          <LocaleLink
+            locale={locale}
+            href={buildOfficeCheckinQuery(pass.officeId, pass.id)}
+            className="mt-4 flex min-h-12 w-full items-center justify-center rounded-xl bg-emerald-500 px-4 text-center text-sm font-bold text-white shadow transition hover:bg-emerald-600"
+          >
+            {c.queueCta}
+          </LocaleLink>
+        ) : null}
+
+        {pass.type === "booking" ? (
+          <p className="mt-3 text-center text-xs leading-relaxed text-white/60">
+            {formCopy.queueSameDayNote}
+          </p>
+        ) : null}
       </div>
     </section>
   );

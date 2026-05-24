@@ -1,6 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 import { AdminDashboardLayout } from "@/components/admin/AdminDashboardLayout";
 import { isLocale } from "@/lib/i18n/config";
+import { isSingleOfficeStaffRole } from "@/lib/office-requests/admin-access";
 import { getOffice } from "@/lib/office-requests/store";
 import {
   getAdminSession,
@@ -25,7 +26,7 @@ export default async function AdminDashboardShellLayout({
 
   const officeId = session.profile.officeId?.trim() ?? "";
   const officeNameAr =
-    session.profile.role === "office_user" && officeId
+    isSingleOfficeStaffRole(session.profile.role) && officeId
       ? (await getOffice(officeId))?.nameAr ?? null
       : null;
 

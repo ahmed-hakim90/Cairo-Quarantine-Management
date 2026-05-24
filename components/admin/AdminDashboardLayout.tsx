@@ -5,7 +5,7 @@ import { AdminLogoutButton } from "@/components/admin/AdminLogoutButton";
 import { unlockFeedbackSound } from "@/lib/ui/feedback-sound";
 import { AdminNewRequestNotifier } from "@/components/admin/AdminNewRequestNotifier";
 import { AdminSidebar } from "@/components/admin/AdminSidebar";
-import { roleLabelAr } from "@/lib/office-requests/admin-access";
+import { isSingleOfficeStaffRole, roleLabelAr } from "@/lib/office-requests/admin-access";
 import type { AdminRole } from "@/lib/office-requests/types";
 
 type AdminDashboardLayoutProps = {
@@ -66,7 +66,7 @@ export function AdminDashboardLayout({
         locale={locale}
         role={role}
         queueOfficeId={
-          role === "office_user"
+          isSingleOfficeStaffRole(role)
             ? officeId
             : (role === "office_admin" || role === "governorate_admin") &&
                 allowedOfficeIds.length === 1

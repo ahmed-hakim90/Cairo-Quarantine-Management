@@ -84,13 +84,13 @@ export function LandingHero({ locale, copy }: LandingHeroProps) {
           >
             <LocaleLink
               locale={locale}
-              href="/citizen-services"
+              href="/"
               className="inline-flex min-h-12 items-center justify-center rounded-xl bg-brand-primary px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-brand-primary/30 transition-opacity hover:opacity-95"
             >
               {h.ctaPrimary}
             </LocaleLink>
             <a
-              href="#services"
+              href="/booking"
               className="inline-flex min-h-12 items-center justify-center rounded-xl border-2 border-brand-secondary/50 bg-white/80 px-6 py-3 text-sm font-semibold text-brand-primary backdrop-blur-sm transition-colors hover:bg-white"
             >
               {h.ctaSecondary}

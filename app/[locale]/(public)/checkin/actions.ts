@@ -17,6 +17,7 @@ import {
   getTodayKey,
   restoreOfficeCheckinByTicketId,
 } from "@/lib/queue/queue-service";
+import { bookingCheckinAllowedForToday } from "@/lib/queue/checkin-booking-day";
 import { getOfficeTravelerStateIds } from "@/lib/office-requests/office-traveler-state";
 import { listTravelerStatesForPublicBooking } from "@/lib/office-requests/store";
 import type { OfficeRequest } from "@/lib/office-requests/types";
@@ -110,6 +111,10 @@ export async function checkinLookupAction(
         ok: false,
         error: t.wrongOffice,
       };
+    }
+
+    if (!bookingCheckinAllowedForToday(request, getTodayKey())) {
+      return { ok: false, error: t.notBookingDay };
     }
 
     const date = getTodayKey();

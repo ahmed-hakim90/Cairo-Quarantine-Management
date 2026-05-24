@@ -1,4 +1,8 @@
-import type { AdminRole, AdminUserProfile } from "@/lib/office-requests/types";
+import type {
+  AdminRole,
+  AdminUserProfile,
+  OfficeRequestType,
+} from "@/lib/office-requests/types";
 
 export type AdminRequestScope = {
   role: AdminRole;
@@ -11,10 +15,44 @@ export function normalizeOfficeIds(ids: readonly unknown[]): string[] {
   return [...new Set(ids.map((id) => String(id).trim()).filter(Boolean))];
 }
 
+export function isSingleOfficeStaffRole(role: AdminRole): boolean {
+  return role === "office_user" || role === "office_reception";
+}
+
+export function canViewFeedbackRequests(role: AdminRole): boolean {
+  return role !== "office_reception";
+}
+
+/** Multi-office dashboard rankings (super admin + office/governorate admins). */
+export function canViewTopOfficesDashboardCharts(role: AdminRole): boolean {
+  return (
+    role === "super_admin" ||
+    role === "office_admin" ||
+    role === "governorate_admin"
+  );
+}
+
+export function adminAllowedRequestTypes(
+  role: AdminRole,
+): OfficeRequestType[] | undefined {
+  if (role === "office_reception") return ["booking"];
+  return undefined;
+}
+
+export function isRequestVisibleToAdminRole(
+  role: AdminRole,
+  request: Pick<{ type: OfficeRequestType }, "type">,
+): boolean {
+  const allowed = adminAllowedRequestTypes(role);
+  if (!allowed) return true;
+  return allowed.includes(request.type);
+}
+
 export function roleLabelAr(role: AdminRole): string {
   if (role === "super_admin") return "سوبر أدمن";
   if (role === "governorate_admin") return "أدمن محافظة";
   if (role === "office_admin") return "أدمن مكاتب";
+  if (role === "office_reception") return "ريسبشن";
   return "مستخدم مكتب";
 }
 
@@ -41,8 +79,12 @@ export function adminCanAccessOffice(
 export function scopedOfficeIdForProfile(
   profile: Pick<AdminUserProfile, "role" | "officeId" | "allowedOfficeIds">,
 ): string | null {
-  if (profile.role !== "office_user") return null;
+  if (!isSingleOfficeStaffRole(profile.role)) return null;
   return profile.officeId?.trim() || null;
+}
+
+function isOfficeStaffRole(role: AdminRole): boolean {
+  return isSingleOfficeStaffRole(role);
 }
 
 export function adminCanManageUser(
@@ -54,7 +96,7 @@ export function adminCanManageUser(
     return false;
   }
   if (target.uid === actor.uid) return false;
-  if (target.role !== "office_user") return false;
+  if (!isOfficeStaffRole(target.role)) return false;
   return adminCanAccessOffice(actor, target.officeId);
 }
 
@@ -74,7 +116,7 @@ export function assertOfficeAdminCanSaveUser(input: {
   ) {
     throw new Error("غير مصرح بتنفيذ هذا الإجراء.");
   }
-  if (input.targetRole !== "office_user") {
+  if (!isOfficeStaffRole(input.targetRole)) {
     throw new Error("الأدمن المحلي يمكنه إنشاء مستخدمي مكاتب فقط.");
   }
   if (!adminCanAccessOffice(input.actor, input.targetOfficeId)) {
@@ -82,7 +124,7 @@ export function assertOfficeAdminCanSaveUser(input: {
   }
   if (
     input.existingTarget &&
-    (input.existingTarget.role !== "office_user" ||
+    (!isOfficeStaffRole(input.existingTarget.role) ||
       !adminCanAccessOffice(input.actor, input.existingTarget.officeId))
   ) {
     throw new Error("لا يمكنك تعديل هذا المستخدم.");

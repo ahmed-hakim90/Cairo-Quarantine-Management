@@ -17,16 +17,14 @@ export function SiteHeader({ locale, messages }: SiteHeaderProps) {
 
   const navItems = [
     { href: "/", label: n.home },
-    { href: "/welcome", label: n.aboutPlatform },
     { href: "/international-traveler", label: n.international },
     { href: "/hajj-umrah", label: n.hajjUmrah },
     { href: "/citizen-services", label: n.citizen },
     { href: "/charter", label: n.charter },
-    { href: "/my-requests", label: n.myRequests },
   ] as const;
 
   return (
-    <header className="app-topbar-glass sticky top-0 z-50 shadow-sm">
+    <header className="app-topbar-glass sticky top-0 z-50 border-b border-white/35 bg-white/90 shadow-sm backdrop-blur-xl">
       <div className="relative z-10 mx-auto flex max-w-6xl flex-col gap-2 px-3 pb-2 pt-[max(0.5rem,env(safe-area-inset-top))] sm:px-4 md:flex-row md:items-center md:justify-between md:gap-4 md:pb-3">
         <div className="flex w-full min-w-0 items-center gap-2 md:hidden">
           <LocaleLink

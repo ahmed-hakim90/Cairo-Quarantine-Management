@@ -1,7 +1,5 @@
 "use client";
 
-import { useState } from "react";
-import { ChatWidget } from "@/components/chat/ChatWidget";
 import { FloatingTextToSpeechButton } from "@/components/layout/FloatingTextToSpeechButton";
 import { PUBLIC_FAB_ANCHOR_CLASS } from "@/lib/layout/public-chrome";
 import type { Locale } from "@/lib/i18n/config";
@@ -16,25 +14,11 @@ export function PublicFloatingChrome({
   locale,
   messages,
 }: PublicFloatingChromeProps) {
-  const [chatOpen, setChatOpen] = useState(false);
-
   return (
-    <>
-      <div className={`fixed start-5 z-[60] ${PUBLIC_FAB_ANCHOR_CLASS}`}>
-        <ChatWidget
-          locale={locale}
-          messages={messages.chat}
-          onOpenChange={setChatOpen}
-        />
-      </div>
-
-      <div
-        className={`fixed end-5 z-[60] flex flex-col items-center gap-3 ${PUBLIC_FAB_ANCHOR_CLASS}`}
-      >
-        <div className={chatOpen ? "max-sm:hidden" : undefined}>
-          <FloatingTextToSpeechButton locale={locale} labels={messages.tts} />
-        </div>
-      </div>
-    </>
+    <div
+      className={`fixed end-5 z-[60] flex max-md:bottom-[calc(5.25rem+1rem+env(safe-area-inset-bottom,0px))] flex-col items-center gap-3 md:bottom-5 ${PUBLIC_FAB_ANCHOR_CLASS}`}
+    >
+      <FloatingTextToSpeechButton locale={locale} labels={messages.tts} />
+    </div>
   );
 }

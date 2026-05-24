@@ -259,3 +259,101 @@ export function buildOfficePerformanceRatings(
 
   return ratings;
 }
+
+export function buildOfficePerformanceFromDailyStats(
+  rows: DailyRequestStats[],
+  offices: Pick<Office, "id" | "nameAr">[],
+): OfficePerformanceRating[] {
+  const byOffice = new Map<string, OfficePerformanceRating>();
+
+  for (const office of offices) {
+    byOffice.set(office.id, {
+      officeId: office.id,
+      officeNameAr: office.nameAr,
+      bookings: 0,
+      complaints: 0,
+      proposals: 0,
+      completed: 0,
+    });
+  }
+
+  for (const row of rows) {
+    const existing = byOffice.get(row.officeId);
+    const rating =
+      existing ??
+      {
+        officeId: row.officeId,
+        officeNameAr: row.officeId,
+        bookings: 0,
+        complaints: 0,
+        proposals: 0,
+        completed: 0,
+      };
+
+    rating.bookings += row.bookings;
+    rating.complaints += row.complaints;
+    rating.proposals += row.proposals;
+    rating.completed += row.bookingCompleted;
+    byOffice.set(rating.officeId, rating);
+  }
+
+  const ratings = [...byOffice.values()];
+
+  ratings.sort((a, b) => {
+    const aTotal = a.bookings + a.complaints + a.proposals;
+    const bTotal = b.bookings + b.complaints + b.proposals;
+    if (aTotal !== bTotal) return bTotal - aTotal;
+    if (a.bookings !== b.bookings) return b.bookings - a.bookings;
+    return a.officeNameAr.localeCompare(b.officeNameAr, "ar");
+  });
+
+  return ratings;
+}
+
+export type TopOfficeChartRow = {
+  officeId: string;
+  officeNameAr: string;
+  count: number;
+};
+
+function truncateOfficeLabel(name: string, maxLength = 28): string {
+  const trimmed = name.trim();
+  if (trimmed.length <= maxLength) return trimmed;
+  return `${trimmed.slice(0, maxLength - 1)}…`;
+}
+
+export function topOfficesByTotalRequests(
+  ratings: OfficePerformanceRating[],
+  limit = 10,
+): TopOfficeChartRow[] {
+  return [...ratings]
+    .map((rating) => ({
+      officeId: rating.officeId,
+      officeNameAr: truncateOfficeLabel(rating.officeNameAr),
+      count: rating.bookings + rating.complaints + rating.proposals,
+    }))
+    .filter((row) => row.count > 0)
+    .sort((a, b) => {
+      if (a.count !== b.count) return b.count - a.count;
+      return a.officeNameAr.localeCompare(b.officeNameAr, "ar");
+    })
+    .slice(0, limit);
+}
+
+export function topOfficesByComplaints(
+  ratings: OfficePerformanceRating[],
+  limit = 10,
+): TopOfficeChartRow[] {
+  return [...ratings]
+    .map((rating) => ({
+      officeId: rating.officeId,
+      officeNameAr: truncateOfficeLabel(rating.officeNameAr),
+      count: rating.complaints,
+    }))
+    .filter((row) => row.count > 0)
+    .sort((a, b) => {
+      if (a.count !== b.count) return b.count - a.count;
+      return a.officeNameAr.localeCompare(b.officeNameAr, "ar");
+    })
+    .slice(0, limit);
+}

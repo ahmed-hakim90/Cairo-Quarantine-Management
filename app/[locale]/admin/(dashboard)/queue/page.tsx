@@ -1,6 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import { AdminQueueHub } from "@/components/queue/AdminQueueHub";
-import { adminAllowedOfficeIds } from "@/lib/office-requests/admin-access";
+import { adminAllowedOfficeIds, isSingleOfficeStaffRole } from "@/lib/office-requests/admin-access";
 import { getAdminSession } from "@/lib/office-requests/session";
 import { listOffices } from "@/lib/office-requests/store";
 import { isLocale } from "@/lib/i18n/config";
@@ -20,7 +20,7 @@ export default async function AdminQueueHubPage({
 
   const role = session.profile.role;
 
-  if (role === "office_user") {
+  if (isSingleOfficeStaffRole(role)) {
     const officeId = session.profile.officeId?.trim();
     if (!officeId) redirect(`/${locale}/admin/pending-review`);
     redirect(`/${locale}/office-dashboard/${officeId}/queue`);

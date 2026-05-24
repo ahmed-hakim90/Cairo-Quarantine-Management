@@ -1,6 +1,7 @@
 import { FieldValue, Timestamp } from "firebase-admin/firestore";
 import { getAdminDb, isFirebaseAdminConfigured } from "@/lib/firebase/admin";
 import { logEvent } from "@/lib/observability/log-event";
+import { buildOfficeCheckinPath } from "@/lib/booking-pass-url";
 import { getCairoTodayYmd } from "@/lib/cairo-today-ymd";
 import { phoneLookupVariants } from "@/lib/office-requests/whatsapp-message";
 import {
@@ -46,8 +47,13 @@ export function getTodayKey(date = new Date()): string {
   return getCairoTodayYmd(date);
 }
 
-export function getOfficeCheckinUrl(officeId: string, origin?: string): string {
-  const path = `/ar/checkin?officeId=${encodeURIComponent(officeId)}`;
+export function getOfficeCheckinUrl(
+  officeId: string,
+  origin?: string,
+  locale = "ar",
+  lookup?: string,
+): string {
+  const path = buildOfficeCheckinPath(locale, officeId, lookup);
   const base =
     process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/+$/, "") ||
     origin?.replace(/\/+$/, "") ||

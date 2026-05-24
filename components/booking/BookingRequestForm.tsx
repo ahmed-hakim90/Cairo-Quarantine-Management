@@ -15,7 +15,6 @@ import {
   type BookingFormState,
 } from "@/app/[locale]/(public)/booking/actions";
 import { BookingRequestSuccessView } from "@/components/booking/BookingRequestSuccessView";
-import { LocaleLink } from "@/components/i18n/LocaleLink";
 import { getCairoMinBookingYmd } from "@/lib/cairo-today-ymd";
 import { bookingRequestCopy } from "@/lib/i18n/booking-request-copy";
 import type { Locale } from "@/lib/i18n/config";
@@ -61,9 +60,6 @@ const initialState: BookingFormState = {
   message: "",
 };
 
-const STORAGE_KEY = "cairo-office-requests:v1";
-const DUPLICATE_REDIRECT_DELAY_MS = 1500;
-
 const inputClass =
   "mt-2 w-full min-h-12 rounded-md border border-gov-gray-200 bg-white px-3.5 py-3 text-base text-gov-gray-900 outline-none transition focus:border-gov-accent focus:ring-2 focus:ring-gov-accent/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gov-accent disabled:bg-gov-gray-50 disabled:text-gov-gray-600 sm:min-h-0 sm:px-3 sm:py-3 sm:text-sm";
 
@@ -84,21 +80,6 @@ const checkboxInputClass =
 function FieldError({ message }: { message?: string }) {
   if (!message) return null;
   return <p className="mt-2 text-sm font-semibold text-red-700">{message}</p>;
-}
-
-function saveRequestToDevice(request: StoredRequest) {
-  try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    const current = raw ? JSON.parse(raw) : [];
-    const requests: StoredRequest[] = Array.isArray(current) ? current : [];
-    const next = [
-      request,
-      ...requests.filter((item) => item?.id !== request.id),
-    ].slice(0, 20);
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-  } catch {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify([request]));
-  }
 }
 
 export function BookingRequestForm(props: BookingRequestFormProps) {
@@ -157,7 +138,6 @@ function BookingRequestFormFields({
   sameDayCutoffHour = DEFAULT_BOOKING_SAME_DAY_CUTOFF_HOUR,
   onSuccess,
 }: BookingRequestFormFieldsProps) {
-  const router = useRouter();
   const t = bookingRequestCopy[locale];
   const bookingStates = useMemo(
     () =>
@@ -171,9 +151,7 @@ function BookingRequestFormFields({
     submitOfficeRequest,
     initialState,
   );
-  const savedRequestId = useRef<string | null>(null);
   const lastToastKeyRef = useRef("");
-  const lastDuplicateRedirectKeyRef = useRef("");
   const officeRef = useRef<HTMLSelectElement>(null);
   const travelerStateRef = useRef<HTMLSelectElement>(null);
   const typeRef = useRef<HTMLSelectElement>(null);
@@ -271,20 +249,6 @@ function BookingRequestFormFields({
   }, [state.ok, state.message, state.duplicate]);
 
   useEffect(() => {
-    if (!state.duplicate || state.ok || !state.message) return;
-    const key = state.message;
-    if (lastDuplicateRedirectKeyRef.current === key) return;
-    lastDuplicateRedirectKeyRef.current = key;
-
-    feedbackToast.error(state.message);
-    const timer = window.setTimeout(() => {
-      router.push(`/${locale}/my-requests`);
-    }, DUPLICATE_REDIRECT_DELAY_MS);
-
-    return () => window.clearTimeout(timer);
-  }, [state.duplicate, state.ok, state.message, locale, router]);
-
-  useEffect(() => {
     if (state.ok || !state.values) return;
     const id = requestAnimationFrame(() => {
       setOfficeId(state.values!.officeId);
@@ -293,19 +257,6 @@ function BookingRequestFormFields({
     });
     return () => cancelAnimationFrame(id);
   }, [state.ok, state.values]);
-
-  useEffect(() => {
-    if (
-      !state.ok ||
-      !state.request ||
-      savedRequestId.current === state.request.id
-    ) {
-      return;
-    }
-
-    saveRequestToDevice(state.request);
-    savedRequestId.current = state.request.id;
-  }, [state.ok, state.request]);
 
   useEffect(() => {
     if (!state.errors) return;
@@ -425,15 +376,6 @@ function BookingRequestFormFields({
           role="status"
         >
           {state.message}
-          {state.duplicate ? (
-            <LocaleLink
-              locale={locale}
-              href="/my-requests"
-              className="mt-3 inline-flex min-h-10 items-center rounded-md bg-gov-accent px-4 text-sm font-bold text-white transition hover:bg-gov-navy"
-            >
-              {t.duplicateLink}
-            </LocaleLink>
-          ) : null}
         </div>
       ) : null}
 

@@ -25,12 +25,14 @@ type AdminAnalyticsChartsProps = {
   analytics: AdminRequestAnalytics;
   bookingQueue: AdminBookingQueueSection;
   feedback: AdminFeedbackSection;
+  showFeedback?: boolean;
 };
 
 export function AdminAnalyticsCharts({
   analytics,
   bookingQueue,
   feedback,
+  showFeedback = true,
 }: AdminAnalyticsChartsProps) {
   const queueData = [
     { name: "حضر", count: bookingQueue.checkedIn },
@@ -81,31 +83,33 @@ export function AdminAnalyticsCharts({
         </div>
       </div>
 
-      <div className={chartCardClass}>
-        <h3 className="font-heading text-sm font-extrabold text-gov-navy">
-          الطلبات حسب النوع
-        </h3>
-        <p className="mt-1 text-xs text-gov-gray-600">
-          الشكاوى والمقترحات الجديدة: {feedback.newCount} من {feedback.total}.
-        </p>
-        <div className="mt-4 h-64 w-full min-w-0" dir="ltr">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={typeData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" className="stroke-gov-gray-200" />
-              <XAxis dataKey="name" tick={{ fontSize: 11 }} />
-              <YAxis allowDecimals={false} tick={{ fontSize: 11 }} width={36} />
-              <Tooltip
-                contentStyle={{ direction: "rtl", textAlign: "right" }}
-                formatter={(value) => [
-                  typeof value === "number" ? value : Number(value) || 0,
-                  "العدد",
-                ]}
-              />
-              <Bar dataKey="count" name="العدد" fill={BRAND_PRIMARY} radius={[4, 4, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
+      {showFeedback ? (
+        <div className={chartCardClass}>
+          <h3 className="font-heading text-sm font-extrabold text-gov-navy">
+            الطلبات حسب النوع
+          </h3>
+          <p className="mt-1 text-xs text-gov-gray-600">
+            الشكاوى والمقترحات الجديدة: {feedback.newCount} من {feedback.total}.
+          </p>
+          <div className="mt-4 h-64 w-full min-w-0" dir="ltr">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={typeData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" className="stroke-gov-gray-200" />
+                <XAxis dataKey="name" tick={{ fontSize: 11 }} />
+                <YAxis allowDecimals={false} tick={{ fontSize: 11 }} width={36} />
+                <Tooltip
+                  contentStyle={{ direction: "rtl", textAlign: "right" }}
+                  formatter={(value) => [
+                    typeof value === "number" ? value : Number(value) || 0,
+                    "العدد",
+                  ]}
+                />
+                <Bar dataKey="count" name="العدد" fill={BRAND_PRIMARY} radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
         </div>
-      </div>
+      ) : null}
 
       <div className={`${chartCardClass} lg:col-span-2`}>
         <h3 className="font-heading text-sm font-extrabold text-gov-navy">

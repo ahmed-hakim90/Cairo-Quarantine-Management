@@ -166,24 +166,16 @@
   }
 
   .app-topbar-glass {
-    position: relative;
-    isolation: isolate;
-    border-bottom: 1px solid rgb(255 255 255 / 0.3);
-  }
-
-  .app-topbar-glass::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    z-index: -1;
-    background: rgb(255 255 255 / 0.7);
-    backdrop-filter: blur(24px);
+    border-bottom: 1px solid rgb(255 255 255 / 0.35);
+    background-color: rgb(255 255 255 / 0.88);
+    -webkit-backdrop-filter: blur(20px);
+    backdrop-filter: blur(20px);
   }
 
   .app-bottom-nav-bar {
-    border-top: 1px solid rgb(var(--brand-primary-rgb) / 0.08);
-    background: #fff;
-    box-shadow: 0 -2px 12px rgb(var(--brand-primary-rgb) / 0.06);
+    border-top: 1px solid rgb(var(--brand-primary-rgb) / 0.1);
+    background-color: #ffffff;
+    box-shadow: 0 -4px 16px rgb(var(--brand-primary-rgb) / 0.08);
   }
 
   body[data-mobile-nav-open] .public-bottom-nav {

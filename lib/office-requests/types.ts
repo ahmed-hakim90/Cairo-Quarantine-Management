@@ -12,7 +12,8 @@ export type AdminRole =
   | "super_admin"
   | "governorate_admin"
   | "office_admin"
-  | "office_user";
+  | "office_user"
+  | "office_reception";
 
 export type Governorate = {
   id: string;
@@ -108,6 +109,7 @@ export type BookingPassPublic = {
   id: string;
   requestNumber: string;
   governorateId?: string;
+  officeId: string;
   officeNameAr: string;
   type: OfficeRequestType;
   travelerStateId?: string;
@@ -130,6 +132,7 @@ export type PublicOfficeRequestStatus = Pick<
   | "id"
   | "requestNumber"
   | "governorateId"
+  | "officeId"
   | "officeNameAr"
   | "type"
   | "travelerStateId"

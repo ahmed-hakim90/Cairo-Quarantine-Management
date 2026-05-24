@@ -8,6 +8,18 @@ describe("localizeCheckinError", () => {
     ).toBe("Too many attempts. Wait a moment and try again.");
   });
 
+  it("returns English not booking day message", () => {
+    expect(
+      localizeCheckinError(
+        "en",
+        "لسه تاريخك مجاش. عد في تاريخ حجزك المحدد.",
+        "checkinFailed",
+      ),
+    ).toBe(
+      "Your booking date has not arrived yet. Please return on your booking date.",
+    );
+  });
+
   it("returns fallback when message is unknown", () => {
     expect(localizeCheckinError("en", "خطأ غير معروف", "quickFailed")).toBe(
       "خطأ غير معروف",

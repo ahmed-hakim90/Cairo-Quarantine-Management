@@ -15,11 +15,11 @@ export function LandingTopBar({ locale, messages }: LandingTopBarProps) {
   const landing = messages.landing;
 
   return (
-    <header className="app-topbar-glass fixed top-0 z-50 w-full">
+    <header className="app-topbar-glass fixed top-0 z-50 w-full border-b border-white/35 bg-white/90 shadow-sm backdrop-blur-xl">
       <div className="relative z-10 mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3 pt-[max(0.75rem,env(safe-area-inset-top))]">
         <LocaleLink
           locale={locale}
-          href="/welcome"
+          href="/"
           className="flex min-w-0 items-center gap-2.5 transition-opacity hover:opacity-90"
         >
           <Image

@@ -6,6 +6,9 @@ import {
   buildFeedbackSectionFromDailyStats,
   buildFeedbackSectionFromRequests,
   buildOfficePerformanceRatings,
+  buildOfficePerformanceFromDailyStats,
+  topOfficesByComplaints,
+  topOfficesByTotalRequests,
 } from "@/lib/office-requests/analytics";
 import type { DailyRequestStats } from "@/lib/office-requests/daily-request-stats";
 import { aggregateDailyQueueStats } from "@/lib/queue/daily-stats-service";
@@ -136,6 +139,125 @@ describe("buildOfficePerformanceRatings", () => {
       "office-high-complaints",
       "office-empty",
     ]);
+  });
+});
+
+describe("buildOfficePerformanceFromDailyStats", () => {
+  it("aggregates bookings and complaints per office", () => {
+    const rows: DailyRequestStats[] = [
+      {
+        date: "2026-05-01",
+        officeId: "office-a",
+        totalRequests: 3,
+        bookings: 2,
+        complaints: 1,
+        proposals: 0,
+        new: 0,
+        inProgress: 0,
+        completed: 0,
+        cancelled: 0,
+        bookingNew: 0,
+        bookingInProgress: 0,
+        bookingCompleted: 1,
+        bookingCancelled: 0,
+        complaintNew: 0,
+        complaintInProgress: 0,
+        complaintCompleted: 0,
+        complaintCancelled: 0,
+        proposalNew: 0,
+        proposalInProgress: 0,
+        proposalCompleted: 0,
+        proposalCancelled: 0,
+      },
+      {
+        date: "2026-05-02",
+        officeId: "office-a",
+        totalRequests: 1,
+        bookings: 1,
+        complaints: 0,
+        proposals: 0,
+        new: 0,
+        inProgress: 0,
+        completed: 0,
+        cancelled: 0,
+        bookingNew: 0,
+        bookingInProgress: 0,
+        bookingCompleted: 0,
+        bookingCancelled: 0,
+        complaintNew: 0,
+        complaintInProgress: 0,
+        complaintCompleted: 0,
+        complaintCancelled: 0,
+        proposalNew: 0,
+        proposalInProgress: 0,
+        proposalCompleted: 0,
+        proposalCancelled: 0,
+      },
+      {
+        date: "2026-05-01",
+        officeId: "office-b",
+        totalRequests: 2,
+        bookings: 0,
+        complaints: 2,
+        proposals: 0,
+        new: 0,
+        inProgress: 0,
+        completed: 0,
+        cancelled: 0,
+        bookingNew: 0,
+        bookingInProgress: 0,
+        bookingCompleted: 0,
+        bookingCancelled: 0,
+        complaintNew: 0,
+        complaintInProgress: 0,
+        complaintCompleted: 0,
+        complaintCancelled: 0,
+        proposalNew: 0,
+        proposalInProgress: 0,
+        proposalCompleted: 0,
+        proposalCancelled: 0,
+      },
+    ];
+
+    const ratings = buildOfficePerformanceFromDailyStats(rows, [
+      office("office-a", "مكتب أ"),
+      office("office-b", "مكتب ب"),
+    ]);
+
+    expect(ratings.find((row) => row.officeId === "office-a")).toMatchObject({
+      bookings: 3,
+      complaints: 1,
+      completed: 1,
+    });
+    expect(ratings.find((row) => row.officeId === "office-b")).toMatchObject({
+      bookings: 0,
+      complaints: 2,
+    });
+  });
+});
+
+describe("top office chart rows", () => {
+  it("returns top offices by total requests and complaints", () => {
+    const ratings = buildOfficePerformanceRatings(
+      [
+        request("1", "office-a", "completed"),
+        request("2", "office-a", "new"),
+        request("3", "office-b", "new", "complaint"),
+        request("4", "office-b", "new", "complaint"),
+        request("5", "office-c", "new", "complaint"),
+      ],
+      [
+        office("office-a", "مكتب أ"),
+        office("office-b", "مكتب ب"),
+        office("office-c", "مكتب ج"),
+      ],
+    );
+
+    expect(topOfficesByTotalRequests(ratings, 2).map((row) => row.officeId)).toEqual([
+      "office-a",
+      "office-b",
+    ]);
+    expect(topOfficesByComplaints(ratings, 2).map((row) => row.count)).toEqual([2, 1]);
   });
 });
 

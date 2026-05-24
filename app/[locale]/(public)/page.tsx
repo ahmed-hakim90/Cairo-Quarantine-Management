@@ -29,7 +29,12 @@ export default async function HomePage({
 
   return (
     <>
-      <HeroSection content={m.hero} />
+      <HeroSection
+        locale={locale}
+        content={m.hero}
+        bookingLabel={m.nav.bookVaccination}
+        bookingAriaLabel={m.nav.bookVaccinationAria}
+      />
       <ScrollReveal initialVisible>
         <ServiceCards locale={locale} content={m.services} />
       </ScrollReveal>
