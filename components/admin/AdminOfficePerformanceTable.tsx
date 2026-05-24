@@ -108,8 +108,8 @@ export function AdminOfficePerformanceTable({
   }
 
   return (
-    <div className="overflow-x-auto">
-      <table className="min-w-full text-right text-sm">
+    <div className="overflow-x-auto" dir="rtl">
+      <table className="min-w-full text-sm">
         <thead className="bg-gov-gray-50 text-xs">
           <tr>
             <SortableHeader
@@ -125,6 +125,7 @@ export function AdminOfficePerformanceTable({
               activeKey={sortKey}
               direction={sortDirection}
               onSort={handleSort}
+              align="center"
             />
             <SortableHeader
               label="مكتمل"
@@ -132,6 +133,7 @@ export function AdminOfficePerformanceTable({
               activeKey={sortKey}
               direction={sortDirection}
               onSort={handleSort}
+              align="center"
             />
             {showComplaints ? (
               <SortableHeader
@@ -140,6 +142,7 @@ export function AdminOfficePerformanceTable({
                 activeKey={sortKey}
                 direction={sortDirection}
                 onSort={handleSort}
+                align="center"
               />
             ) : null}
           </tr>
@@ -147,17 +150,17 @@ export function AdminOfficePerformanceTable({
         <tbody className="divide-y divide-gov-gray-100">
           {sortedRatings.map((rating) => (
             <tr key={rating.officeId} className="align-middle">
-              <td className="px-4 py-3 font-bold text-gov-navy">
+              <td className="px-4 py-3 text-start font-bold text-gov-navy">
                 {rating.officeNameAr}
               </td>
-              <td className="px-4 py-3 font-semibold text-gov-gray-800">
+              <td className="px-4 py-3 text-center font-semibold tabular-nums text-gov-gray-800">
                 {rating.bookings}
               </td>
-              <td className="px-4 py-3 font-semibold text-gov-gray-800">
+              <td className="px-4 py-3 text-center font-semibold tabular-nums text-gov-gray-800">
                 {rating.completed}
               </td>
               {showComplaints ? (
-                <td className="px-4 py-3 font-semibold text-gov-gray-800">
+                <td className="px-4 py-3 text-center font-semibold tabular-nums text-gov-gray-800">
                   {rating.complaints}
                 </td>
               ) : null}
