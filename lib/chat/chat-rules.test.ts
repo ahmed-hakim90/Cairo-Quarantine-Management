@@ -3,6 +3,7 @@ import { VACCINES_BY_CATEGORY } from "@/data/vaccines";
 import { isChatAllowedUrl } from "@/lib/chat/allowed-links";
 import { enforceResponseRules } from "@/lib/chat/enforce-response";
 import { isHumanHandoffRequest } from "@/lib/chat/human-handoff";
+import { resolveEffectiveQuery } from "@/lib/chat/conversation-context";
 import { classifyChatIntent } from "@/lib/chat/intent";
 import { isOfficeOrAreaQuery } from "@/lib/chat/office-area-query";
 import { getLocalChatResponse } from "@/lib/chat/local-responses";
@@ -147,6 +148,26 @@ describe("chat rules", () => {
     );
     expect(result.split("\n").length).toBeLessThanOrEqual(4);
     expect(result).not.toContain("أعتقد");
+  });
+
+  it("merges follow-up area into prior office question", () => {
+    const effective = resolveEffectiveQuery([
+      { role: "user", content: "اقرب مكتب" },
+      { role: "assistant", content: "اختر منطقة" },
+      { role: "user", content: "وحلوان؟" },
+    ]);
+    expect(classifyChatIntent(effective.text)).toBe("office");
+    const reply = localAr(effective.text);
+    expect(reply?.type).toBe("office");
+    expect(reply?.answer).toContain("حلوان");
+  });
+
+  it("classifies checkin and complaint info intents", () => {
+    expect(classifyChatIntent("ازاي اسجل حضور")).toBe("checkin_info");
+    expect(classifyChatIntent("عايز اقدم شكوى")).toBe("complaint_info");
+    expect(classifyChatIntent("مسافر دولي ايه المطلوب")).toBe(
+      "international_info",
+    );
   });
 
   it("returns booking local response with markdown link", () => {

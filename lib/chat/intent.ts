@@ -5,6 +5,17 @@ import {
   getChatOfficeNameTokens,
   messageMatchesChatOfficeCatalog,
 } from "@/lib/chat/office-catalog";
+import {
+  BOOKING_PATTERNS,
+  CHECKIN_PATTERNS,
+  COMPLAINT_PATTERNS,
+  DESTINATION_PATTERNS,
+  HOURS_PATTERNS,
+  INTERNATIONAL_INFO_PATTERNS,
+  normalizedIncludesAny,
+  OFFICE_LOCATION_PATTERNS,
+  PRICE_PATTERNS,
+} from "@/lib/chat/synonym-patterns";
 import type { DestinationCountry } from "@/lib/office-requests/types";
 
 export type ChatIntent =
@@ -17,34 +28,28 @@ export type ChatIntent =
   | "destination_vaccines"
   | "office"
   | "hajj_umrah"
+  | "checkin_info"
+  | "complaint_info"
+  | "international_info"
   | "general";
 
 export function isPriceQuestion(normalized: string): boolean {
-  return (
-    normalized.includes("تكلف") ||
-    normalized.includes("سعر") ||
-    normalized.includes("بكم") ||
-    normalized.includes("بكام") ||
-    normalized.includes("كام") ||
-    normalized.includes("جنيه") ||
-    normalized.includes("egp") ||
-    normalized.includes("مصاريف") ||
-    normalized.includes("price") ||
-    normalized.includes("cost")
-  );
+  if (normalizedIncludesAny(normalized, PRICE_PATTERNS)) return true;
+  const tokens = normalized.split(" ").filter((t) => t.length >= 2);
+  return tokens.some((t) => t === "كام");
 }
 
 export function isBookingQuestion(normalized: string): boolean {
+<<<<<<< HEAD
   if (isBookingStepsQuestion(normalized)) return false;
+=======
+  if (normalizedIncludesAny(normalized, BOOKING_PATTERNS)) return true;
+>>>>>>> origin/main
   const tokens = normalized.split(" ").filter((t) => t.length >= 2);
-  return (
-    normalized.includes("حجز") ||
-    tokens.some((t) => t === "موعد") ||
-    normalized.includes("booking") ||
-    normalized.includes("appointment")
-  );
+  return tokens.some((t) => t === "موعد");
 }
 
+<<<<<<< HEAD
 export function isHelpCapabilitiesQuestion(normalized: string): boolean {
   if (!normalized) return false;
   if (isPriceQuestion(normalized) || isBookingQuestion(normalized)) return false;
@@ -92,8 +97,9 @@ const HOURS_SIGNALS = [
   "open",
 ];
 
+=======
+>>>>>>> origin/main
 const QUESTION_STOP_TOKENS = new Set([
-  "ايه",
   "ايه",
   "هي",
   "هو",
@@ -119,25 +125,8 @@ const BLOCKED_AREA_SUBSTRINGS = new Set([
   "خدمات",
 ]);
 
-const DESTINATION_SIGNALS = [
-  "مسافر",
-  "سافر",
-  "دوله",
-  "لقاح",
-  "تطعيم",
-  "هتطعم",
-  "هاخد",
-  "محتاج",
-  "متطلب",
-  "شهاده",
-  "فاكسين",
-  "vaccine",
-  "travel",
-  "متطلبات",
-];
-
 function hasDestinationSignal(normalized: string): boolean {
-  return DESTINATION_SIGNALS.some((signal) => normalized.includes(signal));
+  return normalizedIncludesAny(normalized, DESTINATION_PATTERNS);
 }
 
 function mentionsHajjOrUmrah(normalized: string): boolean {
@@ -150,18 +139,42 @@ function mentionsHajjOrUmrah(normalized: string): boolean {
 }
 
 function isExplicitOfficeQuery(normalized: string): boolean {
-  return (
-    normalized.includes("اقرب") ||
-    normalized.includes("مكتب") ||
-    normalized.includes("مكاتب") ||
-    normalized.includes("عنوان") ||
-    normalized.includes("office") ||
-    normalized.includes("location")
-  );
+  return normalizedIncludesAny(normalized, OFFICE_LOCATION_PATTERNS);
 }
 
 function hasHoursSignal(normalized: string): boolean {
-  return HOURS_SIGNALS.some((signal) => normalized.includes(signal));
+  return normalizedIncludesAny(normalized, HOURS_PATTERNS);
+}
+
+export function isCheckinInfoQuestion(normalized: string): boolean {
+  if (!normalized) return false;
+  if (isBookingQuestion(normalized)) return false;
+  return normalizedIncludesAny(normalized, CHECKIN_PATTERNS);
+}
+
+export function isComplaintInfoQuestion(normalized: string): boolean {
+  if (!normalized) return false;
+  return normalizedIncludesAny(normalized, COMPLAINT_PATTERNS);
+}
+
+export function isInternationalInfoQuestion(
+  normalized: string,
+  countries: DestinationCountry[],
+): boolean {
+  if (!normalized) return false;
+  if (isPriceQuestion(normalized) || isBookingQuestion(normalized)) return false;
+  if (findDestinationCountry(normalized, countries) && hasDestinationSignal(normalized)) {
+    return false;
+  }
+  if (normalizedIncludesAny(normalized, INTERNATIONAL_INFO_PATTERNS)) return true;
+  return (
+    (normalized.includes("دولي") || normalized.includes("international")) &&
+    (normalized.includes("مسافر") ||
+      normalized.includes("سفر") ||
+      normalized.includes("مطلوب") ||
+      normalized.includes("ايه") ||
+      normalized.includes("what"))
+  );
 }
 
 /** Office or area named in the message (for hours/location routing). */
@@ -238,6 +251,7 @@ export function isDestinationVaccineQuestion(
   if (!normalized || countries.length === 0) return false;
   if (isPriceQuestion(normalized) || isBookingQuestion(normalized)) return false;
   if (isExplicitOfficeQuery(normalized)) return false;
+  if (isInternationalInfoQuestion(normalized, countries)) return false;
 
   const country = findDestinationCountry(normalized, countries);
   if (!country) return false;
@@ -257,6 +271,9 @@ export function isOfficeOrAreaQuery(
   if (!normalized) return false;
   if (isPriceQuestion(normalized) || isBookingQuestion(normalized)) return false;
   if (isServicesQuestion(normalized)) return false;
+  if (isCheckinInfoQuestion(normalized) || isComplaintInfoQuestion(normalized)) {
+    return false;
+  }
 
   const countries = options?.destinationCountries ?? [];
   if (
@@ -298,6 +315,11 @@ export function classifyChatIntent(
   if (isOfficeHoursQuestion(normalized, { destinationCountries: countries })) {
     return "office_hours";
   }
+  if (isCheckinInfoQuestion(normalized)) return "checkin_info";
+  if (isComplaintInfoQuestion(normalized)) return "complaint_info";
+  if (isInternationalInfoQuestion(normalized, countries)) {
+    return "international_info";
+  }
   if (isServicesQuestion(normalized)) return "services";
   if (isDestinationVaccineQuestion(normalized, countries)) {
     return "destination_vaccines";
@@ -309,4 +331,34 @@ export function classifyChatIntent(
     return "office";
   }
   return "general";
+}
+
+export function resolveIntentWithContext(
+  message: string,
+  options?: {
+    destinationCountries?: DestinationCountry[];
+    carriedIntent?: ChatIntent;
+  },
+): ChatIntent {
+  const intent = classifyChatIntent(message, {
+    destinationCountries: options?.destinationCountries,
+  });
+  const carried = options?.carriedIntent;
+  if (!carried || carried === "general") return intent;
+  if (intent !== "general") return intent;
+
+  const carriedStillValid: ChatIntent[] = [
+    "office",
+    "office_hours",
+    "price",
+    "destination_vaccines",
+    "booking",
+    "hajj_umrah",
+    "services",
+    "checkin_info",
+    "complaint_info",
+    "international_info",
+  ];
+  if (carriedStillValid.includes(carried)) return carried;
+  return intent;
 }
