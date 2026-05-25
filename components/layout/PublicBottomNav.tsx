@@ -114,18 +114,6 @@ export function PublicBottomNav({ locale, messages }: PublicBottomNavProps) {
         icon: (active) => <HomeIcon active={active} />,
       },
     ];
-
-    if (hasStored) {
-      navItems.push({
-        kind: "link",
-        href: "/my-requests",
-        label: n.myRequests,
-        ariaLabel: n.myRequests,
-        match: isMyRequests,
-        icon: (active) => <MyRequestsIcon active={active} />,
-      });
-    }
-
     navItems.push(
       { kind: "search" },
       {
@@ -139,6 +127,18 @@ export function PublicBottomNav({ locale, messages }: PublicBottomNavProps) {
       },
     );
 
+    if (hasStored) {
+      navItems.push({
+        kind: "link",
+        href: "/my-requests",
+        label: n.myRequests,
+        ariaLabel: n.myRequests,
+        match: isMyRequests,
+        icon: (active) => <MyRequestsIcon active={active} />,
+      });
+    }
+
+  
     return navItems;
   }, [hasStored, n.home, n.myRequests, n.bookVaccinationAria, b.booking]);
 
