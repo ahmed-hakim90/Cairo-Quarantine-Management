@@ -17,6 +17,7 @@ import {
 import { useOptionalPublicAnalytics } from "@/components/analytics/PublicAnalyticsProvider";
 import { BookingAvailableDatePicker } from "@/components/booking/BookingAvailableDatePicker";
 import { BookingRequestSuccessView } from "@/components/booking/BookingRequestSuccessView";
+import { LocaleLink } from "@/components/i18n/LocaleLink";
 import {
   getCairoMinBookingYmd,
   getCairoYmdDaysAfter,
@@ -35,9 +36,12 @@ import {
 import {
   DEFAULT_BOOKING_SAME_DAY_CUTOFF_HOUR,
   type Office,
-  type PublicOfficeRequestStatus,
   type TravelerState,
 } from "@/lib/office-requests/types";
+import {
+  upsertStoredRequest,
+  type StoredOfficeRequest,
+} from "@/lib/office-requests/my-requests-storage";
 import { SkeletonButton } from "@/components/skeletons/primitives";
 import { feedbackToast } from "@/lib/ui/feedback-toast";
 
@@ -50,10 +54,7 @@ type BookingRequestFormProps = {
   serverSiteOrigin: string;
 };
 
-type StoredRequest = PublicOfficeRequestStatus & {
-  phone: string;
-  passToken?: string;
-};
+type StoredRequest = StoredOfficeRequest;
 
 type LastSuccess = {
   message: string;
@@ -65,6 +66,8 @@ const initialState: BookingFormState = {
   ok: false,
   message: "",
 };
+
+const DUPLICATE_REDIRECT_DELAY_MS = 1500;
 
 const inputClass =
   "mt-2 w-full min-h-12 rounded-md border border-gov-gray-200 bg-white px-3.5 py-3 text-base text-gov-gray-900 outline-none transition focus:border-gov-accent focus:ring-2 focus:ring-gov-accent/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gov-accent disabled:bg-gov-gray-50 disabled:text-gov-gray-600 sm:min-h-0 sm:px-3 sm:py-3 sm:text-sm";
@@ -144,6 +147,7 @@ function BookingRequestFormFields({
   sameDayCutoffHour = DEFAULT_BOOKING_SAME_DAY_CUTOFF_HOUR,
   onSuccess,
 }: BookingRequestFormFieldsProps) {
+  const router = useRouter();
   const t = bookingRequestCopy[locale];
   const analytics = useOptionalPublicAnalytics();
   const formType = mode === "booking" ? "booking" : "complaint";
@@ -160,6 +164,8 @@ function BookingRequestFormFields({
     initialState,
   );
   const lastToastKeyRef = useRef("");
+  const lastDuplicateRedirectKeyRef = useRef("");
+  const savedRequestIdRef = useRef<string | null>(null);
   const officeRef = useRef<HTMLSelectElement>(null);
   const travelerStateRef = useRef<HTMLSelectElement>(null);
   const typeRef = useRef<HTMLSelectElement>(null);
@@ -308,6 +314,20 @@ function BookingRequestFormFields({
   }, [state.ok, state.message, state.duplicate]);
 
   useEffect(() => {
+    if (!state.duplicate || state.ok || !state.message) return;
+    const key = state.message;
+    if (lastDuplicateRedirectKeyRef.current === key) return;
+    lastDuplicateRedirectKeyRef.current = key;
+
+    feedbackToast.error(state.message);
+    const timer = window.setTimeout(() => {
+      router.push(`/${locale}/my-requests`);
+    }, DUPLICATE_REDIRECT_DELAY_MS);
+
+    return () => window.clearTimeout(timer);
+  }, [state.duplicate, state.ok, state.message, locale, router]);
+
+  useEffect(() => {
     if (state.ok || !state.values) return;
     const id = requestAnimationFrame(() => {
       setOfficeId(state.values!.officeId);
@@ -316,6 +336,19 @@ function BookingRequestFormFields({
     });
     return () => cancelAnimationFrame(id);
   }, [state.ok, state.values]);
+
+  useEffect(() => {
+    if (
+      !state.ok ||
+      !state.request ||
+      savedRequestIdRef.current === state.request.id
+    ) {
+      return;
+    }
+
+    upsertStoredRequest(state.request);
+    savedRequestIdRef.current = state.request.id;
+  }, [state.ok, state.request]);
 
   useEffect(() => {
     if (!state.errors) return;
@@ -473,6 +506,15 @@ function BookingRequestFormFields({
           role="status"
         >
           {state.message}
+          {state.duplicate ? (
+            <LocaleLink
+              locale={locale}
+              href="/my-requests"
+              className="mt-3 inline-flex min-h-10 items-center rounded-md bg-gov-accent px-4 text-sm font-bold text-white transition hover:bg-gov-navy"
+            >
+              {t.duplicateLink}
+            </LocaleLink>
+          ) : null}
         </div>
       ) : null}
 

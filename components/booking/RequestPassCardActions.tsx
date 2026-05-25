@@ -1,8 +1,12 @@
 "use client";
 
-import { useCallback } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { BookingDateCalendarReminder } from "@/components/queue/BookingDateCalendarReminder";
-import { downloadBookingPassPdf } from "@/lib/booking-pass-pdf";
+import {
+  canShareBookingPass,
+  downloadBookingPassPdf,
+  shareBookingPassPdf,
+} from "@/lib/booking-pass-pdf";
 import { useBookingPassUrl } from "@/lib/hooks/use-booking-pass-url";
 import { bookingPassFormCopy } from "@/lib/i18n/booking-pass-copy";
 import type { Locale } from "@/lib/i18n/config";
@@ -28,6 +32,12 @@ export function RequestPassCardActions({
     Boolean(request.preferredDate?.trim()) &&
     Boolean(request.officeId?.trim());
   const isDark = variant === "dark";
+  const [canShare, setCanShare] = useState(false);
+  const [shareBusy, setShareBusy] = useState(false);
+
+  useEffect(() => {
+    setCanShare(canShareBookingPass());
+  }, []);
 
   const { passUrl, queueUrl } = useBookingPassUrl({
     locale,
@@ -63,6 +73,41 @@ export function RequestPassCardActions({
     if (!passUrl) return;
     window.open(passUrl, "_blank", "noopener,noreferrer");
   }, [passUrl]);
+
+  const sharePdf = useCallback(async () => {
+    if (!passUrl || shareBusy) return;
+    setShareBusy(true);
+    try {
+      const result = await shareBookingPassPdf({
+        locale,
+        requestId: request.id,
+        requestType: request.type,
+        officeNameAr: request.officeNameAr,
+        preferredDate: request.preferredDate,
+        passUrl,
+        queueUrl: isBooking ? queueUrl : undefined,
+      });
+      if (result === "unsupported") {
+        await navigator.clipboard.writeText(passUrl);
+      }
+    } catch (error) {
+      if ((error as Error).name !== "AbortError") {
+        console.error("Failed to share booking pass PDF", error);
+      }
+    } finally {
+      setShareBusy(false);
+    }
+  }, [
+    passUrl,
+    shareBusy,
+    locale,
+    request.id,
+    request.type,
+    request.officeNameAr,
+    request.preferredDate,
+    isBooking,
+    queueUrl,
+  ]);
 
   const primaryBtn = isDark
     ? "inline-flex min-h-10 items-center justify-center rounded-md bg-gov-accent px-4 text-sm font-bold text-white shadow transition hover:bg-gov-navy disabled:cursor-not-allowed disabled:opacity-50"
@@ -100,6 +145,16 @@ export function RequestPassCardActions({
         >
           {c.downloadPdf}
         </button>
+        {canShare ? (
+          <button
+            type="button"
+            onClick={() => void sharePdf()}
+            disabled={!passUrl || shareBusy}
+            className={secondaryBtn}
+          >
+            {c.sharePdf}
+          </button>
+        ) : null}
         {isBooking && queueUrl ? (
           <a href={queueUrl} target="_blank" rel="noopener noreferrer" className={queueBtn}>
             {c.queueLinkLabel}

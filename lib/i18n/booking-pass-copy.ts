@@ -117,6 +117,7 @@ export const bookingPassFormCopy = {
     cardSubtitle: "حمّل بطاقة PDF أو أضف موعدك للتقويم",
     cardSubtitleComplaint: "جاري متابعة الشكوى — افتح صفحة المتابعة أو حمّل PDF",
     downloadPdf: "تحميل بطاقة PDF",
+    sharePdf: "مشاركة البطاقة",
     openTracking: "فتح صفحة المتابعة",
     passSectionTitle: "بطاقة المتابعة",
     siteUrlHint:
@@ -132,6 +133,7 @@ export const bookingPassFormCopy = {
     cardSubtitleComplaint:
       "Complaint follow-up in progress — open tracking or download PDF",
     downloadPdf: "Download PDF card",
+    sharePdf: "Share PDF card",
     openTracking: "Open tracking page",
     passSectionTitle: "Follow-up card",
     siteUrlHint:
@@ -146,6 +148,7 @@ export const bookingPassFormCopy = {
     cardSubtitle: "下载 PDF 凭证或将预约日期添加到日历",
     cardSubtitleComplaint: "正在跟进投诉 — 打开跟进页面或下载 PDF",
     downloadPdf: "下载 PDF 凭证",
+    sharePdf: "分享 PDF 凭证",
     openTracking: "打开跟进页面",
     passSectionTitle: "跟进卡",
     siteUrlHint:
@@ -161,6 +164,7 @@ export const bookingPassFormCopy = {
     cardSubtitleComplaint:
       "Suivi de la plainte en cours — ouvrez le suivi ou telechargez le PDF",
     downloadPdf: "Telecharger la carte PDF",
+    sharePdf: "Partager la carte PDF",
     openTracking: "Ouvrir la page de suivi",
     passSectionTitle: "Carte de suivi",
     siteUrlHint:
@@ -178,6 +182,7 @@ export const bookingPassFormCopy = {
     | "cardSubtitle"
     | "cardSubtitleComplaint"
     | "downloadPdf"
+    | "sharePdf"
     | "openTracking"
     | "passSectionTitle"
     | "siteUrlHint"

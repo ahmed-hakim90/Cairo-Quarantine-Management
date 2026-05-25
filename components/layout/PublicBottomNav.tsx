@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { LocaleLink } from "@/components/i18n/LocaleLink";
 import {
   PublicSiteSearch,
   PublicSiteSearchTrigger,
 } from "@/components/layout/PublicSiteSearch";
 import { normalizedNavPath } from "@/components/layout/SiteNavLinks";
+import { useHasStoredRequests } from "@/lib/hooks/use-has-stored-requests";
 import type { Locale } from "@/lib/i18n/config";
 import type { Messages } from "@/lib/i18n/messages";
 import { usePathname } from "next/navigation";
@@ -63,6 +64,25 @@ function BookingIcon() {
   );
 }
 
+function MyRequestsIcon({ active }: { active: boolean }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      className={`size-6 ${active ? "text-brand-primary" : "text-brand-primary/45"}`}
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2" />
+      <rect x="9" y="3" width="6" height="4" rx="1" />
+      <path d="M9 12h6M9 16h6" />
+    </svg>
+  );
+}
+
 function isHome(path: string): boolean {
   return path === "/";
 }
@@ -71,33 +91,56 @@ function isBooking(path: string): boolean {
   return path === "/booking" || path.startsWith("/booking/");
 }
 
+function isMyRequests(path: string): boolean {
+  return path === "/my-requests" || path.startsWith("/my-requests/");
+}
+
 export function PublicBottomNav({ locale, messages }: PublicBottomNavProps) {
   const pathname = usePathname();
   const path = normalizedNavPath(pathname);
   const n = messages.nav;
   const b = messages.bottomNav;
+  const hasStored = useHasStoredRequests();
   const [searchOpen, setSearchOpen] = useState(false);
 
-  const items: BottomNavItem[] = [
-    {
-      kind: "link",
-      href: "/",
-      label: n.home,
-      ariaLabel: n.home,
-      match: isHome,
-      icon: (active) => <HomeIcon active={active} />,
-    },
-    { kind: "search" },
-    {
-      kind: "link",
-      href: "/booking",
-      label: b.booking,
-      ariaLabel: n.bookVaccinationAria,
-      match: isBooking,
-      prominent: true,
-      icon: () => <BookingIcon />,
-    },
-  ];
+  const items: BottomNavItem[] = useMemo(() => {
+    const navItems: BottomNavItem[] = [
+      {
+        kind: "link",
+        href: "/",
+        label: n.home,
+        ariaLabel: n.home,
+        match: isHome,
+        icon: (active) => <HomeIcon active={active} />,
+      },
+    ];
+
+    if (hasStored) {
+      navItems.push({
+        kind: "link",
+        href: "/my-requests",
+        label: n.myRequests,
+        ariaLabel: n.myRequests,
+        match: isMyRequests,
+        icon: (active) => <MyRequestsIcon active={active} />,
+      });
+    }
+
+    navItems.push(
+      { kind: "search" },
+      {
+        kind: "link",
+        href: "/booking",
+        label: b.booking,
+        ariaLabel: n.bookVaccinationAria,
+        match: isBooking,
+        prominent: true,
+        icon: () => <BookingIcon />,
+      },
+    );
+
+    return navItems;
+  }, [hasStored, n.home, n.myRequests, n.bookVaccinationAria, b.booking]);
 
   const colCount = items.length;
 

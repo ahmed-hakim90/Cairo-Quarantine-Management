@@ -188,7 +188,11 @@ function wrapCenteredText(
   });
 }
 
-export async function generateBookingPassPdf(input: BookingPassPdfInput): Promise<Blob> {
+function passPdfFilename(requestId: string): string {
+  return `cairo-pass-${requestId}.pdf`;
+}
+
+async function buildBookingPassPdfDocument(input: BookingPassPdfInput) {
   const { canvas, links } = await composePassCardCanvas(input);
   const img = canvas.toDataURL("image/png");
   const { jsPDF } = await import("jspdf");
@@ -215,17 +219,48 @@ export async function generateBookingPassPdf(input: BookingPassPdfInput): Promis
     pdf.link(x, y, lw, lh, { url: link.url });
   }
 
+  return pdf;
+}
+
+export async function generateBookingPassPdf(input: BookingPassPdfInput): Promise<Blob> {
+  const pdf = await buildBookingPassPdfDocument(input);
   return pdf.output("blob");
 }
 
+/** Saves directly to disk — avoids opening a temporary `blob:` tab that cannot be shared. */
 export async function downloadBookingPassPdf(
   input: BookingPassPdfInput,
 ): Promise<void> {
+  const pdf = await buildBookingPassPdfDocument(input);
+  pdf.save(passPdfFilename(input.requestId));
+}
+
+export type BookingPassShareResult = "file" | "url" | "unsupported";
+
+export function canShareBookingPass(): boolean {
+  return typeof navigator !== "undefined" && typeof navigator.share === "function";
+}
+
+/** Share the PDF file, or fall back to the public pass tracking URL (never a blob URL). */
+export async function shareBookingPassPdf(
+  input: BookingPassPdfInput,
+): Promise<BookingPassShareResult> {
+  if (!canShareBookingPass()) return "unsupported";
+
   const blob = await generateBookingPassPdf(input);
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `cairo-pass-${input.requestId}.pdf`;
-  a.click();
-  URL.revokeObjectURL(url);
+  const filename = passPdfFilename(input.requestId);
+  const file = new File([blob], filename, { type: "application/pdf" });
+  const title = bookingPassFormCopy[input.locale].passSectionTitle;
+
+  if (navigator.canShare?.({ files: [file] })) {
+    await navigator.share({ title, files: [file] });
+    return "file";
+  }
+
+  if (input.passUrl && navigator.canShare?.({ url: input.passUrl })) {
+    await navigator.share({ title, url: input.passUrl });
+    return "url";
+  }
+
+  return "unsupported";
 }

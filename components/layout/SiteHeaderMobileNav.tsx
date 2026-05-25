@@ -4,7 +4,7 @@ import { Suspense, useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { LanguageSwitcher } from "@/components/i18n/LanguageSwitcher";
 import { LanguageSwitcherSkeleton } from "@/components/skeletons/LanguageSwitcherSkeleton";
-import { SiteNavLinks } from "@/components/layout/SiteNavLinks";
+import { PublicNavLinks } from "@/components/layout/PublicNavLinks";
 import type { Locale } from "@/lib/i18n/config";
 import type { Messages } from "@/lib/i18n/messages";
 import { lockDocumentScroll } from "@/lib/ui/scroll-lock";
@@ -15,12 +15,14 @@ type SiteHeaderMobileNavProps = {
   locale: Locale;
   nav: Messages["nav"];
   items: readonly NavItem[];
+  myRequestsLabel: string;
 };
 
 export function SiteHeaderMobileNav({
   locale,
   nav,
   items,
+  myRequestsLabel,
 }: SiteHeaderMobileNavProps) {
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -121,10 +123,11 @@ export function SiteHeaderMobileNav({
                 </button>
               </div>
               <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain px-3 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
-                <SiteNavLinks
+                <PublicNavLinks
                   locale={locale}
                   ariaLabel={nav.aria}
-                  items={items}
+                  baseItems={items}
+                  myRequestsLabel={myRequestsLabel}
                   variant="drawer"
                   onNavigate={closeDrawer}
                 />

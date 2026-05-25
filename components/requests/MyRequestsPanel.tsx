@@ -16,6 +16,12 @@ import {
   mergeTravelerStateLabelsWithLegacy,
 } from "@/lib/office-requests/office-traveler-state";
 import {
+  readStoredRequests,
+  removeStoredRequest,
+  writeStoredRequests,
+  type StoredOfficeRequest,
+} from "@/lib/office-requests/my-requests-storage";
+import {
   type PublicOfficeRequestStatus,
 } from "@/lib/office-requests/types";
 import { MyRequestsSkeleton } from "@/components/skeletons/public/MyRequestsSkeleton";
@@ -25,14 +31,9 @@ const TRAVELER_LABEL_BY_ID = mergeTravelerStateLabelsWithLegacy(
   defaultTravelerStatesFromLegacyLabels(),
 );
 
-type StoredRequest = PublicOfficeRequestStatus & {
-  phone: string;
-  passToken?: string;
-  missing?: boolean;
-};
-
 type MyRequestsPanelProps = {
   locale: Locale;
+  serverSiteOrigin?: string;
 };
 
 const copy = {
@@ -149,16 +150,23 @@ const CANCELLABLE: PublicOfficeRequestStatus["status"][] = [
 ];
 
 function mergeRequests(
-  current: StoredRequest[],
+  current: StoredOfficeRequest[],
   updates: PublicOfficeRequestStatus[],
   missing: string[],
-): StoredRequest[] {
+): StoredOfficeRequest[] {
   const byId = new Map(updates.map((request) => [request.id, request]));
   const missingIds = new Set(missing);
 
   return current.map((request) => {
     const update = byId.get(request.id);
-    if (update) return { ...request, ...update, missing: false };
+    if (update) {
+      return {
+        ...request,
+        ...update,
+        passToken: request.passToken,
+        missing: false,
+      };
+    }
     if (missingIds.has(request.id)) return { ...request, missing: true };
     return request;
   });
@@ -181,9 +189,14 @@ function formatDate(value: string, locale: Locale) {
   }).format(date);
 }
 
-export function MyRequestsPanel({ locale }: MyRequestsPanelProps) {
+export function MyRequestsPanel({
+  locale,
+  serverSiteOrigin = "",
+}: MyRequestsPanelProps) {
   const t = copy[locale];
-  const [requests, setRequests] = useState<StoredRequest[]>([]);
+  const [requests, setRequests] = useState<StoredOfficeRequest[]>(() =>
+    readStoredRequests(),
+  );
   const [loading, setLoading] = useState(false);
   const [cancellingId, setCancellingId] = useState<string | null>(null);
   const [error, setError] = useState("");
@@ -191,7 +204,7 @@ export function MyRequestsPanel({ locale }: MyRequestsPanelProps) {
     new Map(),
   );
 
-  const refreshRequests = useCallback(async (items: StoredRequest[], silent = false) => {
+  const refreshRequests = useCallback(async (items: StoredOfficeRequest[], silent = false) => {
     if (items.length === 0) return;
 
     setLoading(true);
@@ -217,6 +230,7 @@ export function MyRequestsPanel({ locale }: MyRequestsPanelProps) {
         data.requests ?? [],
         data.missing ?? [],
       );
+      writeStoredRequests(next);
       setRequests(next);
 
       let statusChanged = false;
@@ -241,6 +255,13 @@ export function MyRequestsPanel({ locale }: MyRequestsPanelProps) {
   }, [locale, t.loadError, t.statusChanged]);
 
   useEffect(() => {
+    const stored = readStoredRequests();
+    if (stored.length === 0) return;
+    void refreshRequests(stored, true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- initial sync only
+  }, []);
+
+  useEffect(() => {
     if (requests.length === 0) return;
     for (const r of requests) {
       if (!r.missing) statusByIdRef.current.set(r.id, r.status);
@@ -254,7 +275,12 @@ export function MyRequestsPanel({ locale }: MyRequestsPanelProps) {
     return () => window.clearInterval(id);
   }, [requests, refreshRequests]);
 
-  async function cancelRequest(request: StoredRequest) {
+  function removeRequest(id: string) {
+    removeStoredRequest(id);
+    setRequests((current) => current.filter((request) => request.id !== id));
+  }
+
+  async function cancelRequest(request: StoredOfficeRequest) {
     if (!window.confirm(t.cancelConfirm)) return;
     setCancellingId(request.id);
     setError("");
@@ -421,6 +447,7 @@ export function MyRequestsPanel({ locale }: MyRequestsPanelProps) {
                             passToken: string;
                           }
                         }
+                        serverSiteOrigin={serverSiteOrigin}
                       />
                     </div>
                   </div>
@@ -436,6 +463,13 @@ export function MyRequestsPanel({ locale }: MyRequestsPanelProps) {
                 </div>
 
                 <div className="mt-4 flex flex-wrap justify-end gap-2">
+                  <button
+                    type="button"
+                    onClick={() => removeRequest(request.id)}
+                    className="inline-flex min-h-10 items-center justify-center rounded-md border border-gov-gray-200 px-4 text-sm font-bold text-gov-navy transition hover:bg-gov-gray-50"
+                  >
+                    {t.remove}
+                  </button>
                   {!request.missing &&
                   CANCELLABLE.includes(request.status) ? (
                     <button

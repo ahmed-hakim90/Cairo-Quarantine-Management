@@ -3,8 +3,8 @@ import { LanguageSwitcher } from "@/components/i18n/LanguageSwitcher";
 import { LanguageSwitcherSkeleton } from "@/components/skeletons/LanguageSwitcherSkeleton";
 import { LocaleLink } from "@/components/i18n/LocaleLink";
 import { PublicHeaderSiteSearch } from "@/components/layout/PublicHeaderSiteSearch";
+import { PublicNavLinks } from "@/components/layout/PublicNavLinks";
 import { SiteHeaderMobileNav } from "@/components/layout/SiteHeaderMobileNav";
-import { SiteNavLinks } from "@/components/layout/SiteNavLinks";
 import type { Locale } from "@/lib/i18n/config";
 import type { Messages } from "@/lib/i18n/messages";
 
@@ -37,7 +37,12 @@ export function SiteHeader({ locale, messages }: SiteHeaderProps) {
               {n.title}
             </span>
           </LocaleLink>
-          <SiteHeaderMobileNav locale={locale} nav={n} items={navItems} />
+          <SiteHeaderMobileNav
+            locale={locale}
+            nav={n}
+            items={navItems}
+            myRequestsLabel={n.myRequests}
+          />
         </div>
 
         <LocaleLink
@@ -54,7 +59,12 @@ export function SiteHeader({ locale, messages }: SiteHeaderProps) {
         </LocaleLink>
 
         <div className="hidden min-w-0 flex-nowrap items-center justify-end gap-2 md:flex md:min-w-0 md:flex-1 lg:gap-3">
-          <SiteNavLinks locale={locale} ariaLabel={n.aria} items={navItems} />
+          <PublicNavLinks
+            locale={locale}
+            ariaLabel={n.aria}
+            baseItems={navItems}
+            myRequestsLabel={n.myRequests}
+          />
           <PublicHeaderSiteSearch locale={locale} messages={messages} />
           <Suspense fallback={<LanguageSwitcherSkeleton variant="header" />}>
             <LanguageSwitcher locale={locale} nav={n} variant="landing" />
