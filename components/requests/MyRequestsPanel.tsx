@@ -312,14 +312,14 @@ export function MyRequestsPanel({
   );
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-8 lg:py-12">
+    <div className="mx-auto max-w-6xl px-3 py-5 pb-8 sm:px-4 sm:py-8 lg:py-12">
       <section className="min-w-0">
-        <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div className="mb-4 flex flex-col gap-3 sm:mb-5 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <h1 className="font-heading text-3xl font-extrabold text-gov-navy">
+            <h1 className="font-heading text-2xl font-extrabold text-gov-navy sm:text-3xl">
               {t.title}
             </h1>
-            <p className="mt-2 max-w-2xl leading-relaxed text-gov-gray-700">
+            <p className="mt-2 max-w-2xl text-sm leading-relaxed text-gov-gray-700 sm:text-base">
               {t.intro}
             </p>
           </div>
@@ -327,7 +327,7 @@ export function MyRequestsPanel({
             type="button"
             onClick={() => void refreshRequests(requests)}
             disabled={loading || requests.length === 0}
-            className="inline-flex min-h-11 items-center justify-center rounded-md bg-gov-accent px-5 py-3 text-sm font-bold text-white transition hover:bg-gov-navy disabled:cursor-not-allowed disabled:opacity-60"
+            className="inline-flex min-h-11 w-full shrink-0 items-center justify-center rounded-md bg-gov-accent px-5 py-3 text-sm font-bold text-white transition hover:bg-gov-navy disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
           >
             {loading ? t.refreshing : t.refresh}
           </button>
@@ -339,98 +339,57 @@ export function MyRequestsPanel({
           </p>
         ) : null}
 
-        {loading && sortedRequests.length > 0 ? (
-          <MyRequestsSkeleton cardCount={Math.min(sortedRequests.length, 3)} compact />
+        {sortedRequests.length === 0 && loading ? (
+          <MyRequestsSkeleton cardCount={1} compact />
         ) : sortedRequests.length === 0 ? (
           <div className="rounded-lg border border-gov-gray-200 bg-white p-6 text-gov-gray-700 shadow-sm">
             {t.empty}
           </div>
         ) : (
           <div className="grid gap-4">
-            {sortedRequests.map((request) => (
+            {sortedRequests.map((request) => {
+              const travelerLabel = (() => {
+                const id = effectiveTravelerStateIdOnRequest(request);
+                if (!id) return "-";
+                if (id in publicTravelerCategoryLabels[locale]) {
+                  return publicTravelerCategoryLabels[locale][
+                    id as keyof (typeof publicTravelerCategoryLabels)[typeof locale]
+                  ];
+                }
+                return (
+                  TRAVELER_LABEL_BY_ID[id] ??
+                  (request.travelerCategory
+                    ? publicTravelerCategoryLabels[locale][request.travelerCategory]
+                    : id)
+                );
+              })();
+
+              return (
               <article
                 key={request.id}
-                className="rounded-lg border border-gov-gray-200 bg-white p-5 shadow-sm"
+                className={`rounded-lg border border-gov-gray-200 bg-white p-4 shadow-sm sm:p-5 ${loading ? "opacity-70" : ""}`}
               >
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                  <div>
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
+                  <div className="min-w-0 flex-1">
                     <p className="text-sm font-bold text-gov-accent">
                       {publicRequestTypeLabels[locale][request.type]}
                     </p>
-                    <h2 className="mt-1 font-heading text-xl font-extrabold text-gov-navy">
+                    <h2 className="mt-1 break-all font-heading text-lg font-extrabold text-gov-navy sm:text-xl">
                       #{request.id}
                     </h2>
-                    <p className="mt-2 text-sm text-gov-gray-600">
+                    <p className="mt-1 text-sm text-gov-gray-600">
                       {t.office}: {request.officeNameAr || "-"}
                     </p>
                   </div>
-                  <span className="inline-flex w-fit rounded-md bg-gov-accent-muted px-3 py-2 text-sm font-bold text-gov-navy">
+                  <span className="inline-flex w-fit shrink-0 rounded-md bg-gov-accent-muted px-3 py-1.5 text-xs font-bold text-gov-navy sm:py-2 sm:text-sm">
                     {request.missing
                       ? t.missing
                       : publicRequestStatusLabels[locale][request.status]}
                   </span>
                 </div>
 
-                <dl className="mt-5 grid gap-4 border-t border-gov-gray-200 pt-4 text-sm md:grid-cols-3">
-                  {request.type === "booking" ? (
-                    <>
-                      <div>
-                        <dt className="font-bold text-gov-navy">
-                          {t.travelerState}
-                        </dt>
-                        <dd className="mt-1 text-gov-gray-700">
-                          {(() => {
-                            const id =
-                              effectiveTravelerStateIdOnRequest(request);
-                            if (!id) return "-";
-                            if (id in publicTravelerCategoryLabels[locale]) {
-                              return publicTravelerCategoryLabels[locale][
-                                id as keyof (typeof publicTravelerCategoryLabels)[typeof locale]
-                              ];
-                            }
-                            return (
-                              TRAVELER_LABEL_BY_ID[id] ??
-                              (request.travelerCategory
-                                ? publicTravelerCategoryLabels[locale][
-                                    request.travelerCategory
-                                  ]
-                                : id)
-                            );
-                          })()}
-                        </dd>
-                      </div>
-                      <div>
-                        <dt className="font-bold text-gov-navy">
-                          {t.preferredDate}
-                        </dt>
-                        <dd className="mt-1 text-gov-gray-700">
-                          {request.preferredDate || "-"}
-                        </dd>
-                      </div>
-                    </>
-                  ) : null}
-                  <div>
-                    <dt className="font-bold text-gov-navy">{t.status}</dt>
-                    <dd className="mt-1 text-gov-gray-700">
-                      {publicRequestStatusLabels[locale][request.status]}
-                    </dd>
-                  </div>
-                  <div>
-                    <dt className="font-bold text-gov-navy">{t.createdAt}</dt>
-                    <dd className="mt-1 text-gov-gray-700">
-                      {formatDate(request.createdAt, locale)}
-                    </dd>
-                  </div>
-                  <div>
-                    <dt className="font-bold text-gov-navy">{t.updatedAt}</dt>
-                    <dd className="mt-1 text-gov-gray-700">
-                      {formatDate(request.updatedAt, locale)}
-                    </dd>
-                  </div>
-                </dl>
-
                 {request.passToken ? (
-                  <div className="mt-5 rounded-md border border-emerald-200 bg-emerald-50/50 p-4">
+                  <div className="mt-4 rounded-md border border-emerald-200 bg-emerald-50/60 p-3 sm:p-4">
                     <h3 className="text-sm font-bold text-gov-navy">
                       {t.passSectionTitle}
                     </h3>
@@ -439,7 +398,7 @@ export function MyRequestsPanel({
                         ? bookingPassFormCopy[locale].cardSubtitle
                         : bookingPassFormCopy[locale].cardSubtitleComplaint}
                     </p>
-                    <div className="mt-4">
+                    <div className="mt-3">
                       <RequestPassCardActions
                         locale={locale}
                         request={
@@ -448,25 +407,66 @@ export function MyRequestsPanel({
                           }
                         }
                         serverSiteOrigin={serverSiteOrigin}
+                        buttonLayout="stack"
+                        hideNotice
                       />
                     </div>
                   </div>
                 ) : null}
 
-                <div className="mt-5 rounded-md bg-gov-gray-50 p-4">
-                  <h3 className="text-sm font-bold text-gov-navy">
+                <dl className="mt-4 grid grid-cols-2 gap-x-3 gap-y-3 border-t border-gov-gray-200 pt-4 text-sm sm:grid-cols-3 sm:gap-4">
+                  {request.type === "booking" ? (
+                    <>
+                      <div>
+                        <dt className="text-xs font-bold text-gov-navy sm:text-sm">
+                          {t.travelerState}
+                        </dt>
+                        <dd className="mt-0.5 text-gov-gray-700">
+                          {travelerLabel}
+                        </dd>
+                      </div>
+                      <div>
+                        <dt className="text-xs font-bold text-gov-navy sm:text-sm">
+                          {t.preferredDate}
+                        </dt>
+                        <dd className="mt-0.5 text-gov-gray-700">
+                          {request.preferredDate || "-"}
+                        </dd>
+                      </div>
+                    </>
+                  ) : null}
+                  <div>
+                    <dt className="text-xs font-bold text-gov-navy sm:text-sm">
+                      {t.createdAt}
+                    </dt>
+                    <dd className="mt-0.5 text-gov-gray-700">
+                      {formatDate(request.createdAt, locale)}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="text-xs font-bold text-gov-navy sm:text-sm">
+                      {t.updatedAt}
+                    </dt>
+                    <dd className="mt-0.5 text-gov-gray-700">
+                      {formatDate(request.updatedAt, locale)}
+                    </dd>
+                  </div>
+                </dl>
+
+                <details className="mt-4 rounded-md bg-gov-gray-50 open:pb-1">
+                  <summary className="cursor-pointer px-3 py-2.5 text-sm font-bold text-gov-navy sm:px-4">
                     {t.notes}
-                  </h3>
-                  <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-gov-gray-700">
+                  </summary>
+                  <p className="whitespace-pre-wrap px-3 pb-3 text-sm leading-relaxed text-gov-gray-700 sm:px-4">
                     {request.notes || t.noNotes}
                   </p>
-                </div>
+                </details>
 
-                <div className="mt-4 flex flex-wrap justify-end gap-2">
+                <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:justify-end">
                   <button
                     type="button"
                     onClick={() => removeRequest(request.id)}
-                    className="inline-flex min-h-10 items-center justify-center rounded-md border border-gov-gray-200 px-4 text-sm font-bold text-gov-navy transition hover:bg-gov-gray-50"
+                    className="inline-flex min-h-11 w-full items-center justify-center rounded-md border border-gov-gray-200 px-4 text-sm font-bold text-gov-navy transition hover:bg-gov-gray-50 sm:min-h-10 sm:w-auto"
                   >
                     {t.remove}
                   </button>
@@ -476,14 +476,15 @@ export function MyRequestsPanel({
                       type="button"
                       disabled={cancellingId === request.id}
                       onClick={() => void cancelRequest(request)}
-                      className="inline-flex min-h-10 items-center justify-center rounded-md border border-red-200 bg-red-50 px-4 text-sm font-bold text-red-800 transition hover:bg-red-100 disabled:opacity-60"
+                      className="inline-flex min-h-11 w-full items-center justify-center rounded-md border border-red-200 bg-red-50 px-4 text-sm font-bold text-red-800 transition hover:bg-red-100 disabled:opacity-60 sm:min-h-10 sm:w-auto"
                     >
                       {cancellingId === request.id ? t.cancelling : t.cancel}
                     </button>
                   ) : null}
                 </div>
               </article>
-            ))}
+            );
+            })}
           </div>
         )}
       </section>

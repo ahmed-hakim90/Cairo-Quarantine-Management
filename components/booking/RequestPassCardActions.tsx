@@ -17,6 +17,9 @@ type RequestPassCardActionsProps = {
   request: PublicOfficeRequestStatus & { passToken: string };
   serverSiteOrigin?: string;
   variant?: "dark" | "light";
+  /** Full-width stacked buttons (my-requests on mobile). */
+  buttonLayout?: "inline" | "stack";
+  hideNotice?: boolean;
 };
 
 export function RequestPassCardActions({
@@ -24,6 +27,8 @@ export function RequestPassCardActions({
   request,
   serverSiteOrigin = "",
   variant = "light",
+  buttonLayout = "inline",
+  hideNotice = false,
 }: RequestPassCardActionsProps) {
   const c = bookingPassFormCopy[locale];
   const isBooking = request.type === "booking";
@@ -109,57 +114,69 @@ export function RequestPassCardActions({
     queueUrl,
   ]);
 
+  const isStack = buttonLayout === "stack";
+  const btnWidth = isStack ? "w-full" : "";
+
   const primaryBtn = isDark
-    ? "inline-flex min-h-10 items-center justify-center rounded-md bg-gov-accent px-4 text-sm font-bold text-white shadow transition hover:bg-gov-navy disabled:cursor-not-allowed disabled:opacity-50"
-    : "inline-flex min-h-10 items-center justify-center rounded-md bg-gov-accent px-4 text-sm font-bold text-white transition hover:bg-gov-navy disabled:cursor-not-allowed disabled:opacity-50";
+    ? `inline-flex min-h-11 items-center justify-center rounded-md bg-gov-accent px-4 text-sm font-bold text-white shadow transition hover:bg-gov-navy disabled:cursor-not-allowed disabled:opacity-50 ${btnWidth}`
+    : `inline-flex min-h-11 items-center justify-center rounded-md bg-gov-accent px-4 text-sm font-bold text-white transition hover:bg-gov-navy disabled:cursor-not-allowed disabled:opacity-50 ${btnWidth}`;
 
   const secondaryBtn = isDark
-    ? "inline-flex min-h-10 items-center justify-center rounded-md border border-white/30 bg-white/10 px-4 text-sm font-bold text-white transition hover:bg-white/20 disabled:cursor-not-allowed disabled:opacity-50"
-    : "inline-flex min-h-10 items-center justify-center rounded-md border border-gov-gray-200 bg-white px-4 text-sm font-bold text-gov-navy transition hover:bg-gov-gray-50 disabled:cursor-not-allowed disabled:opacity-50";
+    ? `inline-flex min-h-11 items-center justify-center rounded-md border border-white/30 bg-white/10 px-4 text-sm font-bold text-white transition hover:bg-white/20 disabled:cursor-not-allowed disabled:opacity-50 ${btnWidth}`
+    : `inline-flex min-h-11 items-center justify-center rounded-md border border-gov-gray-200 bg-white px-4 text-sm font-bold text-gov-navy transition hover:bg-gov-gray-50 disabled:cursor-not-allowed disabled:opacity-50 ${btnWidth}`;
 
   const queueBtn = isDark
-    ? "inline-flex min-h-10 items-center justify-center rounded-md border border-emerald-300/40 bg-emerald-500/20 px-4 text-sm font-bold text-emerald-50 transition hover:bg-emerald-500/30"
-    : "inline-flex min-h-10 items-center justify-center rounded-md border border-emerald-200 bg-emerald-50 px-4 text-sm font-bold text-emerald-900 transition hover:bg-emerald-100";
+    ? `inline-flex min-h-11 items-center justify-center rounded-md border border-emerald-300/40 bg-emerald-500/20 px-4 text-sm font-bold text-emerald-50 transition hover:bg-emerald-500/30 ${btnWidth}`
+    : `inline-flex min-h-11 items-center justify-center rounded-md border border-emerald-200 bg-emerald-50 px-4 text-sm font-bold text-emerald-900 transition hover:bg-emerald-100 ${btnWidth}`;
 
   const noticeClass = isDark
     ? "rounded-md border border-amber-200/30 bg-amber-500/10 px-3 py-2 text-center text-xs font-semibold leading-relaxed text-amber-100"
     : "rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-center text-xs font-semibold leading-relaxed text-amber-900";
 
-  return (
-    <div className="space-y-3">
-      <p className={noticeClass}>{c.keepCardNotice}</p>
-      <div className="flex flex-wrap gap-2">
+  const actions = (
+    <>
+      <button
+        type="button"
+        onClick={openTracking}
+        disabled={!passUrl}
+        className={primaryBtn}
+      >
+        {c.openTracking}
+      </button>
+      <button
+        type="button"
+        onClick={() => void downloadPdf()}
+        disabled={!passUrl}
+        className={secondaryBtn}
+      >
+        {c.downloadPdf}
+      </button>
+      {canShare ? (
         <button
           type="button"
-          onClick={openTracking}
-          disabled={!passUrl}
-          className={primaryBtn}
-        >
-          {c.openTracking}
-        </button>
-        <button
-          type="button"
-          onClick={() => void downloadPdf()}
-          disabled={!passUrl}
+          onClick={() => void sharePdf()}
+          disabled={!passUrl || shareBusy}
           className={secondaryBtn}
         >
-          {c.downloadPdf}
+          {c.sharePdf}
         </button>
-        {canShare ? (
-          <button
-            type="button"
-            onClick={() => void sharePdf()}
-            disabled={!passUrl || shareBusy}
-            className={secondaryBtn}
-          >
-            {c.sharePdf}
-          </button>
-        ) : null}
-        {isBooking && queueUrl ? (
-          <a href={queueUrl} target="_blank" rel="noopener noreferrer" className={queueBtn}>
-            {c.queueLinkLabel}
-          </a>
-        ) : null}
+      ) : null}
+      {isBooking && queueUrl ? (
+        <a href={queueUrl} target="_blank" rel="noopener noreferrer" className={queueBtn}>
+          {c.queueLinkLabel}
+        </a>
+      ) : null}
+    </>
+  );
+
+  return (
+    <div className="space-y-3">
+      <div
+        className={
+          isStack ? "flex flex-col gap-2" : "flex flex-wrap gap-2"
+        }
+      >
+        {actions}
       </div>
       {isBooking ? (
         <p
@@ -172,6 +189,7 @@ export function RequestPassCardActions({
           {c.queueSameDayNote}
         </p>
       ) : null}
+      {!hideNotice ? <p className={noticeClass}>{c.keepCardNotice}</p> : null}
       {showCalendar && request.officeId && request.preferredDate ? (
         <BookingDateCalendarReminder
           locale={locale}
