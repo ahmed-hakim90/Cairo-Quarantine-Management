@@ -41,6 +41,7 @@ export type Messages = {
   bottomNav: {
     aria: string;
     booking: string;
+    charter: string;
     complaints: string;
     search: string;
     searchAria: string;
@@ -306,6 +307,7 @@ const ar: Messages = {
   bottomNav: {
     aria: "التنقل السريع",
     booking: "حجز",
+    charter: "الميثاق",
     complaints: "شكاوى",
     search: "بحث",
     searchAria: "فتح البحث في الموقع",
@@ -612,6 +614,7 @@ const en: Messages = {
   bottomNav: {
     aria: "Quick navigation",
     booking: "Book",
+    charter: "Charter",
     complaints: "Complaints",
     search: "Search",
     searchAria: "Open site search",
@@ -922,6 +925,7 @@ const zh: Messages = {
   bottomNav: {
     aria: "快捷导航",
     booking: "预约",
+    charter: "章程",
     complaints: "投诉",
     search: "搜索",
     searchAria: "打开网站搜索",
@@ -1220,6 +1224,7 @@ const fr: Messages = {
   bottomNav: {
     aria: "Navigation rapide",
     booking: "Reserver",
+    charter: "Charte",
     complaints: "Plaintes",
     search: "Recherche",
     searchAria: "Ouvrir la recherche sur le site",

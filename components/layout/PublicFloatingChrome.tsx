@@ -16,7 +16,7 @@ export function PublicFloatingChrome({
 }: PublicFloatingChromeProps) {
   return (
     <div
-      className={`fixed end-5 z-[60] flex max-md:bottom-[calc(5.25rem+1rem+env(safe-area-inset-bottom,0px))] flex-col items-center gap-3 md:bottom-5 ${PUBLIC_FAB_ANCHOR_CLASS}`}
+      className={`fixed z-[60] flex flex-col items-center gap-3 max-md:bottom-[calc(5.25rem+1rem+env(safe-area-inset-bottom,0px))] max-md:start-5 max-md:end-auto md:end-5 md:bottom-5 ${PUBLIC_FAB_ANCHOR_CLASS}`}
     >
       <FloatingTextToSpeechButton locale={locale} labels={messages.tts} />
     </div>

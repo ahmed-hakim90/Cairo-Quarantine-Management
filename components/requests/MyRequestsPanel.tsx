@@ -312,7 +312,7 @@ export function MyRequestsPanel({
   );
 
   return (
-    <div className="mx-auto max-w-6xl px-3 py-5 pb-8 sm:px-4 sm:py-8 lg:py-12">
+    <div className="mx-auto max-w-6xl px-3 py-5 sm:px-4 sm:py-8 lg:py-12">
       <section className="min-w-0">
         <div className="mb-4 flex flex-col gap-3 sm:mb-5 sm:flex-row sm:items-end sm:justify-between">
           <div>

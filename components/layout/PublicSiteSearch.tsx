@@ -77,10 +77,12 @@ export function PublicSiteSearchTrigger({
   labels,
   onClick,
   variant = "bottom",
+  className,
 }: {
   labels: Messages["bottomNav"];
   onClick: () => void;
   variant?: "bottom" | "header";
+  className?: string;
 }) {
   if (variant === "header") {
     return (
@@ -103,10 +105,13 @@ export function PublicSiteSearchTrigger({
       type="button"
       onClick={onClick}
       aria-label={labels.searchAria}
-      className="flex min-h-8 flex-col items-center justify-center gap-0.5 px-1 py-0.5 text-[10px] font-semibold leading-tight text-brand-primary/50 transition-colors sm:text-[11px]"
+      className={
+        className ??
+        "flex min-h-8 w-full flex-col items-center justify-center gap-0.5 px-0.5 py-0.5 text-[10px] font-semibold leading-tight text-brand-primary/50 transition-colors sm:text-[11px]"
+      }
     >
-      <SearchIcon />
-      <span className="max-w-[4.25rem] truncate text-center">{labels.search}</span>
+      <SearchIcon className="size-6 text-brand-primary/45" />
+      <span className="max-w-[3.5rem] truncate text-center">{labels.search}</span>
     </button>
   );
 }
