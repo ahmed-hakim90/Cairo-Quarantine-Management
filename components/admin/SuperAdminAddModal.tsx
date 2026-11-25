@@ -11,6 +11,10 @@ import {
   officeFieldClass,
 } from "@/components/admin/OfficeFormFields";
 import { EGYPT_GOVERNORATES } from "@/data/governorates";
+import {
+  ADMIN_PASSWORD_MIN_LENGTH,
+  ADMIN_PASSWORD_RULE_AR,
+} from "@/lib/office-requests/admin-password-policy";
 import { defaultTravelerStatesFromLegacyLabels } from "@/lib/office-requests/office-traveler-state";
 import { runWithFeedback } from "@/lib/ui/run-with-feedback";
 import type { AdminRole, AdminUserProfile, Office } from "@/lib/office-requests/types";
@@ -322,9 +326,10 @@ export function SuperAdminAddModal({
                   placeholder={
                     userToEdit
                       ? "اتركه فارغاً للإبقاء على كلمة المرور الحالية"
-                      : "مطلوبة عند الإنشاء (6 أحرف على الأقل)"
+                      : `مطلوبة عند الإنشاء (${ADMIN_PASSWORD_RULE_AR})`
                   }
-                  {...(!userToEdit ? { minLength: 6 } : {})}
+                  minLength={ADMIN_PASSWORD_MIN_LENGTH}
+                  autoComplete="new-password"
                 />
               </label>
               <UserRoleOfficeFields

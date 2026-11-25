@@ -71,6 +71,7 @@ import {
   isSingleOfficeStaffRole,
   normalizeOfficeIds,
 } from "@/lib/office-requests/admin-access";
+import { adminPasswordProblem } from "@/lib/office-requests/admin-password-policy";
 import {
   DUPLICATE_BOOKING_MESSAGE,
   findMatchingDuplicateBooking,
@@ -2872,14 +2873,16 @@ export async function upsertAdminUserAccount(input: {
   const email = input.email.trim();
   const displayName = input.displayName.trim() || email;
   if (!email) throw new Error("اكتب البريد الإلكتروني.");
-  if (!input.uid && (!input.password || input.password.length < 6)) {
-    throw new Error("اكتب كلمة مرور لا تقل عن 6 أحرف للمستخدم الجديد.");
+  if (!input.uid && !input.password) {
+    throw new Error("اكتب كلمة مرور للمستخدم الجديد.");
   }
-  if (input.uid && input.password && input.password.length < 6) {
-    throw new Error("كلمة المرور يجب ألا تقل عن 6 أحرف.");
+  if (input.password) {
+    const passwordProblem = adminPasswordProblem(input.password);
+    if (passwordProblem) throw new Error(passwordProblem);
   }
 
   const all = await listUserProfiles();
+  const previous = input.uid ? all.find((p) => p.uid === input.uid) : undefined;
   const role = input.role;
   const active = input.active;
   const allowedOfficeIds =
@@ -2967,6 +2970,14 @@ export async function upsertAdminUserAccount(input: {
       targetUid: profile.uid,
       role: profile.role,
       active: profile.active,
+      passwordChanged: Boolean(input.password),
+      ...(previous
+        ? {
+            previousEmail: previous.email,
+            previousDisplayName: previous.displayName,
+            previousRole: previous.role,
+          }
+        : {}),
     },
   });
 

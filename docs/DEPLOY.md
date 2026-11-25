@@ -61,3 +61,10 @@ npm run start
 - [ ] `/ar/admin/offices` — سعة يومية ومكتب المطار 24 ساعة
 - [ ] اختبار: حجز → QR → لوحة → طابور → تصدير
 - [ ] نسخ احتياطي: [`BACKUP-FIRESTORE.md`](BACKUP-FIRESTORE.md)
+
+## 7. أمان حسابات الإدارة
+
+- كلمة مرور أي مستخدم إداري: 10 أحرف على الأقل وتحتوي على حروف وأرقام (`lib/office-requests/admin-password-policy.ts`). Firebase وحده يقبل 6 أحرف، وده سمح سابقاً بكلمة مرور زي `123456` لحساب سوبر أدمن، واتخمنت.
+- سجل النشاط لـ `user.updated` بيحفظ البريد والاسم والدور السابقين، وهل كلمة المرور اتغيرت، عشان أي تعديل على حساب يبان ويتراجع.
+- في Firebase Console: اقفل التسجيل الذاتي (Authentication → Settings → User actions → إلغاء Enable create)، وفعّل التحقق بخطوتين (MFA) لحسابات السوبر أدمن.
+- عند الاشتباه في اختراق: غيّر كلمات المرور من Firebase Console، ثم `revokeRefreshTokens` لكل المستخدمين الإداريين (جلسات اللوحة بتتحقق من الإلغاء في `getAdminSession`).
